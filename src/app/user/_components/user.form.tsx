@@ -1,10 +1,21 @@
 "use client"
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import {useEffect, useState} from "react"
+import {Button} from "@/components/ui/button"
+import {Input} from "@/components/ui/input"
+import {useRouter} from "next/navigation";
+import {Backdrop, CircularProgress} from "@mui/material";
 
 export function UserForm() {
+    const [openBackLoading, setOpenBackLoading] = useState(false);
+
+    const user = sessionStorage.getItem('user');
+    const router = useRouter();
+
+    if (user == null) {
+        router.push('/login');
+    }
+
     const [isEditingPersonal, setIsEditingPersonal] = useState(false)
     const [isEditingProfessional, setIsEditingProfessional] = useState(false)
     const [personalInfo, setPersonalInfo] = useState({
@@ -34,8 +45,37 @@ export function UserForm() {
     const handleProfessionalSave = () => {
         setIsEditingProfessional(false)
     }
+
+    const getUser = () => {
+        setOpenBackLoading(true);
+
+        try {
+            // your code here
+
+            setTimeout(() => {
+                setOpenBackLoading(false);
+            }, 1000);
+        } catch (error) {
+            console.log('[TRY-CATCH] error: ', error);
+            setOpenBackLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        getUser();
+    }, []);
+
     return (
         <div className="container mx-auto px-4 py-12 md:px-6 lg:px-8">
+            <Backdrop
+                sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
+                open={openBackLoading}
+            >
+                <div className="flex flex-col items-center">
+                    <CircularProgress color="inherit"/>
+                    <p>Buscando dados do usuário...</p>
+                </div>
+            </Backdrop>
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <div className="space-y-6">
                     <div className="bg-white rounded-lg shadow-md p-6">
@@ -50,43 +90,45 @@ export function UserForm() {
                         {isEditingPersonal ? (
                             <div className="space-y-4">
                                 <div className="flex items-center gap-4">
-                                    <img src="/next.svg" alt="Profile Photo" width={100} height={100} className="rounded-full" />
+                                    <img src="/next.svg" alt="Profile Photo" width={100} height={100}
+                                         className="rounded-full"/>
                                     <Input
                                         type="text"
                                         label="Nome"
                                         value={personalInfo.name}
-                                        onChange={(e) => setPersonalInfo({ ...personalInfo, name: e.target.value })}
+                                        onChange={(e) => setPersonalInfo({...personalInfo, name: e.target.value})}
                                     />
                                 </div>
                                 <Input
                                     type="text"
                                     label="CPF"
                                     value={personalInfo.cpf}
-                                    onChange={(e) => setPersonalInfo({ ...personalInfo, cpf: e.target.value })}
+                                    onChange={(e) => setPersonalInfo({...personalInfo, cpf: e.target.value})}
                                 />
                                 <Input
                                     type="text"
                                     label="RG"
                                     value={personalInfo.rg}
-                                    onChange={(e) => setPersonalInfo({ ...personalInfo, rg: e.target.value })}
+                                    onChange={(e) => setPersonalInfo({...personalInfo, rg: e.target.value})}
                                 />
                                 <Input
                                     type="email"
                                     label="Email"
                                     value={personalInfo.email}
-                                    onChange={(e) => setPersonalInfo({ ...personalInfo, email: e.target.value })}
+                                    onChange={(e) => setPersonalInfo({...personalInfo, email: e.target.value})}
                                 />
                                 <Input
                                     type="tel"
                                     label="Telefone"
                                     value={personalInfo.telephone}
-                                    onChange={(e) => setPersonalInfo({ ...personalInfo, telephone: e.target.value })}
+                                    onChange={(e) => setPersonalInfo({...personalInfo, telephone: e.target.value})}
                                 />
                             </div>
                         ) : (
                             <div className="space-y-4">
                                 <div className="flex items-center gap-4">
-                                    <img src="/next.svg" alt="Profile Photo" width={100} height={100} className="rounded-full" />
+                                    <img src="/next.svg" alt="Profile Photo" width={100} height={100}
+                                         className="rounded-full"/>
                                     <div>
                                         <div className="text-lg font-bold">{personalInfo.name}</div>
                                         <div className="text-muted-foreground">{personalInfo.email}</div>

@@ -1,15 +1,12 @@
 "use client"
-import {useRouter} from "next/navigation";
-import {useAuthState} from "react-firebase-hooks/auth";
-import {auth} from "@/app/firebase/config";
 import Dashboard from "@/app/dashboard/page";
+import {useRouter} from "next/navigation";
 
 export default function App() {
-    const [user] = useAuthState(auth);
     const router = useRouter();
+    const user = sessionStorage.getItem('user');
 
-    console.log('user: ', user)
-    if (!user) {
+    if (user == null) {
         router.push('/login');
     }
 
