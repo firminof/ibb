@@ -9,6 +9,7 @@ import {useRouter} from "next/navigation";
 import {Backdrop, CircularProgress} from "@mui/material";
 import {useState} from "react";
 import api from "@/lib/api/api";
+import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
 
 export default function CreateUserForm() {
     const [openBackLoading, setOpenBackLoading] = useState(false);
@@ -20,6 +21,19 @@ export default function CreateUserForm() {
     if (user == null) {
         router.push('/login');
     }
+
+    const ministeriosCadastrados = [
+        {id: 1, label: 'Option 1'},
+        {id: 2, label: 'Option 2'},
+        {id: 3, label: 'Option 3'},
+        {id: 4, label: 'Option 4'},
+        {id: 5, label: 'Option 5'},
+        {id: 6, label: 'Option 6'},
+        {id: 7, label: 'Option 7'},
+        {id: 8, label: 'Option 8'},
+        {id: 9, label: 'Option 9'},
+        {id: 10, label: 'Option 10'},
+    ];
 
     const handleCreateUser = (e) => {
         e.preventDefault();
@@ -37,6 +51,10 @@ export default function CreateUserForm() {
         }
     };
 
+    const ministeriosSelected = (ministerios) => {
+        console.log('mini: ', ministerios);
+    }
+
     return (
         <div className="container mx-auto max-w-2xl py-12">
             <Backdrop
@@ -53,44 +71,49 @@ export default function CreateUserForm() {
                     <h1 className="text-3xl font-bold">Cadastro de Membro</h1>
                     <p className="text-muted-foreground">Preencha os campos abaixo para cadastrar um novo membro.</p>
                 </div>
-                <Card>
+                <Card className="w-full">
                     <CardContent className="mt-10">
                         <form className="space-y-6">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="nome">Nome</Label>
                                     <Input id="nome" placeholder="Digite o nome"/>
                                 </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="cpf">CPF</Label>
                                     <Input id="cpf" placeholder="Digite o CPF"/>
                                 </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="rg">RG</Label>
                                     <Input id="rg" placeholder="Digite o RG"/>
                                 </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="telefone">Telefone</Label>
                                     <Input id="telefone" placeholder="Digite o telefone"/>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+
+                            <div className="grid grid-cols-1 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="foto">Foto</Label>
                                     <Input id="foto" type="file"/>
                                 </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="data-ingresso">Data de Ingresso</Label>
                                     <Input id="data-ingresso" type="date"/>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="situacao-membresia">Situação de Membresia</Label>
-                                    <Input id="situacao-membresia" placeholder="Digite a situação"/>
-                                </div>
+
+                            <div className="grid grid-cols-1 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="status">Status</Label>
                                     <Select>
@@ -98,13 +121,18 @@ export default function CreateUserForm() {
                                             <SelectValue placeholder="Selecione o status"/>
                                         </SelectTrigger>
                                         <SelectContent>
+                                            <SelectItem value="visitante">Visitante</SelectItem>
+                                            <SelectItem value="congregado">Congregado</SelectItem>
                                             <SelectItem value="ativo">Ativo</SelectItem>
                                             <SelectItem value="inativo">Inativo</SelectItem>
-                                            <SelectItem value="pendente">Pendente</SelectItem>
+                                            <SelectItem value="transferido">Transferido</SelectItem>
+                                            <SelectItem value="falecido">Falecido</SelectItem>
+                                            <SelectItem value="excluido">Excluído</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                             </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="transferencia">Transferência</Label>
@@ -112,7 +140,8 @@ export default function CreateUserForm() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="ministerio">Ministério</Label>
-                                    <Input id="ministerio" placeholder="Digite o ministério"/>
+                                    {/*<Input id="ministerio" placeholder="Digite o ministério"/>*/}
+                                    <MultiSelectDropdown dataSelected={ministeriosSelected} data={ministeriosCadastrados}/>
                                 </div>
                             </div>
                             <div className="flex flex-1 justify-end">

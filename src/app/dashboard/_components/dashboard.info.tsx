@@ -120,9 +120,13 @@ export function DashboardInfo() {
                                             <SelectValue placeholder="Selecionar status"/>
                                         </SelectTrigger>
                                         <SelectContent>
+                                            <SelectItem value="visitante">Visitante</SelectItem>
+                                            <SelectItem value="congregado">Congregado</SelectItem>
                                             <SelectItem value="ativo">Ativo</SelectItem>
                                             <SelectItem value="inativo">Inativo</SelectItem>
                                             <SelectItem value="transferido">Transferido</SelectItem>
+                                            <SelectItem value="falecido">Falecido</SelectItem>
+                                            <SelectItem value="excluido">Excluído</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
