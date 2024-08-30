@@ -1,8 +1,9 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 
 const MultiSelectDropdown = (props) => {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOptions, setSelectedOptions] = useState([]);
+    const dropdownRef = useRef(null);
 
     const toggleDropdown = () => setIsOpen(!isOpen);
 
@@ -22,8 +23,23 @@ const MultiSelectDropdown = (props) => {
 
     const isSelected = (optionId) => selectedOptions.includes(optionId);
 
+    // Close dropdown if click is outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [dropdownRef]);
+
     return (
-        <div className="relative inline-block w-full sm:w-64 md:w-68">
+        <div className="relative inline-block w-full sm:w-64 md:w-68" ref={dropdownRef}>
             <div
                 onClick={toggleDropdown}
                 className="cursor-pointer border border-gray-300 rounded-md p-2 flex justify-between items-center"
@@ -64,6 +80,7 @@ const MultiSelectDropdown = (props) => {
                                 }}
                             >
                                 <input
+                                    id={option.id}
                                     type="checkbox"
                                     className="form-checkbox h-4 w-4 text-indigo-600"
                                     checked={isSelected(option.id)}
