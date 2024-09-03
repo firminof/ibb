@@ -39,7 +39,7 @@ const MultiSelectDropdown = (props) => {
     }, [dropdownRef]);
 
     return (
-        <div className="relative inline-block w-full sm:w-64 md:w-68" ref={dropdownRef}>
+        <div className="relative w-full" ref={dropdownRef}>
             <div
                 onClick={toggleDropdown}
                 className="cursor-pointer border border-gray-300 rounded-md p-2 flex justify-between items-center"

@@ -72,6 +72,9 @@ const config = {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
+      width: {
+        '70': '271.2px', // ou qualquer valor que precisar, por exemplo '70%': '70%'
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

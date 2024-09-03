@@ -57,6 +57,7 @@
     "react-dom": "^18",
     "react-firebase-hooks": "^5.1.1",
     "react-hook-form": "^7.52.0",
+    "react-input-mask": "^2.0.4",
     "react-resizable-panels": "^2.0.19",
     "react-router-dom": "^6.24.0",
     "sonner": "^1.5.0",

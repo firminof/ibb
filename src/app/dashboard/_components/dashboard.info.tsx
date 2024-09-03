@@ -13,10 +13,32 @@ import {useState} from "react";
 import {PhoneIcon} from "@/components/phone-icon/phone-icon";
 import {PlusIcon} from "@/components/plus-icon/plus-icon";
 import {DownloadIcon} from "@/components/download-icon/download-icon";
+import {SendIcon} from "@/components/send-icon/send-icon";
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import {ArrowRightIcon} from "@radix-ui/react-icons";
+import {EmailInput} from "@/components/form-inputs/form-inputs";
+import {Birthdays} from "@/app/dashboard/_components/birthdays";
+import {Cards} from "@/app/dashboard/_components/cards";
+import {ToastSuccess} from "@/components/toast/toast-success";
 
 export function DashboardInfo() {
     const [openBackLoading, setOpenBackLoading] = useState(false);
-    const [isExporting, setIsExporting] = useState(false);
+    const [openDialogInvite, setOpenDialogInvite] = useState(false);
+    const [isSuccessSendInvite, setIsSuccessSendInvite] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const [messageLoading, setMessageLoading] = useState('');
+
+    const [email, setEmail] = useState('');
 
     const router = useRouter();
 
@@ -28,21 +50,50 @@ export function DashboardInfo() {
 
     const handleExportToExcel = (e) => {
         e.preventDefault();
-        setIsExporting(true);
+        setIsLoading(true);
+        setMessageLoading('Exportando membros para Excel');
         setOpenBackLoading(true);
 
         try {
             // your code here
             setTimeout(() => {
-                setIsExporting(false);
+                setIsLoading(false);
                 setOpenBackLoading(false);
+                setMessageLoading('');
             }, 2500);
         } catch (error) {
             console.log('[TRY-CATCH] error: ', error);
-            setIsExporting(false);
+            setIsLoading(false);
             setOpenBackLoading(false);
+            setMessageLoading('');
         }
     }
+
+    const handleConvidarMembro = (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setMessageLoading('Enviando convite por email');
+        setOpenBackLoading(true);
+
+        try {
+            console.log('email: ', email);
+            setTimeout(() => {
+                setIsLoading(false);
+                setOpenBackLoading(false);
+                setMessageLoading('');
+                setOpenDialogInvite(false);
+                setIsSuccessSendInvite(true);
+            }, 2500);
+        } catch (error) {
+            console.log('[TRY-CATCH] error: ', error);
+            setIsLoading(false);
+            setOpenBackLoading(false);
+            setMessageLoading('');
+            setOpenDialogInvite(false);
+            setIsSuccessSendInvite(true);
+        }
+    }
+
     return (
         <div className="flex flex-col h-full">
             <Backdrop
@@ -52,162 +103,67 @@ export function DashboardInfo() {
                 <div className="flex flex-col items-center">
                     <CircularProgress color="inherit"/>
                     {
-                        isExporting ? <p><br/>Exportando membros para Excel</p> : ''
+                        isLoading ? <p><br/>{messageLoading}</p> : 'Carregando'
                     }
                 </div>
             </Backdrop>
 
             <main className="flex-1 p-4 sm:p-6">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Total de membros</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex justify-between items-center">
-                            <div className="text-4xl font-bold">1,234</div>
-                            <div className="flex justify-end justify-items-center flex-row gap-3">
-                                <Button variant="outline" size="sm" className="hidden md:inline-flex" onClick={(e) => handleExportToExcel(e)}>
-                                    <DownloadIcon className="w-4 h-4"/>
-                                    Exportar para Excel
-                                </Button>
-                                <Button size="sm" className="hidden md:inline-flex" onClick={() => router.push('/create-user')}>
-                                    <PlusIcon className="w-4 h-4"/>
-                                    Adicionar Membro
+                <div
+                    className="gap-3 grid sm:grid-rows-2 md:grid-cols-4 sm:flex sm:justify-end md:flex md:justify-end mb-3">
+                    <Button variant="outline" size="sm" className="border-2 font-bold sm:inline-flex md:inline-flex"
+                            onClick={(e) => handleExportToExcel(e)}>
+                        <DownloadIcon className="w-4 h-4 mr-1"/>
+                        Exportar para Excel
+                    </Button>
+
+                    <Dialog open={openDialogInvite} onOpenChange={setOpenDialogInvite}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" size="sm"
+                                    className="border-2 font-bold sm:inline-flex md:inline-flex" onClick={() => setOpenDialogInvite(true)}>
+                                <SendIcon className="w-4 h-4 mr-1"/>
+                                Convidar Membro
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                                <DialogTitle>Convidar Membro</DialogTitle>
+                                <DialogDescription>
+                                    Será enviado um email para o membro solicitando que aceite e atualize as informações de membresia.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="flex items-center space-x-2">
+                                <div className="grid flex-1 gap-2">
+                                    <Label htmlFor="link" className="sr-only">
+                                        Link
+                                    </Label>
+                                    <EmailInput
+                                        id="convite_email"
+                                        onChange={(e: any) => setEmail(e.target.value)}/>
+                                </div>
+                                <Button type="submit" size="sm" className="px-3" disabled={email.length === 0} onClick={(e) => handleConvidarMembro(e)}>
+                                    Convidar
+                                    <ArrowRightIcon className="w-4 h-4 ml-1"/>
                                 </Button>
                             </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Membros ativos</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex justify-between items-center">
-                            <div className="text-4xl font-bold text-green-500">987</div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Membros inativos</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex justify-between items-center">
-                            <div className="text-4xl font-bold text-red-500">247</div>
-                        </CardContent>
-                    </Card>
+                        </DialogContent>
+                    </Dialog>
+                    {
+                        isSuccessSendInvite && (
+                            <ToastSuccess data={{message: 'Convite enviado com sucesso!'}} visible={true}/>
+                        )
+                    }
+                    <Button size="sm" className="font-bold sm:inline-flex md:inline-flex"
+                            onClick={() => router.push('/create-user')}>
+                        <PlusIcon className="w-4 h-4 mr-1"/>
+                        Adicionar Membro
+                    </Button>
                 </div>
-                <div className="mt-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Novos membros este mês</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-4xl font-bold">45</div>
-                        </CardContent>
-                    </Card>
-                </div>
-                <div className="mt-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Aniversariantes do mês: AGOSTO</CardTitle>
-                            <div className="mb-4 flex space-x-4">
-                                <div className="flex-1">
-                                    <Label htmlFor="name-filter">Filtrar por nome</Label>
-                                    <Input id="name-filter" placeholder="Digite o nome..."/>
-                                </div>
-                                <div className="flex-1">
-                                    <Label htmlFor="status-filter">Filtrar por Status</Label>
-                                    <Select>
-                                        <SelectTrigger id="status-filter" aria-label="Status">
-                                            <SelectValue placeholder="Selecionar status"/>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="visitante">Visitante</SelectItem>
-                                            <SelectItem value="congregado">Congregado</SelectItem>
-                                            <SelectItem value="ativo">Ativo</SelectItem>
-                                            <SelectItem value="inativo">Inativo</SelectItem>
-                                            <SelectItem value="transferido">Transferido</SelectItem>
-                                            <SelectItem value="falecido">Falecido</SelectItem>
-                                            <SelectItem value="excluido">Excluído</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Nome</TableHead>
-                                        <TableHead>Aniversário</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Ação</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    <TableRow>
-                                        <TableCell>John Doe</TableCell>
-                                        <TableCell>Maio 15</TableCell>
-                                        <TableCell>
-                                            <div className="px-2 py-1 rounded-full bg-green-100 text-green-700">Ativo
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Link
-                                                href="#"
-                                                target="_blank"
-                                                className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                                prefetch={false}
-                                            >
-                                                <PhoneIcon className="w-4 h-4"/>
-                                                Enviar Mensagem
-                                            </Link>
-                                        </TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell>Jane Smith</TableCell>
-                                        <TableCell>Junho 3</TableCell>
-                                        <TableCell>
-                                            <div
-                                                className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700">Inativo
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Link
-                                                href="#"
-                                                target="_blank"
-                                                className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                                prefetch={false}
-                                            >
-                                                <PhoneIcon className="w-4 h-4"/>
-                                                Enviar Mensagem
-                                            </Link>
-                                        </TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell>Bob Johnson</TableCell>
-                                        <TableCell>Julho 21</TableCell>
-                                        <TableCell>
-                                            <div
-                                                className="px-2 py-1 rounded-full bg-red-100 text-red-700">Transferido
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Link
-                                                href="#"
-                                                target="_blank"
-                                                className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                                prefetch={false}
-                                            >
-                                                <PhoneIcon className="w-4 h-4"/>
-                                                Enviar Mensagem
-                                            </Link>
-                                        </TableCell>
-                                    </TableRow>
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </div>
+
+                <Cards/>
+
+                <Birthdays/>
             </main>
         </div>
-    )
+)
 }

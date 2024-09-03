@@ -17,6 +17,7 @@ import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {obterIniciaisPrimeiroUltimo} from "@/lib/helpers/helpers";
 import {diaconos} from "@/lib/constants/diaconos";
 import {IDiaconoSelect} from "@/lib/models/diaconos";
+import {CPFInput, EmailInput, PhoneInput, RGInput} from "@/components/form-inputs/form-inputs";
 
 export default function CreateUserForm() {
     const [openBackLoading, setOpenBackLoading] = useState(false);
@@ -114,27 +115,36 @@ export default function CreateUserForm() {
                             <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label htmlFor="cpf">CPF</Label>
-                                    <Input
+                                    <CPFInput
                                         id="cpf"
-                                        onChange={(e: any) => handleCreateUserForm('cpf', e)}
-                                        placeholder="Digite o CPF"/>
+                                        onChange={(e: any) => handleCreateUserForm('cpf', e)}/>
+                                    {/*<Input*/}
+                                    {/*    id="cpf"*/}
+                                    {/*    onChange={(e: any) => handleCreateUserForm('cpf', e)}*/}
+                                    {/*    placeholder="Digite o CPF"/>*/}
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="rg">RG</Label>
-                                    <Input
+                                    <RGInput
                                         id="rg"
-                                        onChange={(e: any) => handleCreateUserForm('rg', e)}
-                                        placeholder="Digite o RG"/>
+                                        onChange={(e: any) => handleCreateUserForm('rg', e)}/>
+                                    {/*<Input*/}
+                                    {/*    id="rg"*/}
+                                    {/*    onChange={(e: any) => handleCreateUserForm('rg', e)}*/}
+                                    {/*    placeholder="Digite o RG"/>*/}
                                 </div>
                             </div>
 
                             <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label htmlFor="telefone">Telefone</Label>
-                                    <Input
+                                    <PhoneInput
                                         id="telefone"
-                                        onChange={(e: any) => handleCreateUserForm('telefone', e)}
-                                        placeholder="Digite o telefone"/>
+                                        onChange={(e: any) => handleCreateUserForm('telefone', e)}/>
+                                    {/*<Input*/}
+                                    {/*    id="telefone"*/}
+                                    {/*    onChange={(e: any) => handleCreateUserForm('telefone', e)}*/}
+                                    {/*    placeholder="Digite o telefone"/>*/}
                                 </div>
 
                                 <div className="grid grid-cols-1 gap-4">
@@ -151,9 +161,12 @@ export default function CreateUserForm() {
                             <div className="grid grid-cols-1 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="email">Email</Label>
-                                    <Input id="email"
-                                           onChange={(e: any) => handleCreateUserForm('email', e)}
-                                           placeholder="Digite o email"/>
+                                    <EmailInput
+                                        id="email"
+                                        onChange={(e: any) => handleCreateUserForm('email', e)}/>
+                                    {/*<Input id="email"*/}
+                                    {/*       onChange={(e: any) => handleCreateUserForm('email', e)}*/}
+                                    {/*       placeholder="Digite o email"/>*/}
                                 </div>
                             </div>
 
@@ -227,9 +240,9 @@ export default function CreateUserForm() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-4">
-                                {
-                                    userForm.status === 'transferido' && (
+                            {
+                                userForm.status === 'transferido' && (
+                                    <div className="grid grid-cols-1 gap-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="transferencia">Transferência</Label>
                                             <Input
@@ -241,9 +254,9 @@ export default function CreateUserForm() {
                                                 Informe a data da transferência do membro
                                             </p>
                                         </div>
-                                    )
-                                }
-                            </div>
+                                    </div>
+                                )
+                            }
 
                             <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-1">
                                 <div className="space-y-2">
@@ -302,32 +315,30 @@ export default function CreateUserForm() {
                                 </div>
                             </div>
 
-                            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
-                                {
-                                    userForm.estado_civil === 'casado' && (
-                                        <>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="data_casamento">Data do Casamento</Label>
-                                                <Input
-                                                    id="data_casamento"
-                                                    onChange={(e: any) => handleCreateUserForm('data_casamento', e)}
-                                                    type="date"/>
-                                                <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
-                                                   id="file_input_help_transferencia">
-                                                    Informe a data de casamento do membro (caso saiba)
-                                                </p>
-                                            </div>
+                            {
+                                userForm.estado_civil === 'casado' && (
+                                    <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="data_casamento">Data do Casamento</Label>
+                                            <Input
+                                                id="data_casamento"
+                                                onChange={(e: any) => handleCreateUserForm('data_casamento', e)}
+                                                type="date"/>
+                                            <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
+                                               id="file_input_help_transferencia">
+                                                Informe a data de casamento do membro (caso saiba)
+                                            </p>
+                                        </div>
 
-                                            <div className="space-y-2">
-                                                <Label htmlFor="conjugue">Nome do(a) conjugue</Label>
-                                                <Input id="conjugue"
-                                                       onChange={(e: any) => handleCreateUserForm('conjugue', e)}
-                                                       placeholder="Digite o nome do(a) conjugue"/>
-                                            </div>
-                                        </>
-                                    )
-                                }
-                            </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="conjugue">Nome do(a) conjugue</Label>
+                                            <Input id="conjugue"
+                                                   onChange={(e: any) => handleCreateUserForm('conjugue', e)}
+                                                   placeholder="Digite o nome do(a) conjugue"/>
+                                        </div>
+                                    </div>
+                                )
+                            }
 
                             <div className="flex flex-1 justify-end">
                                 <Button type="submit" className="ml-auto" onClick={(e) => handleCreateUser(e)}>
