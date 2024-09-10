@@ -18,6 +18,7 @@ import {obterIniciaisPrimeiroUltimo} from "@/lib/helpers/helpers";
 import {diaconos} from "@/lib/constants/diaconos";
 import {IDiaconoSelect} from "@/lib/models/diaconos";
 import {CPFInput, EmailInput, PhoneInput, RGInput} from "@/components/form-inputs/form-inputs";
+import {ChevronLeftIcon} from "@radix-ui/react-icons";
 
 export default function CreateUserForm() {
     const [openBackLoading, setOpenBackLoading] = useState(false);
@@ -85,7 +86,7 @@ export default function CreateUserForm() {
     }
 
     return (
-        <div className="container mx-auto max-w-2xl py-12">
+        <div className="container mx-auto mt-4">
             <Backdrop
                 sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
                 open={openBackLoading}
@@ -95,11 +96,17 @@ export default function CreateUserForm() {
                     <p>Criando usuário...</p>
                 </div>
             </Backdrop>
+
+            <section>
+                <Button variant="outline" className="text-black" onClick={() => router.back()}>
+                    <ChevronLeftIcon className="h-4 w-4"/> voltar
+                </Button>
+                <h2 className="text-black text-3xl font-semibold mb-4 mt-4">Cadastro de Membro</h2>
+            </section>
+
             <div className="space-y-6">
-                <div className="text-center">
-                    <h1 className="text-3xl font-bold">Cadastro de Membro</h1>
-                    <p className="text-muted-foreground">Preencha os campos abaixo para cadastrar um novo membro.</p>
-                </div>
+                <p className="text-muted-foreground flex justify-items-start items-start flex-col">Preencha os campos abaixo para cadastrar um novo membro.</p>
+
                 <Card className="w-full">
                     <CardContent className="mt-10">
                         <form className="space-y-6">

@@ -68,7 +68,7 @@ const MultiSelectDropdown = (props) => {
             </div>
 
             {isOpen && (
-                <div className="absolute mt-2 w-full border border-gray-300 bg-white rounded-md shadow-lg z-10">
+                <div className="absolute mt-2 w-full border border-gray-300 bg-white rounded-md shadow-lg z-30">
                     <ul className="max-h-60 overflow-y-auto">
                         {props.data.map((option) => (
                             <li

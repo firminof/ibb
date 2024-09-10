@@ -1,23 +1,27 @@
+"use client"
+
+import {IMinisteriosSelect, IMisterios} from "@/lib/models/misterios";
+import {ministerios} from "@/lib/constants/misterios";
+import {IDiaconoSelect} from "@/lib/models/diaconos";
+import {diaconos} from "@/lib/constants/diaconos";
+import {IUser} from "@/lib/models/user";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Label} from "@/components/ui/label";
 import {Input} from "@/components/ui/input";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import Link from "next/link";
 import {PhoneIcon} from "@/components/phone-icon/phone-icon";
-import {IDiaconoSelect} from "@/lib/models/diaconos";
-import {diaconos} from "@/lib/constants/diaconos";
-import {IUser} from "@/lib/models/user";
-import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
-import {IMinisteriosSelect, IMisterios} from "@/lib/models/misterios";
-import {ministerios} from "@/lib/constants/misterios";
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from "@/components/ui/accordion";
+import {ChevronDownIcon, ChevronLeftIcon, ChevronUpIcon} from "@radix-ui/react-icons";
+import {Button} from "@/components/ui/button";
+import {useRouter} from "next/navigation";
 import {useState} from "react";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
-import {Button} from "@/components/ui/button";
-import {ChevronDownIcon, ChevronUpIcon} from "@radix-ui/react-icons";
 
-export function Birthdays(props) {
+export function MembersList() {
+    const router = useRouter();
     const [isOpenFilter, setIsOpenFilter] = useState(false);
 
     const ministeriosCadastrados: IMinisteriosSelect[] = ministerios.map((ministerio: IMisterios): IMinisteriosSelect => ({
@@ -37,9 +41,15 @@ export function Birthdays(props) {
     }
 
     return (
-        <div className="mt-5">
-            <Label className="text-black text-xl font-bold">Aniversariantes do mês: SETEMBRO</Label>
-            <Card className="mt-5">
+        <div className="mt-4 container mx-auto">
+            <section>
+                <Button variant="outline" className="text-black" onClick={() => router.back()}>
+                    <ChevronLeftIcon className="h-4 w-4"/> voltar
+                </Button>
+                <h2 className="text-black text-3xl font-semibold mb-4 mt-4">Membros</h2>
+            </section>
+
+            <Card>
                 <CardHeader>
                     <Collapsible
                         open={isOpenFilter}
