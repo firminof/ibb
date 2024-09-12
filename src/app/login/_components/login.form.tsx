@@ -188,7 +188,7 @@ export function LoginForm() {
 
                         {
                             showSuccessLogin && (
-                                <ToastSuccess data={{message: 'Login efetuado com sucesso!'}} visible={true}/>
+                                <ToastSuccess data={{message: 'Login efetuado com sucesso!'}} visible={true} setShowParentComponent={setShowSuccessLogin}/>
                             )
                         }
 

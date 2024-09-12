@@ -1,33 +1,34 @@
 'use client'
 
-import {Label} from "@/components/ui/label"
-import {Input} from "@/components/ui/input"
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
-import {Button} from "@/components/ui/button"
-import {Card, CardContent} from "@/components/ui/card";
-import {useRouter} from "next/navigation";
-import {Backdrop, CircularProgress} from "@mui/material";
-import {useState} from "react";
-import api from "@/lib/api/api";
-import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
-import {ministerios} from "@/lib/constants/misterios";
+import {useEffect, useState} from "react";
+import {useRouter, useSearchParams } from "next/navigation";
 import {IMinisteriosSelect, IMisterios} from "@/lib/models/misterios";
-import {ITempUserCreate, IUser} from "@/lib/models/user";
+import {ministerios} from "@/lib/constants/misterios";
+import api from "@/lib/api/api";
+import {Backdrop, CircularProgress} from "@mui/material";
+import {Button} from "@/components/ui/button";
+import {ChevronLeftIcon} from "@radix-ui/react-icons";
+import {Card, CardContent} from "@/components/ui/card";
+import {Label} from "@/components/ui/label";
+import {Input} from "@/components/ui/input";
+import {CPFInput, EmailInput, PhoneInput, RGInput} from "@/components/form-inputs/form-inputs";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {obterIniciaisPrimeiroUltimo} from "@/lib/helpers/helpers";
-import {diaconos} from "@/lib/constants/diaconos";
-import {IDiaconoSelect} from "@/lib/models/diaconos";
-import {CPFInput, EmailInput, PhoneInput, RGInput} from "@/components/form-inputs/form-inputs";
-import {ChevronLeftIcon} from "@radix-ui/react-icons";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
+import {ToastSuccess} from "@/components/toast/toast-success";
+import {ITempInvite} from "@/lib/models/invite";
 
-export default function CreateUserForm() {
+export function InviteForm(props) {
     const [openBackLoading, setOpenBackLoading] = useState(false);
+    const [isSuccessSaveInvite, setIsSuccessSaveInvite] = useState(false);
 
-    const [userForm, setUserForm] = useState<ITempUserCreate>({} as ITempUserCreate);
+    const [userForm, setUserForm] = useState<ITempInvite>({} as ITempInvite);
 
     const user = sessionStorage.getItem('user');
 
     const router = useRouter();
+    const searchParams = useSearchParams()
 
     if (user == null) {
         router.push('/login');
@@ -38,13 +39,7 @@ export default function CreateUserForm() {
         label: ministerio.nome
     }));
 
-    const diaconosCadastrados: IDiaconoSelect[] = diaconos.map((diacono: IUser): IDiaconoSelect => ({
-        id: diacono.id,
-        label: diacono.nome,
-        value: diacono.nome
-    }));
-
-    const handleCreateUser = (e) => {
+    const handleInviteCreateUser = (e) => {
         e.preventDefault();
         setOpenBackLoading(true);
 
@@ -54,6 +49,7 @@ export default function CreateUserForm() {
             console.log(api.defaults.headers.Authorization)
             setTimeout(() => {
                 setOpenBackLoading(false);
+                setIsSuccessSaveInvite(true);
             }, 1000);
         } catch (error) {
             console.log('[TRY-CATCH] error: ', error);
@@ -85,6 +81,18 @@ export default function CreateUserForm() {
         }));
     }
 
+    useEffect(() => {
+        const emailParam =  searchParams.get('email') ?? '';
+
+        if (emailParam.length > 0) {
+            console.log('emailParam ', emailParam);
+            setUserForm((prevState) => ({
+                ...prevState,
+                'email': emailParam
+            }));
+        }
+    }, [searchParams]);
+    
     return (
         <div className="container mx-auto mt-4">
             <Backdrop
@@ -93,7 +101,7 @@ export default function CreateUserForm() {
             >
                 <div className="flex flex-col items-center">
                     <CircularProgress color="inherit"/>
-                    <p>Criando usuário...</p>
+                    <p>Atualizando convite...</p>
                 </div>
             </Backdrop>
 
@@ -101,11 +109,17 @@ export default function CreateUserForm() {
                 <Button variant="outline" className="text-black" onClick={() => router.back()}>
                     <ChevronLeftIcon className="h-4 w-4"/> voltar
                 </Button>
-                <h2 className="text-black text-3xl font-semibold mb-4 mt-4">Cadastro de Membro</h2>
+                <h2 className="text-black text-3xl font-semibold mb-4 mt-4">Solicitação de membresia</h2>
             </section>
 
+            {
+                isSuccessSaveInvite && (
+                    <ToastSuccess data={{message: 'Membro cadastrado com sucesso.'}} visible={true} setShowParentComponent={setIsSuccessSaveInvite}/>
+                )
+            }
+
             <div className="space-y-6">
-                <p className="text-muted-foreground flex justify-items-start items-start flex-col">Preencha os campos abaixo para cadastrar um novo membro.</p>
+                <p className="text-muted-foreground flex justify-items-start items-start flex-col">Preencha os campos abaixo para se cadastrar como novo membro após o envio do convite.</p>
 
                 <Card className="w-full">
                     <CardContent className="mt-10">
@@ -114,6 +128,7 @@ export default function CreateUserForm() {
                                 <div className="space-y-2">
                                     <Label htmlFor="nome">Nome</Label>
                                     <Input id="nome"
+                                           value={userForm && userForm.nome ? userForm.nome : ''}
                                            onChange={(e: any) => handleCreateUserForm('nome', e)}
                                            placeholder="Digite o nome"/>
                                 </div>
@@ -124,21 +139,15 @@ export default function CreateUserForm() {
                                     <Label htmlFor="cpf">CPF</Label>
                                     <CPFInput
                                         id="cpf"
+                                        value={userForm && userForm.cpf ? userForm.cpf : ''}
                                         onChange={(e: any) => handleCreateUserForm('cpf', e)}/>
-                                    {/*<Input*/}
-                                    {/*    id="cpf"*/}
-                                    {/*    onChange={(e: any) => handleCreateUserForm('cpf', e)}*/}
-                                    {/*    placeholder="Digite o CPF"/>*/}
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="rg">RG</Label>
                                     <RGInput
                                         id="rg"
+                                        value={userForm && userForm.rg ? userForm.rg : ''}
                                         onChange={(e: any) => handleCreateUserForm('rg', e)}/>
-                                    {/*<Input*/}
-                                    {/*    id="rg"*/}
-                                    {/*    onChange={(e: any) => handleCreateUserForm('rg', e)}*/}
-                                    {/*    placeholder="Digite o RG"/>*/}
                                 </div>
                             </div>
 
@@ -147,11 +156,8 @@ export default function CreateUserForm() {
                                     <Label htmlFor="telefone">Telefone</Label>
                                     <PhoneInput
                                         id="telefone"
+                                        value={userForm && userForm.telefone ? userForm.telefone : ''}
                                         onChange={(e: any) => handleCreateUserForm('telefone', e)}/>
-                                    {/*<Input*/}
-                                    {/*    id="telefone"*/}
-                                    {/*    onChange={(e: any) => handleCreateUserForm('telefone', e)}*/}
-                                    {/*    placeholder="Digite o telefone"/>*/}
                                 </div>
 
                                 <div className="grid grid-cols-1 gap-4">
@@ -170,10 +176,8 @@ export default function CreateUserForm() {
                                     <Label htmlFor="email">Email</Label>
                                     <EmailInput
                                         id="email"
+                                        value={userForm && userForm.email ? userForm.email : ''}
                                         onChange={(e: any) => handleCreateUserForm('email', e)}/>
-                                    {/*<Input id="email"*/}
-                                    {/*       onChange={(e: any) => handleCreateUserForm('email', e)}*/}
-                                    {/*       placeholder="Digite o email"/>*/}
                                 </div>
                             </div>
 
@@ -220,79 +224,9 @@ export default function CreateUserForm() {
 
                             <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="status">Status</Label>
-                                    <Select id="status"
-                                            onValueChange={(value) => handleCreateUserForm('status', value)}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Selecione o status"/>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="visitante">Visitante</SelectItem>
-                                            <SelectItem value="congregado">Congregado</SelectItem>
-                                            <SelectItem value="ativo">Ativo</SelectItem>
-                                            <SelectItem value="inativo">Inativo</SelectItem>
-                                            <SelectItem value="transferido">Transferido</SelectItem>
-                                            <SelectItem value="falecido">Falecido</SelectItem>
-                                            <SelectItem value="excluido">Excluído</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="ministerio">Ministério</Label>
-                                    <MultiSelectDropdown
-                                        id="ministerio"
-                                        dataSelected={ministeriosSelected}
-                                        data={ministeriosCadastrados}/>
-                                </div>
-                            </div>
-
-                            {
-                                userForm.status === 'transferido' && (
-                                    <div className="grid grid-cols-1 gap-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="transferencia">Transferência</Label>
-                                            <Input
-                                                id="transferencia"
-                                                onChange={(e: any) => handleCreateUserForm('transferencia', e)}
-                                                type="date"/>
-                                            <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
-                                               id="file_input_help_transferencia">
-                                                Informe a data da transferência do membro
-                                            </p>
-                                        </div>
-                                    </div>
-                                )
-                            }
-
-                            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-1">
-                                <div className="space-y-2">
-                                    <Label htmlFor="diacono">Diácono</Label>
-                                    <Select id="diacono"
-                                            onValueChange={(value: string) => handleCreateUserForm('diacono', value)}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Selecione uma opção"/>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {
-                                                diaconosCadastrados && diaconosCadastrados.length > 0 && (
-                                                    diaconosCadastrados.map((diacono: IDiaconoSelect) => (
-                                                        <SelectItem key={diacono.id}
-                                                                    value={diacono.value}>
-                                                            {diacono.label}
-                                                        </SelectItem>
-                                                    ))
-                                                )
-                                            }
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
-                                <div className="space-y-2">
                                     <Label htmlFor="estado_civil">Estado civil</Label>
                                     <Select id="estado_civil"
+                                            value={userForm && userForm.estado_civil ? userForm.estado_civil : ''}
                                             onValueChange={(value: string) => handleCreateUserForm('estado_civil', value)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Selecione uma opção"/>
@@ -310,6 +244,7 @@ export default function CreateUserForm() {
                                 <div className="space-y-2">
                                     <Label htmlFor="possui_filhos">Tem filhos?</Label>
                                     <Select id="possui_filhos"
+                                            value={userForm && userForm.possui_filhos ? userForm.possui_filhos : ''}
                                             onValueChange={(value: string) => handleCreateUserForm('possui_filhos', value)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Selecione uma opção"/>
@@ -333,13 +268,14 @@ export default function CreateUserForm() {
                                                 type="date"/>
                                             <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
                                                id="file_input_help_transferencia">
-                                                Informe a data de casamento do membro (caso saiba)
+                                                Informe a data de casamento
                                             </p>
                                         </div>
 
                                         <div className="space-y-2">
                                             <Label htmlFor="conjugue">Nome do(a) cônjugue</Label>
                                             <Input id="conjugue"
+                                                   value={userForm && userForm.conjugue && userForm.conjugue.nome ? userForm.conjugue.nome : ''}
                                                    onChange={(e: any) => handleCreateUserForm('conjugue', e)}
                                                    placeholder="Digite o nome do(a) conjugue"/>
                                         </div>
@@ -347,8 +283,18 @@ export default function CreateUserForm() {
                                 )
                             }
 
+                            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="ministerio">Ministério</Label>
+                                    <MultiSelectDropdown
+                                        id="ministerio"
+                                        dataSelected={ministeriosSelected}
+                                        data={ministeriosCadastrados}/>
+                                </div>
+                            </div>
+
                             <div className="flex flex-1 justify-end">
-                                <Button type="submit" className="ml-auto" onClick={(e) => handleCreateUser(e)}>
+                                <Button type="submit" className="ml-auto" onClick={(e) => handleInviteCreateUser(e)}>
                                     Salvar
                                 </Button>
                             </div>

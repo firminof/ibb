@@ -1,25 +1,17 @@
 'use client'
 
-import Link from "next/link"
 import {Button} from "@/components/ui/button"
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table"
 import {Label} from "@/components/ui/label";
-import {Input} from "@/components/ui/input";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {useRouter} from "next/navigation";
 import {Backdrop, CircularProgress} from "@mui/material";
 import {useState} from "react";
-import {PhoneIcon} from "@/components/phone-icon/phone-icon";
 import {PlusIcon} from "@/components/plus-icon/plus-icon";
 import {DownloadIcon} from "@/components/download-icon/download-icon";
 import {SendIcon} from "@/components/send-icon/send-icon";
 import {
     Dialog,
-    DialogClose,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
@@ -83,6 +75,7 @@ export function DashboardInfo() {
                 setMessageLoading('');
                 setOpenDialogInvite(false);
                 setIsSuccessSendInvite(true);
+                setEmail('');
             }, 2500);
         } catch (error) {
             console.log('[TRY-CATCH] error: ', error);
@@ -91,6 +84,7 @@ export function DashboardInfo() {
             setMessageLoading('');
             setOpenDialogInvite(false);
             setIsSuccessSendInvite(true);
+            setEmail('');
         }
     }
 
@@ -150,7 +144,7 @@ export function DashboardInfo() {
                     </Dialog>
                     {
                         isSuccessSendInvite && (
-                            <ToastSuccess data={{message: 'Convite enviado com sucesso!'}} visible={true}/>
+                            <ToastSuccess data={{message: 'Convite enviado com sucesso!'}} visible={true} setShowParentComponent={setIsSuccessSendInvite}/>
                         )
                     }
                     <Button size="sm" className="font-bold sm:inline-flex md:inline-flex"

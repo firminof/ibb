@@ -1,4 +1,6 @@
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+'use client'
+
+import {Card, CardContent, CardHeader} from "@/components/ui/card";
 import {Label} from "@/components/ui/label";
 import {Input} from "@/components/ui/input";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
@@ -11,7 +13,6 @@ import {IUser} from "@/lib/models/user";
 import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
 import {IMinisteriosSelect, IMisterios} from "@/lib/models/misterios";
 import {ministerios} from "@/lib/constants/misterios";
-import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from "@/components/ui/accordion";
 import {useState} from "react";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import {Button} from "@/components/ui/button";
