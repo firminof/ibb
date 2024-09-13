@@ -20,4 +20,5 @@ export interface ITempUserCreate {
     transferencia: Date;
     diacono: IUser;
     ministerio: number[];
+    role?: string;
 }

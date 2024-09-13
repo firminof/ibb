@@ -1,8 +1,8 @@
 import Axios from "axios";
 
 let urls = {
-    local: `http://localhost:3001`,
-    development: 'http://localhost:3333/',
+    local: `http://localhost:3001/v1`,
+    development: 'http://localhost:3001/v1',
     production: 'https://your-production-url.com/'
 }
 const api = Axios.create({

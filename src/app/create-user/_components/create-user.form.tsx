@@ -19,6 +19,7 @@ import {diaconos} from "@/lib/constants/diaconos";
 import {IDiaconoSelect} from "@/lib/models/diaconos";
 import {CPFInput, EmailInput, PhoneInput, RGInput} from "@/components/form-inputs/form-inputs";
 import {ChevronLeftIcon} from "@radix-ui/react-icons";
+import {UserApi} from "@/lib/api/user-api";
 
 export default function CreateUserForm() {
     const [openBackLoading, setOpenBackLoading] = useState(false);
@@ -44,14 +45,17 @@ export default function CreateUserForm() {
         value: diacono.nome
     }));
 
-    const handleCreateUser = (e) => {
+    const handleCreateUser = async (e) => {
         e.preventDefault();
         setOpenBackLoading(true);
 
         console.log('userForm: ', userForm)
+        userForm.role = 'MEMBRO';
+
         try {
             // your code here
-            console.log(api.defaults.headers.Authorization)
+            const saveMember = await UserApi.createMember(userForm);
+            console.log(saveMember);
             setTimeout(() => {
                 setOpenBackLoading(false);
             }, 1000);
