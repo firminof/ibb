@@ -129,20 +129,12 @@ export default function CreateUserForm() {
                                     <CPFInput
                                         id="cpf"
                                         onChange={(e: any) => handleCreateUserForm('cpf', e)}/>
-                                    {/*<Input*/}
-                                    {/*    id="cpf"*/}
-                                    {/*    onChange={(e: any) => handleCreateUserForm('cpf', e)}*/}
-                                    {/*    placeholder="Digite o CPF"/>*/}
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="rg">RG</Label>
                                     <RGInput
                                         id="rg"
                                         onChange={(e: any) => handleCreateUserForm('rg', e)}/>
-                                    {/*<Input*/}
-                                    {/*    id="rg"*/}
-                                    {/*    onChange={(e: any) => handleCreateUserForm('rg', e)}*/}
-                                    {/*    placeholder="Digite o RG"/>*/}
                                 </div>
                             </div>
 
@@ -152,10 +144,6 @@ export default function CreateUserForm() {
                                     <PhoneInput
                                         id="telefone"
                                         onChange={(e: any) => handleCreateUserForm('telefone', e)}/>
-                                    {/*<Input*/}
-                                    {/*    id="telefone"*/}
-                                    {/*    onChange={(e: any) => handleCreateUserForm('telefone', e)}*/}
-                                    {/*    placeholder="Digite o telefone"/>*/}
                                 </div>
 
                                 <div className="grid grid-cols-1 gap-4">
@@ -175,9 +163,6 @@ export default function CreateUserForm() {
                                     <EmailInput
                                         id="email"
                                         onChange={(e: any) => handleCreateUserForm('email', e)}/>
-                                    {/*<Input id="email"*/}
-                                    {/*       onChange={(e: any) => handleCreateUserForm('email', e)}*/}
-                                    {/*       placeholder="Digite o email"/>*/}
                                 </div>
                             </div>
 

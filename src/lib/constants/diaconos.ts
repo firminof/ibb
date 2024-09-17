@@ -8,5 +8,9 @@ export const diaconos: IUser[] = [
     {
         id: 2,
         nome: 'Idê Rosa'
+    },
+    {
+        id: 3,
+        nome: 'Filipe Firmino Lemos'
     }
 ]

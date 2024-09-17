@@ -1,11 +1,12 @@
-import {Auth} from 'firebase/auth';
 import api from "@/lib/api/api";
 
 export class UserApi {
     static async fetchMembers(): Promise<any | undefined> {
-        const user = await api.get(`/user/all`);
+        return await api.get(`/user/all`);
+    }
 
-        return user.data;
+    static async fetchBirthdaysMembers(month: number): Promise<any | undefined> {
+        return await api.get(`/user/birthdays-month/${month}`);
     }
 
     static async createMember(body: any): Promise<any | undefined> {
