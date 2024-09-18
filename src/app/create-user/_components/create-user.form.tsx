@@ -20,11 +20,35 @@ import {IDiaconoSelect} from "@/lib/models/diaconos";
 import {CPFInput, EmailInput, PhoneInput, RGInput} from "@/components/form-inputs/form-inputs";
 import {ChevronLeftIcon} from "@radix-ui/react-icons";
 import {UserApi} from "@/lib/api/user-api";
+import {ToastError} from "@/components/toast/toast-error";
+import {z} from "zod";
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
+import {cn} from "@/lib/utils";
+import * as React from "react";
+
+const formSchema = z.object({
+    nome: z.string().min(2, {message: 'nome deve ter ao menos 2 caracteres'}),
+    cpf: z.string().min(14, {message: 'cpf deve ter ao menos 14 caracteres'}),
+    telefone: z.string().min(11, {message: 'telefone deve ter ao menos 14 caracteres'}),
+    email: z.string().email('cpf deve ter ao menos 14 caracteres'),
+    foto: z.string(),
+})
+
+type MemberSchema = z.infer<typeof formSchema>;
 
 export default function CreateUserForm() {
+    const {handleSubmit, register} = useForm<MemberSchema>({
+        resolver: zodResolver(formSchema)
+    });
+
     const [openBackLoading, setOpenBackLoading] = useState(false);
 
     const [userForm, setUserForm] = useState<ITempUserCreate>({} as ITempUserCreate);
+
+    const [showWarningToast, setShowWarningToast] = useState(false);
+    const [showWarningMessage, setShowWarningMessage] = useState('');
 
     const user = sessionStorage.getItem('user');
 
@@ -45,17 +69,23 @@ export default function CreateUserForm() {
         value: diacono.nome
     }));
 
-    const handleCreateUser = async (e) => {
-        e.preventDefault();
+    const handleCreateUser = async (data: MemberSchema) => {
         setOpenBackLoading(true);
 
-        console.log('userForm: ', userForm)
-        userForm.role = 'MEMBRO';
+        console.log('userForm 1: ', userForm);
+        // validateForm();
 
+        console.log(data);
+
+        // console.log(validateForm)
+        return
         try {
+            userForm.role = 'MEMBRO';
+            userForm.ministerio = [];
             // your code here
-            const saveMember = await UserApi.createMember(userForm);
-            console.log(saveMember);
+            return console.log('userForm: ', userForm);
+            // const saveMember = await UserApi.createMember(userForm);
+            // console.log(saveMember);
             setTimeout(() => {
                 setOpenBackLoading(false);
             }, 1000);
@@ -64,6 +94,78 @@ export default function CreateUserForm() {
             setOpenBackLoading(false);
         }
     };
+
+    const validateForm = () => {
+        if (Object.keys(userForm).length === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Preencha o formulário');
+            setOpenBackLoading(false);
+            return;
+        }
+
+        if (userForm && userForm.nome.length === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Campo NOME está vazio!');
+            setOpenBackLoading(false);
+            return;
+        }
+
+        if (userForm && userForm.cpf.length === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Campo CPF está vazio!');
+            setOpenBackLoading(false);
+            return;
+        }
+
+        if (userForm && userForm.rg.length === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Campo RG está vazio!');
+            setOpenBackLoading(false);
+            return;
+        }
+
+        if (userForm && userForm.telefone.length === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Campo TELEFONE está vazio!');
+            setOpenBackLoading(false);
+            return;
+        }
+
+        if (userForm && userForm.data_nascimento.getTime() === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Campo DATA DE NASCIMENTO está vazio!');
+            setOpenBackLoading(false);
+            return;
+        }
+
+        if (userForm && userForm.status.length === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Campo STATUS está vazio!');
+            setOpenBackLoading(false);
+            return;
+        }
+
+        if (userForm && userForm.ministerio.length === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Campo MINISTÉRIO está vazio!');
+            setOpenBackLoading(false);
+            return;
+        }
+
+        if (userForm && userForm.diacono.nome.length === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Campo DIÁCONO/DIACONISA está vazio!');
+            setOpenBackLoading(false);
+            return;
+        }
+
+        if (userForm && userForm.estado_civil.length === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Campo ESTADO CIVIL está vazio!');
+            setOpenBackLoading(false);
+            return;
+        }
+    }
 
     const ministeriosSelected = (ministerios) => {
         // handleCreateUserForm('ministerio', ministerios)
@@ -101,6 +203,13 @@ export default function CreateUserForm() {
                 </div>
             </Backdrop>
 
+            {
+                showWarningToast && (
+                    <ToastError data={{message: showWarningMessage}} visible={true}
+                                setShowParentComponent={setShowWarningToast}/>
+                )
+            }
+
             <section>
                 <Button variant="outline" className="text-black" onClick={() => router.back()}>
                     <ChevronLeftIcon className="h-4 w-4"/> voltar
@@ -108,18 +217,20 @@ export default function CreateUserForm() {
                 <h2 className="text-black text-3xl font-semibold mb-4 mt-4">Cadastro de Membro</h2>
             </section>
 
-            <div className="space-y-6">
-                <p className="text-muted-foreground flex justify-items-start items-start flex-col">Preencha os campos abaixo para cadastrar um novo membro.</p>
-
+            <form onSubmit={handleSubmit(handleCreateUser)} className="space-y-6">
+                <p className="text-muted-foreground flex justify-items-start items-start flex-col">Preencha os campos
+                    abaixo para cadastrar um novo membro.</p>
                 <Card className="w-full">
                     <CardContent className="mt-10">
                         <form className="space-y-6">
                             <div className="grid grid-cols-1 gap-4">
-                                <div className="space-y-2">
+                                <div className={`space-y-2`}>
                                     <Label htmlFor="nome">Nome</Label>
-                                    <Input id="nome"
-                                           onChange={(e: any) => handleCreateUserForm('nome', e)}
-                                           placeholder="Digite o nome"/>
+                                    <input
+                                        {...register('nome')}
+                                        onChange={(e: any) => handleCreateUserForm('nome', e)}
+                                        placeholder="Digite o nome"
+                                        className={"flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"}                                  />
                                 </div>
                             </div>
 
@@ -128,12 +239,14 @@ export default function CreateUserForm() {
                                     <Label htmlFor="cpf">CPF</Label>
                                     <CPFInput
                                         id="cpf"
+                                        {...register('cpf')}
                                         onChange={(e: any) => handleCreateUserForm('cpf', e)}/>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="rg">RG</Label>
                                     <RGInput
                                         id="rg"
+                                        {...register('rg')}
                                         onChange={(e: any) => handleCreateUserForm('rg', e)}/>
                                 </div>
                             </div>
@@ -143,6 +256,7 @@ export default function CreateUserForm() {
                                     <Label htmlFor="telefone">Telefone</Label>
                                     <PhoneInput
                                         id="telefone"
+                                        {...register('telefone')}
                                         onChange={(e: any) => handleCreateUserForm('telefone', e)}/>
                                 </div>
 
@@ -162,6 +276,7 @@ export default function CreateUserForm() {
                                     <Label htmlFor="email">Email</Label>
                                     <EmailInput
                                         id="email"
+                                        {...register('email')}
                                         onChange={(e: any) => handleCreateUserForm('email', e)}/>
                                 </div>
                             </div>
@@ -199,6 +314,7 @@ export default function CreateUserForm() {
                                                 </div>
                                                 <input
                                                     id="foto"
+                                                    {...register('foto')}
                                                     onChange={(e: any) => handleCreateUserForm('foto', e)}
                                                     type="file" className="hidden"/>
                                             </label>
@@ -337,14 +453,14 @@ export default function CreateUserForm() {
                             }
 
                             <div className="flex flex-1 justify-end">
-                                <Button type="submit" className="ml-auto" onClick={(e) => handleCreateUser(e)}>
+                                <Button type="submit" className="ml-auto">
                                     Salvar
                                 </Button>
                             </div>
                         </form>
                     </CardContent>
                 </Card>
-            </div>
+            </form>
         </div>
     )
 }

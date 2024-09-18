@@ -389,31 +389,37 @@ export function Birthdays(props) {
                                                 <TableCell>{membro.data_nascimento}</TableCell>
                                                 <TableCell>{membro.diacono.nome ? membro.diacono.nome : (
                                                     <div
-                                                        className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold">Nenhum
+                                                        className="py-1 text-yellow-700 font-semibold">Nenhum
                                                         diácono/diaconisa cadastrado
                                                     </div>
                                                 )}</TableCell>
                                                 <TableCell>{membro.idade}</TableCell>
                                                 <TableCell>{membro.ministerio.length > 0 ? membro.ministerio : (
                                                     <div
-                                                        className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold">Nenhum
+                                                        className="py-1 text-yellow-700 font-semibold">Nenhum
                                                         ministério cadastrado
                                                     </div>
                                                 )}</TableCell>
                                                 <TableCell>
-                                                    {membro.status === 'ativo' ? (
-                                                        <div
-                                                            className="px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold">Ativo
-                                                        </div>
-                                                    ) : (membro.status === 'inativo' || membro.status === 'excluido' || membro.status === 'falecido') ? (
-                                                        <div
-                                                            className="px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">Inativo
-                                                        </div>
-                                                    ) : (membro.status === 'transferido') ? (
-                                                        <div
-                                                            className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-semibold">Transferido
-                                                        </div>
-                                                    ) : ''}
+                                                    {
+                                                        membro.status === 'ativo' ? (
+                                                            <div className="px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold">Ativo</div>
+                                                        ) : membro.status === 'inativo' ? (
+                                                            <div className="px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">Inativo</div>
+                                                        ) : membro.status === 'transferido' ? (
+                                                            <div className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-semibold">Transferido</div>
+                                                        ) : membro.status === 'falecido' ? (
+                                                            <div className="px-2 py-1 rounded-full bg-gray-100 text-gray-700 font-semibold">Falecido</div>
+                                                        ) : membro.status === 'excluido' ? (
+                                                            <div className="px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">Excluído</div>
+                                                        ) : membro.status === 'visitante' ? (
+                                                            <div className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold">Visitante</div>
+                                                        ) : membro.status === 'congregado' ? (
+                                                            <div className="px-2 py-1 rounded-full bg-purple-100 text-purple-700 font-semibold">Congregado</div>
+                                                        ) : (
+                                                            membro.status.toUpperCase()
+                                                        )
+                                                    }
 
                                                 </TableCell>
                                                 <TableCell>{membro.updatedAt}</TableCell>

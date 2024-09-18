@@ -22,6 +22,7 @@ import {UserApi} from "@/lib/api/user-api";
 import {IUserResponseApi} from "@/lib/models/user-response-api";
 import {ToastError} from "@/components/toast/toast-error";
 import {Backdrop, CircularProgress} from "@mui/material";
+import {PlusIcon} from "@/components/plus-icon/plus-icon";
 
 export function MembersList() {
     const [showErrorApi, setShowErrorApi] = useState(false);
@@ -207,7 +208,15 @@ export function MembersList() {
                 <Button variant="outline" className="text-black" onClick={() => router.back()}>
                     <ChevronLeftIcon className="h-4 w-4"/> voltar
                 </Button>
-                <h2 className="text-black text-3xl font-semibold mb-4 mt-4">Membros</h2>
+
+                <div className="flex justify-between items-center">
+                    <h2 className="text-black text-3xl font-semibold mb-4 mt-4">Membros</h2>
+                    <Button size="sm" className="font-bold sm:inline-flex md:inline-flex"
+                            onClick={() => router.push('/create-user')}>
+                        <PlusIcon className="w-4 h-4 mr-1"/>
+                        Adicionar Membro
+                    </Button>
+                </div>
             </section>
 
             <Backdrop
@@ -379,31 +388,37 @@ export function MembersList() {
                                                 <TableCell>{membro.data_nascimento}</TableCell>
                                                 <TableCell>{membro.diacono.nome ? membro.diacono.nome : (
                                                     <div
-                                                        className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold">Nenhum
+                                                        className="py-1 text-yellow-700 font-semibold">Nenhum
                                                         diácono/diaconisa cadastrado
                                                     </div>
                                                 )}</TableCell>
                                                 <TableCell>{membro.idade}</TableCell>
                                                 <TableCell>{membro.ministerio.length > 0 ? membro.ministerio : (
                                                     <div
-                                                        className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold">Nenhum
+                                                        className="py-1 text-yellow-700 font-semibold">Nenhum
                                                         ministério cadastrado
                                                     </div>
                                                 )}</TableCell>
                                                 <TableCell>
-                                                    {membro.status === 'ativo' ? (
-                                                        <div
-                                                            className="px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold">Ativo
-                                                        </div>
-                                                    ) : (membro.status === 'inativo' || membro.status === 'excluido' || membro.status === 'falecido') ? (
-                                                        <div
-                                                            className="px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">Inativo
-                                                        </div>
-                                                    ) : (membro.status === 'transferido') ? (
-                                                        <div
-                                                            className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-semibold">Transferido
-                                                        </div>
-                                                    ) : ''}
+                                                    {
+                                                        membro.status === 'ativo' ? (
+                                                            <div className="px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold">Ativo</div>
+                                                        ) : membro.status === 'inativo' ? (
+                                                            <div className="px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">Inativo</div>
+                                                        ) : membro.status === 'transferido' ? (
+                                                            <div className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-semibold">Transferido</div>
+                                                        ) : membro.status === 'falecido' ? (
+                                                            <div className="px-2 py-1 rounded-full bg-gray-100 text-gray-700 font-semibold">Falecido</div>
+                                                        ) : membro.status === 'excluido' ? (
+                                                            <div className="px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">Excluído</div>
+                                                        ) : membro.status === 'visitante' ? (
+                                                            <div className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold">Visitante</div>
+                                                        ) : membro.status === 'congregado' ? (
+                                                            <div className="px-2 py-1 rounded-full bg-purple-100 text-purple-700 font-semibold">Congregado</div>
+                                                        ) : (
+                                                            membro.status.toUpperCase()
+                                                        )
+                                                    }
 
                                                 </TableCell>
                                                 <TableCell>{membro.updatedAt}</TableCell>
