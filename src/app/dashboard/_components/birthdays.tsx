@@ -43,6 +43,7 @@ export function Birthdays(props) {
     const [nome, setNome] = useState<string>('');
     const [status, setStatus] = useState<string>('');
     const [diacono, setDiacono] = useState<string>('');
+    const [ministerio, setMinisterio] = useState<number[]>([]);
     const [idade, setIdade] = useState<string>('');
     const [updatedAt, setUpdatedAt] = useState<string>('');
 
@@ -58,8 +59,13 @@ export function Birthdays(props) {
     }));
 
     const ministeriosSelected = (ministerios) => {
-        // handleCreateUserForm('ministerio', ministerios)
-        // console.log('mini: ', ministerios);
+        console.log(ministerios);
+        setMinisterio((previous: number[]) => {
+            return (
+                {...previous},
+                    ministerios
+            );
+        });
     }
 
     const getAllMembers = async (): Promise<void> => {
@@ -148,6 +154,19 @@ export function Birthdays(props) {
                 setMembers(resultStatus);
                 break;
             case 'ministerio':
+                const resultMinisterio: IUserResponseApi[] = membersToFilter.filter((member: IUserResponseApi) => {
+                    if (member.ministerio.find((ministerio: number) => ministerio.toString() === valor))
+                        return member;
+                })
+                console.log(resultMinisterio);
+
+                // setMinisterio((previous: string) => {
+                //     return (
+                //         {...previous},
+                //             valor
+                //     );
+                // });
+                setMembers(resultMinisterio);
                 break;
             case 'diacono':
                 const resultDiacono: IUserResponseApi[] = membersToFilter.filter((member: IUserResponseApi) => (
@@ -394,7 +413,7 @@ export function Birthdays(props) {
                                                     </div>
                                                 )}</TableCell>
                                                 <TableCell>{membro.idade}</TableCell>
-                                                <TableCell>{membro.ministerio.length > 0 ? membro.ministerio : (
+                                                <TableCell>{membro.ministerio.length > 0 ? membro.ministerio.join(', ') : (
                                                     <div
                                                         className="py-1 text-yellow-700 font-semibold">Nenhum
                                                         ministério cadastrado
@@ -403,19 +422,26 @@ export function Birthdays(props) {
                                                 <TableCell>
                                                     {
                                                         membro.status === 'ativo' ? (
-                                                            <div className="px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold">Ativo</div>
+                                                            <div
+                                                                className="px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold">Ativo</div>
                                                         ) : membro.status === 'inativo' ? (
-                                                            <div className="px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">Inativo</div>
+                                                            <div
+                                                                className="px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">Inativo</div>
                                                         ) : membro.status === 'transferido' ? (
-                                                            <div className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-semibold">Transferido</div>
+                                                            <div
+                                                                className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-semibold">Transferido</div>
                                                         ) : membro.status === 'falecido' ? (
-                                                            <div className="px-2 py-1 rounded-full bg-gray-100 text-gray-700 font-semibold">Falecido</div>
+                                                            <div
+                                                                className="px-2 py-1 rounded-full bg-gray-100 text-gray-700 font-semibold">Falecido</div>
                                                         ) : membro.status === 'excluido' ? (
-                                                            <div className="px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">Excluído</div>
+                                                            <div
+                                                                className="px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">Excluído</div>
                                                         ) : membro.status === 'visitante' ? (
-                                                            <div className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold">Visitante</div>
+                                                            <div
+                                                                className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold">Visitante</div>
                                                         ) : membro.status === 'congregado' ? (
-                                                            <div className="px-2 py-1 rounded-full bg-purple-100 text-purple-700 font-semibold">Congregado</div>
+                                                            <div
+                                                                className="px-2 py-1 rounded-full bg-purple-100 text-purple-700 font-semibold">Congregado</div>
                                                         ) : (
                                                             membro.status.toUpperCase()
                                                         )
@@ -446,7 +472,8 @@ export function Birthdays(props) {
                     <Card className='mt-5'>
                         <div className="flex justify-center">
                             <CardHeader>
-                                <CardTitle>Lista de membros que fazem aniversário em {mesAtual.toUpperCase()} está vazia!</CardTitle>
+                                <CardTitle>Lista de membros que fazem aniversário em {mesAtual.toUpperCase()} está
+                                    vazia!</CardTitle>
                             </CardHeader>
                         </div>
                     </Card>

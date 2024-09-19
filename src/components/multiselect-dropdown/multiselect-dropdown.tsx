@@ -19,7 +19,7 @@ const MultiSelectDropdown = (props) => {
 
     useEffect(() => {
         props.dataSelected(selectedOptions);
-    }, [props, selectedOptions]);
+    }, [selectedOptions]);
 
     const isSelected = (optionId) => selectedOptions.includes(optionId);
 

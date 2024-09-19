@@ -7,8 +7,8 @@ import {Button} from "@/components/ui/button"
 import {Card, CardContent} from "@/components/ui/card";
 import {useRouter} from "next/navigation";
 import {Backdrop, CircularProgress} from "@mui/material";
+import * as React from "react";
 import {useState} from "react";
-import api from "@/lib/api/api";
 import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
 import {ministerios} from "@/lib/constants/misterios";
 import {IMinisteriosSelect, IMisterios} from "@/lib/models/misterios";
@@ -19,27 +19,30 @@ import {diaconos} from "@/lib/constants/diaconos";
 import {IDiaconoSelect} from "@/lib/models/diaconos";
 import {CPFInput, EmailInput, PhoneInput, RGInput} from "@/components/form-inputs/form-inputs";
 import {ChevronLeftIcon} from "@radix-ui/react-icons";
-import {UserApi} from "@/lib/api/user-api";
 import {ToastError} from "@/components/toast/toast-error";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
-import {cn} from "@/lib/utils";
-import * as React from "react";
 
 const formSchema = z.object({
-    nome: z.string().min(2, {message: 'nome deve ter ao menos 2 caracteres'}),
-    cpf: z.string().min(14, {message: 'cpf deve ter ao menos 14 caracteres'}),
-    telefone: z.string().min(11, {message: 'telefone deve ter ao menos 14 caracteres'}),
-    email: z.string().email('cpf deve ter ao menos 14 caracteres'),
+    nome: z.string({required_error: 'NOME é obrigatório'}),
+    cpf: z.string({required_error: 'CPF é obrigatório'}),
+    rg: z.string({required_error: 'RG é obrigatório'}),
+    telefone: z.string({required_error: 'TELEFONE é obrigatório'}),
+    data_nascimento: z.date({required_error: 'DATA DE NASCIMENTO é obrigatório'}),
+    email: z.string({required_error: 'EMAIL é obrigatório'}),
+    status: z.string({required_error: 'STATUS é obrigatório'}),
+    diacono: z.string({required_error: 'DIÁCONO/DIACONISA é obrigatório'}),
+    ministerio: z.number({required_error: 'MINISTÉRIO(S) é obrigatório'}),
+    estado_civil: z.string({required_error: 'ESTADO CIVIL é obrigatório'}),
     foto: z.string(),
 })
 
 type MemberSchema = z.infer<typeof formSchema>;
 
 export default function CreateUserForm() {
-    const {handleSubmit, register} = useForm<MemberSchema>({
+    const {handleSubmit} = useForm<MemberSchema>({
+        mode: "onBlur",
         resolver: zodResolver(formSchema)
     });
 
@@ -69,20 +72,14 @@ export default function CreateUserForm() {
         value: diacono.nome
     }));
 
-    const handleCreateUser = async (data: MemberSchema) => {
+    const handleCreateUser = async () => {
         setOpenBackLoading(true);
 
         console.log('userForm 1: ', userForm);
-        // validateForm();
+        validateForm();
 
-        console.log(data);
-
-        // console.log(validateForm)
-        return
         try {
             userForm.role = 'MEMBRO';
-            userForm.ministerio = [];
-            // your code here
             return console.log('userForm: ', userForm);
             // const saveMember = await UserApi.createMember(userForm);
             // console.log(saveMember);
@@ -131,7 +128,8 @@ export default function CreateUserForm() {
             return;
         }
 
-        if (userForm && userForm.data_nascimento.getTime() === 0) {
+        const dt_nasc = new Date(userForm.data_nascimento).getTime();
+        if (userForm &&  dt_nasc === 0) {
             setShowWarningToast(true);
             setShowWarningMessage('Campo DATA DE NASCIMENTO está vazio!');
             setOpenBackLoading(false);
@@ -168,8 +166,8 @@ export default function CreateUserForm() {
     }
 
     const ministeriosSelected = (ministerios) => {
-        // handleCreateUserForm('ministerio', ministerios)
-        // console.log('mini: ', ministerios);
+        handleCreateUserForm('ministerio', ministerios);
+        console.log('mini: ', ministerios);
     }
 
     const handleCreateUserForm = (key: string, event: any) => {
@@ -217,7 +215,7 @@ export default function CreateUserForm() {
                 <h2 className="text-black text-3xl font-semibold mb-4 mt-4">Cadastro de Membro</h2>
             </section>
 
-            <form onSubmit={handleSubmit(handleCreateUser)} className="space-y-6">
+            <div className="space-y-6">
                 <p className="text-muted-foreground flex justify-items-start items-start flex-col">Preencha os campos
                     abaixo para cadastrar um novo membro.</p>
                 <Card className="w-full">
@@ -227,10 +225,11 @@ export default function CreateUserForm() {
                                 <div className={`space-y-2`}>
                                     <Label htmlFor="nome">Nome</Label>
                                     <input
-                                        {...register('nome')}
+                                        id="nome"
+                                        required
                                         onChange={(e: any) => handleCreateUserForm('nome', e)}
                                         placeholder="Digite o nome"
-                                        className={"flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"}                                  />
+                                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"/>
                                 </div>
                             </div>
 
@@ -239,14 +238,14 @@ export default function CreateUserForm() {
                                     <Label htmlFor="cpf">CPF</Label>
                                     <CPFInput
                                         id="cpf"
-                                        {...register('cpf')}
+                                        required
                                         onChange={(e: any) => handleCreateUserForm('cpf', e)}/>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="rg">RG</Label>
                                     <RGInput
                                         id="rg"
-                                        {...register('rg')}
+                                        required
                                         onChange={(e: any) => handleCreateUserForm('rg', e)}/>
                                 </div>
                             </div>
@@ -256,7 +255,7 @@ export default function CreateUserForm() {
                                     <Label htmlFor="telefone">Telefone</Label>
                                     <PhoneInput
                                         id="telefone"
-                                        {...register('telefone')}
+                                        required
                                         onChange={(e: any) => handleCreateUserForm('telefone', e)}/>
                                 </div>
 
@@ -265,6 +264,7 @@ export default function CreateUserForm() {
                                         <Label htmlFor="data_nascimento">Data de Nascimento</Label>
                                         <Input
                                             id="data_nascimento"
+                                            required={true}
                                             onChange={(e: any) => handleCreateUserForm('data_nascimento', e)}
                                             type="date"/>
                                     </div>
@@ -276,7 +276,7 @@ export default function CreateUserForm() {
                                     <Label htmlFor="email">Email</Label>
                                     <EmailInput
                                         id="email"
-                                        {...register('email')}
+                                        required
                                         onChange={(e: any) => handleCreateUserForm('email', e)}/>
                                 </div>
                             </div>
@@ -314,7 +314,6 @@ export default function CreateUserForm() {
                                                 </div>
                                                 <input
                                                     id="foto"
-                                                    {...register('foto')}
                                                     onChange={(e: any) => handleCreateUserForm('foto', e)}
                                                     type="file" className="hidden"/>
                                             </label>
@@ -327,6 +326,7 @@ export default function CreateUserForm() {
                                 <div className="space-y-2">
                                     <Label htmlFor="status">Status</Label>
                                     <Select id="status"
+                                            required
                                             onValueChange={(value) => handleCreateUserForm('status', value)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Selecione o status"/>
@@ -347,6 +347,7 @@ export default function CreateUserForm() {
                                     <Label htmlFor="ministerio">Ministério</Label>
                                     <MultiSelectDropdown
                                         id="ministerio"
+                                        required
                                         dataSelected={ministeriosSelected}
                                         data={ministeriosCadastrados}/>
                                 </div>
@@ -359,6 +360,7 @@ export default function CreateUserForm() {
                                             <Label htmlFor="transferencia">Transferência</Label>
                                             <Input
                                                 id="transferencia"
+                                                required
                                                 onChange={(e: any) => handleCreateUserForm('transferencia', e)}
                                                 type="date"/>
                                             <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
@@ -374,6 +376,7 @@ export default function CreateUserForm() {
                                 <div className="space-y-2">
                                     <Label htmlFor="diacono">Diácono</Label>
                                     <Select id="diacono"
+                                            required
                                             onValueChange={(value: string) => handleCreateUserForm('diacono', value)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Selecione uma opção"/>
@@ -398,6 +401,7 @@ export default function CreateUserForm() {
                                 <div className="space-y-2">
                                     <Label htmlFor="estado_civil">Estado civil</Label>
                                     <Select id="estado_civil"
+                                            required
                                             onValueChange={(value: string) => handleCreateUserForm('estado_civil', value)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Selecione uma opção"/>
@@ -415,6 +419,7 @@ export default function CreateUserForm() {
                                 <div className="space-y-2">
                                     <Label htmlFor="possui_filhos">Tem filhos?</Label>
                                     <Select id="possui_filhos"
+                                            required
                                             onValueChange={(value: string) => handleCreateUserForm('possui_filhos', value)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Selecione uma opção"/>
@@ -453,14 +458,14 @@ export default function CreateUserForm() {
                             }
 
                             <div className="flex flex-1 justify-end">
-                                <Button type="submit" className="ml-auto">
+                                <Button type="button" onClick={() => handleCreateUser()} className="ml-auto">
                                     Salvar
                                 </Button>
                             </div>
                         </form>
                     </CardContent>
                 </Card>
-            </form>
+            </div>
         </div>
     )
 }

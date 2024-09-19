@@ -34,14 +34,17 @@ export function MembersList() {
     const router = useRouter();
 
     const [isOpenFilter, setIsOpenFilter] = useState(false);
+
     const [members, setMembers] = useState<IUserResponseApi[]>([]);
     const [membersToFilter, setMembersToFilter] = useState<IUserResponseApi[]>([]);
 
     const [nome, setNome] = useState<string>('');
     const [status, setStatus] = useState<string>('');
     const [diacono, setDiacono] = useState<string>('');
+    const [ministerio, setMinisterio] = useState<number[]>([]);
     const [idade, setIdade] = useState<string>('');
     const [updatedAt, setUpdatedAt] = useState<string>('');
+    const [filterPreviousModified, setFilterPreviousModified] = useState(false);
 
     const ministeriosCadastrados: IMinisteriosSelect[] = ministerios.map((ministerio: IMisterios): IMinisteriosSelect => ({
         id: ministerio.id,
@@ -55,8 +58,14 @@ export function MembersList() {
     }));
 
     const ministeriosSelected = (ministerios) => {
-        // handleCreateUserForm('ministerio', ministerios)
-        // console.log('mini: ', ministerios);
+        setMinisterio((previous: number[]) => {
+            return (
+                {...previous},
+                    ministerios
+            );
+        });
+
+        filtros('ministerio', ministerios, null);
     }
 
     const getAllMembers = async (): Promise<void> => {
@@ -136,6 +145,23 @@ export function MembersList() {
                 setMembers(resultStatus);
                 break;
             case 'ministerio':
+                console.log('pesquisa: ', valor);
+                if (valor.length > 0) {
+                    const resultMinisterio: IUserResponseApi[] = membersToFilter.filter((member: IUserResponseApi) => {
+                        if (member && member.ministerio.length > 0) {
+                            const filterMemberByMinisterio: number[] = member.ministerio.filter(a => valor.includes(a));
+                            console.log('filterMemberByMinisterio: ', filterMemberByMinisterio);
+                            if (filterMemberByMinisterio.length > 0) return member;
+                        }
+                    })
+                    console.log('resultMinisterio: ', resultMinisterio);
+                    setMembers(resultMinisterio);
+                    setFilterPreviousModified(true);
+                }
+
+                if (filterPreviousModified && valor.length === 0) {
+                    setMembers(membersToFilter);
+                }
                 break;
             case 'diacono':
                 const resultDiacono: IUserResponseApi[] = membersToFilter.filter((member: IUserResponseApi) => (
@@ -200,6 +226,7 @@ export function MembersList() {
         setUpdatedAt('');
 
         setMembers(membersToFilter);
+        setMinisterio([]);
     }
 
     return (
@@ -393,7 +420,7 @@ export function MembersList() {
                                                     </div>
                                                 )}</TableCell>
                                                 <TableCell>{membro.idade}</TableCell>
-                                                <TableCell>{membro.ministerio.length > 0 ? membro.ministerio : (
+                                                <TableCell>{membro.ministerio.length > 0 ? membro.ministerio.join(', ') : (
                                                     <div
                                                         className="py-1 text-yellow-700 font-semibold">Nenhum
                                                         ministério cadastrado
