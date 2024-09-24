@@ -20,7 +20,7 @@ export const obterMesAtual = (): IMesAtual => {
 
     const month: number = date.getMonth() + 1;
 
-    // return { codigo: 7, descricao: 'Julho' }
+    return { codigo: 7, descricao: 'Julho' }
     switch (month) {
         case 1:
             return { codigo: 1, descricao: 'Janeiro' };

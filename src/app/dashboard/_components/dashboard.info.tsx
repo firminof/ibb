@@ -21,12 +21,19 @@ import {EmailInput} from "@/components/form-inputs/form-inputs";
 import {Birthdays} from "@/app/dashboard/_components/birthdays";
 import {Cards} from "@/app/dashboard/_components/cards";
 import {ToastSuccess} from "@/components/toast/toast-success";
+import {ToastWarning} from "@/components/toast/toast-warning";
+import * as React from "react";
+import {UserApi} from "@/lib/api/user-api";
+import {IInviteByEmail} from "@/lib/models/invite";
 
 export function DashboardInfo() {
     const [openBackLoading, setOpenBackLoading] = useState(false);
     const [openDialogInvite, setOpenDialogInvite] = useState(false);
     const [isSuccessSendInvite, setIsSuccessSendInvite] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+
+    const [showWarningToast, setShowWarningToast] = useState(false);
+    const [showWarningMessage, setShowWarningMessage] = useState('');
 
     const [messageLoading, setMessageLoading] = useState('');
 
@@ -35,6 +42,8 @@ export function DashboardInfo() {
     const router = useRouter();
 
     const user = sessionStorage.getItem('user');
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (user == null) {
         router.push('/login');
@@ -61,7 +70,7 @@ export function DashboardInfo() {
         }
     }
 
-    const handleConvidarMembro = (e) => {
+    const handleConvidarMembro = async (e) => {
         e.preventDefault();
         setIsLoading(true);
         setMessageLoading('Enviando convite por email');
@@ -69,21 +78,49 @@ export function DashboardInfo() {
 
         try {
             console.log('email: ', email);
-            setTimeout(() => {
+
+            const validateEmail = emailRegex.test(email);
+
+            if (!validateEmail) {
+                setShowWarningToast(true);
+                setShowWarningMessage('Email inválido, insira um corretamente!');
+
+                setIsLoading(false);
+                setOpenBackLoading(false);
+                setMessageLoading('');
+                setOpenDialogInvite(false);
+                setIsSuccessSendInvite(true);
+
+                return;
+            }
+
+            const body: IInviteByEmail = {
+              to: email,
+              subject: 'Convite para membresia',
+              text: 'Você está sendo convidado para fazer parte da Igreja Batista do Brooklink',
+              requestName: ''
+            };
+
+            const sendingEmail = await UserApi.sendInvite(body)
+
+            if (sendingEmail) {
+                setShowWarningToast(false);
+                setShowWarningMessage('');
+
                 setIsLoading(false);
                 setOpenBackLoading(false);
                 setMessageLoading('');
                 setOpenDialogInvite(false);
                 setIsSuccessSendInvite(true);
                 setEmail('');
-            }, 2500);
+            }
         } catch (error) {
             console.log('[TRY-CATCH] error: ', error);
             setIsLoading(false);
             setOpenBackLoading(false);
             setMessageLoading('');
             setOpenDialogInvite(false);
-            setIsSuccessSendInvite(true);
+            setIsSuccessSendInvite(false);
             setEmail('');
         }
     }
@@ -101,6 +138,13 @@ export function DashboardInfo() {
                     }
                 </div>
             </Backdrop>
+
+            {
+                showWarningToast && (
+                    <ToastWarning data={{message: showWarningMessage}} visible={true}
+                                  setShowParentComponent={setShowWarningToast}/>
+                )
+            }
 
             <main className="flex-1 p-4 sm:p-6">
                 <div
@@ -135,7 +179,7 @@ export function DashboardInfo() {
                                         id="convite_email"
                                         onChange={(e: any) => setEmail(e.target.value)}/>
                                 </div>
-                                <Button type="submit" size="sm" className="px-3" disabled={email.length === 0} onClick={(e) => handleConvidarMembro(e)}>
+                                <Button type="submit" size="sm" className="px-3" disabled={email.length === 0 || !emailRegex.test(email)} onClick={(e) => handleConvidarMembro(e)}>
                                     Convidar
                                     <ArrowRightIcon className="w-4 h-4 ml-1"/>
                                 </Button>

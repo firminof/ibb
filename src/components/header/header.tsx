@@ -86,7 +86,7 @@ export function Header() {
                     <Link href="/members" className="font-medium text-primary text-black hover:text-gray-400" prefetch={false}>
                         Membros
                     </Link>
-                    <Link href="#" className="font-medium text-primary text-black hover:text-gray-400" prefetch={false}>
+                    <Link href="/ministries" className="font-medium text-primary text-black hover:text-gray-400" prefetch={false}>
                         Ministérios
                     </Link>
                 </nav>

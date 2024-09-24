@@ -12,7 +12,7 @@ import {useState} from "react";
 import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
 import {ministerios} from "@/lib/constants/misterios";
 import {IMinisteriosSelect, IMisterios} from "@/lib/models/misterios";
-import {ITempUserCreate, IUser} from "@/lib/models/user";
+import {ITempUserCreate, IUser, StatusEnum, UserRoles} from "@/lib/models/user";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {obterIniciaisPrimeiroUltimo} from "@/lib/helpers/helpers";
 import {diaconos} from "@/lib/constants/diaconos";
@@ -23,34 +23,18 @@ import {ToastError} from "@/components/toast/toast-error";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
-
-const formSchema = z.object({
-    nome: z.string({required_error: 'NOME é obrigatório'}),
-    cpf: z.string({required_error: 'CPF é obrigatório'}),
-    rg: z.string({required_error: 'RG é obrigatório'}),
-    telefone: z.string({required_error: 'TELEFONE é obrigatório'}),
-    data_nascimento: z.date({required_error: 'DATA DE NASCIMENTO é obrigatório'}),
-    email: z.string({required_error: 'EMAIL é obrigatório'}),
-    status: z.string({required_error: 'STATUS é obrigatório'}),
-    diacono: z.string({required_error: 'DIÁCONO/DIACONISA é obrigatório'}),
-    ministerio: z.number({required_error: 'MINISTÉRIO(S) é obrigatório'}),
-    estado_civil: z.string({required_error: 'ESTADO CIVIL é obrigatório'}),
-    foto: z.string(),
-})
-
-type MemberSchema = z.infer<typeof formSchema>;
+import {ToastWarning} from "@/components/toast/toast-warning";
+import {UserApi} from "@/lib/api/user-api";
+import {ToastSuccess} from "@/components/toast/toast-success";
 
 export default function CreateUserForm() {
-    const {handleSubmit} = useForm<MemberSchema>({
-        mode: "onBlur",
-        resolver: zodResolver(formSchema)
-    });
+    const [isSuccessSaveMember, setIsSuccessSaveMember] = useState<boolean>(false);
 
-    const [openBackLoading, setOpenBackLoading] = useState(false);
+    const [openBackLoading, setOpenBackLoading] = useState<boolean>(false);
 
     const [userForm, setUserForm] = useState<ITempUserCreate>({} as ITempUserCreate);
 
-    const [showWarningToast, setShowWarningToast] = useState(false);
+    const [showWarningToast, setShowWarningToast] = useState<boolean>(false);
     const [showWarningMessage, setShowWarningMessage] = useState('');
 
     const user = sessionStorage.getItem('user');
@@ -79,16 +63,43 @@ export default function CreateUserForm() {
         validateForm();
 
         try {
-            userForm.role = 'MEMBRO';
-            return console.log('userForm: ', userForm);
-            // const saveMember = await UserApi.createMember(userForm);
-            // console.log(saveMember);
+            userForm.role = UserRoles.MEMBRO;
+            userForm.possui_filhos = userForm.possui_filhos === 'sim';
+
+            const diacono: number = diaconosCadastrados.findIndex((diacono: IDiaconoSelect): boolean => diacono.id === Number(userForm.diacono));
+
+            if (diacono !== -1) {
+                userForm.diacono = {
+                    id: diaconosCadastrados[diacono].id,
+                    nome: diaconosCadastrados[diacono].label
+                }
+            } else {
+                userForm.diacono = {
+                    id: -1,
+                    nome: ''
+                }
+            }
+
+            // return console.log('userForm: ', userForm);
+            const saveMember = await UserApi.createMember(userForm);
             setTimeout(() => {
                 setOpenBackLoading(false);
+
+                setIsSuccessSaveMember(true);
+
+                setShowWarningMessage('');
+                setShowWarningToast(false);
             }, 1000);
+
+            setTimeout(() => router.push('members'), 1500);
+
         } catch (error) {
             console.log('[TRY-CATCH] error: ', error);
             setOpenBackLoading(false);
+            setIsSuccessSaveMember(false);
+
+            setShowWarningMessage('');
+            setShowWarningToast(false);
         }
     };
 
@@ -100,28 +111,28 @@ export default function CreateUserForm() {
             return;
         }
 
-        if (userForm && userForm.nome.length === 0) {
+        if (!userForm.nome || userForm.nome.length === 0) {
             setShowWarningToast(true);
             setShowWarningMessage('Campo NOME está vazio!');
             setOpenBackLoading(false);
             return;
         }
 
-        if (userForm && userForm.cpf.length === 0) {
+        if (!userForm.cpf || userForm.cpf.length === 0) {
             setShowWarningToast(true);
             setShowWarningMessage('Campo CPF está vazio!');
             setOpenBackLoading(false);
             return;
         }
 
-        if (userForm && userForm.rg.length === 0) {
+        if (!userForm.rg || userForm.rg.length === 0) {
             setShowWarningToast(true);
             setShowWarningMessage('Campo RG está vazio!');
             setOpenBackLoading(false);
             return;
         }
 
-        if (userForm && userForm.telefone.length === 0) {
+        if (!userForm.telefone || userForm.telefone.length === 0) {
             setShowWarningToast(true);
             setShowWarningMessage('Campo TELEFONE está vazio!');
             setOpenBackLoading(false);
@@ -129,45 +140,70 @@ export default function CreateUserForm() {
         }
 
         const dt_nasc = new Date(userForm.data_nascimento).getTime();
-        if (userForm &&  dt_nasc === 0) {
+        if (dt_nasc === 0) {
             setShowWarningToast(true);
             setShowWarningMessage('Campo DATA DE NASCIMENTO está vazio!');
             setOpenBackLoading(false);
             return;
         }
 
-        if (userForm && userForm.status.length === 0) {
+        if (!userForm.status || userForm.status.length === 0) {
             setShowWarningToast(true);
             setShowWarningMessage('Campo STATUS está vazio!');
             setOpenBackLoading(false);
             return;
         }
 
-        if (userForm && userForm.ministerio.length === 0) {
+        if (!userForm.ministerio || userForm.ministerio.length === 0) {
             setShowWarningToast(true);
             setShowWarningMessage('Campo MINISTÉRIO está vazio!');
             setOpenBackLoading(false);
             return;
         }
 
-        if (userForm && userForm.diacono.nome.length === 0) {
-            setShowWarningToast(true);
-            setShowWarningMessage('Campo DIÁCONO/DIACONISA está vazio!');
-            setOpenBackLoading(false);
-            return;
-        }
+        // if (!userForm.diacono) {
+        //     setShowWarningToast(true);
+        //     setShowWarningMessage('Campo DIÁCONO/DIACONISA está vazio!');
+        //     setOpenBackLoading(false);
+        //     return;
+        // }
 
-        if (userForm && userForm.estado_civil.length === 0) {
+        if (!userForm.estado_civil || userForm.estado_civil.length === 0) {
             setShowWarningToast(true);
             setShowWarningMessage('Campo ESTADO CIVIL está vazio!');
             setOpenBackLoading(false);
             return;
         }
+
+        if (userForm.status && userForm.status.length > 0) {
+            switch (userForm) {
+                case StatusEnum.ativo:
+                    if (!userForm.data_ingresso) {
+                        setShowWarningToast(true);
+                        setShowWarningMessage('Campo DATA DE INGRESSO está vazio!');
+                        setOpenBackLoading(false);
+                        return;
+                    }
+
+                    if (!userForm.forma_ingresso) {
+                        setShowWarningToast(true);
+                        setShowWarningMessage('Campo FORMA DE INGRESSO está vazio!');
+                        setOpenBackLoading(false);
+                        return;
+                    }
+                    if (!userForm.local_ingresso) {
+                        setShowWarningToast(true);
+                        setShowWarningMessage('Campo LOCAL DE INGRESSO está vazio!');
+                        setOpenBackLoading(false);
+                        return;
+                    }
+                    break;
+            }
+        }
     }
 
     const ministeriosSelected = (ministerios) => {
         handleCreateUserForm('ministerio', ministerios);
-        console.log('mini: ', ministerios);
     }
 
     const handleCreateUserForm = (key: string, event: any) => {
@@ -177,13 +213,14 @@ export default function CreateUserForm() {
             key == 'ministerio' ||
             key == 'estado_civil' ||
             key == 'possui_filhos' ||
-            key == 'diacono'
+            key == 'diacono' ||
+            key == 'forma_ingresso'
         )
             fieldValue = event;
         else
             fieldValue = event.target.value;
 
-        setUserForm((prevState) => ({
+        setUserForm((prevState: ITempUserCreate) => ({
             ...prevState,
             [key]: fieldValue
         }));
@@ -203,8 +240,15 @@ export default function CreateUserForm() {
 
             {
                 showWarningToast && (
-                    <ToastError data={{message: showWarningMessage}} visible={true}
+                    <ToastWarning data={{message: showWarningMessage}} visible={true}
                                 setShowParentComponent={setShowWarningToast}/>
+                )
+            }
+
+            {
+                isSuccessSaveMember && (
+                    <ToastSuccess data={{message: 'Membro cadastrado com sucesso.'}} visible={true}
+                                  setShowParentComponent={setIsSuccessSaveMember}/>
                 )
             }
 
@@ -354,8 +398,51 @@ export default function CreateUserForm() {
                             </div>
 
                             {
+                                userForm.status === 'ativo' && (
+                                    <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-3">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="data_ingresso">Ingresso</Label>
+                                            <Input
+                                                id="data_ingresso"
+                                                required
+                                                onChange={(e: any) => handleCreateUserForm('data_ingresso', e)}
+                                                type="date"/>
+                                            <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
+                                               id="file_input_help_data_ingresso">
+                                                Informe a data de ingresso na igreja
+                                            </p>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="forma_ingresso">Forma de ingresso</Label>
+                                            <Select id="forma_ingresso"
+                                                    required
+                                                    onValueChange={(value: string) => handleCreateUserForm('forma_ingresso', value)}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Selecione a forma de ingresso"/>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="aclamacao">Aclamação</SelectItem>
+                                                    <SelectItem value="batismo">Batismo</SelectItem>
+                                                    <SelectItem value="transferencia">Transferência</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="local_ingresso">Local</Label>
+                                            <Input id="local_ingresso"
+                                                   onChange={(e: any) => handleCreateUserForm('local_ingresso', e)}
+                                                   placeholder="Digite o local de ingresso"/>
+                                        </div>
+                                    </div>
+                                )
+                            }
+
+                            {
                                 userForm.status === 'transferido' && (
-                                    <div className="grid grid-cols-1 gap-4">
+                                    <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
                                         <div className="space-y-2">
                                             <Label htmlFor="transferencia">Transferência</Label>
                                             <Input
@@ -367,6 +454,78 @@ export default function CreateUserForm() {
                                                id="file_input_help_transferencia">
                                                 Informe a data da transferência do membro
                                             </p>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="motivo_transferencia">Motivo de transferência</Label>
+                                            <Input id="motivo_transferencia"
+                                                   onChange={(e: any) => handleCreateUserForm('motivo_transferencia', e)}
+                                                   placeholder="Digite o motivo da transferência"/>
+                                        </div>
+                                    </div>
+                                )
+                            }
+
+                            {
+                                userForm.status === 'falecido' && (
+                                    <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="falecimento">Falecimento</Label>
+                                            <Input
+                                                id="falecimento"
+                                                required
+                                                onChange={(e: any) => handleCreateUserForm('falecimento', e)}
+                                                type="date"/>
+                                            <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
+                                               id="file_input_help_falecimento">
+                                                Informe a data de falecimento do membro
+                                            </p>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="motivo_falecimento">Descrição/Motivo</Label>
+                                            <Input id="motivo_falecimento"
+                                                   onChange={(e: any) => handleCreateUserForm('motivo_falecimento', e)}
+                                                   placeholder="Digite algo complementar do falecimento"/>
+                                        </div>
+                                    </div>
+                                )
+                            }
+
+                            {
+                                userForm.status === 'excluido' && (
+                                    <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="excluido">Exclusão</Label>
+                                            <Input
+                                                id="excluido"
+                                                required
+                                                onChange={(e: any) => handleCreateUserForm('excluido', e)}
+                                                type="date"/>
+                                            <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
+                                               id="file_input_help_excluido">
+                                                Informe a data de exclusão do membro
+                                            </p>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="motivo_exclusao">Descrição/Motivo</Label>
+                                            <Input id="motivo_exclusao"
+                                                   onChange={(e: any) => handleCreateUserForm('motivo_exclusao', e)}
+                                                   placeholder="Digite o motivo pela exclusão"/>
+                                        </div>
+                                    </div>
+                                )
+                            }
+
+                            {
+                                userForm.status === 'visitante' && (
+                                    <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-1">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="motivo_visita">Descrição/Motivo</Label>
+                                            <Input id="motivo_visita"
+                                                   onChange={(e: any) => handleCreateUserForm('motivo_visita', e)}
+                                                   placeholder="Digite brevemente quando compareceu a igreja para visitação"/>
                                         </div>
                                     </div>
                                 )
@@ -386,7 +545,7 @@ export default function CreateUserForm() {
                                                 diaconosCadastrados && diaconosCadastrados.length > 0 && (
                                                     diaconosCadastrados.map((diacono: IDiaconoSelect) => (
                                                         <SelectItem key={diacono.id}
-                                                                    value={diacono.value}>
+                                                                    value={diacono.id.toString()}>
                                                             {diacono.label}
                                                         </SelectItem>
                                                     ))
@@ -425,8 +584,8 @@ export default function CreateUserForm() {
                                             <SelectValue placeholder="Selecione uma opção"/>
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="true">Sim</SelectItem>
-                                            <SelectItem value="false">Não</SelectItem>
+                                            <SelectItem value="sim">Sim</SelectItem>
+                                            <SelectItem value="nao">Não</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

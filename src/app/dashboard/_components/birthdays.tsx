@@ -16,7 +16,7 @@ import {ministerios} from "@/lib/constants/misterios";
 import {useEffect, useState} from "react";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import {Button} from "@/components/ui/button";
-import {ChevronDownIcon, ChevronUpIcon} from "@radix-ui/react-icons";
+import {ChevronDownIcon, ChevronUpIcon, ReloadIcon} from "@radix-ui/react-icons";
 import {IUserResponseApi} from "@/lib/models/user-response-api";
 import {ToastError} from "@/components/toast/toast-error";
 import {Backdrop, CircularProgress} from "@mui/material";
@@ -258,6 +258,21 @@ export function Birthdays(props) {
                 members && members.length > 0 ? (
                     <Card className='mt-5'>
                         <CardHeader>
+                            <div className="flex justify-end items-center -mt-6 -mr-6">
+                                <Button size="sm" className="font-bold sm:inline-flex md:inline-flex bg-zinc-500"
+                                        onClick={() => {
+                                            setOpenBackLoadingMembros(true);
+                                            setShowBackLoadingMessage('Carregando membros');
+
+                                            setMembers([]);
+                                            setMembersToFilter([]);
+
+                                            setTimeout(() => getAllMembers(), 500);
+                                        }}>
+                                    <ReloadIcon className="w-4 h-4 mr-1"/>
+                                    Recarregar
+                                </Button>
+                            </div>
                             <Collapsible
                                 open={isOpenFilter}
                                 onOpenChange={setIsOpenFilter}

@@ -13,7 +13,7 @@ import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-d
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import Link from "next/link";
 import {PhoneIcon} from "@/components/phone-icon/phone-icon";
-import {ChevronDownIcon, ChevronLeftIcon, ChevronUpIcon} from "@radix-ui/react-icons";
+import {ChevronDownIcon, ChevronLeftIcon, ChevronUpIcon, ReloadIcon} from "@radix-ui/react-icons";
 import {Button} from "@/components/ui/button";
 import {useRouter} from "next/navigation";
 import {useEffect, useState} from "react";
@@ -57,6 +57,18 @@ export function MembersList() {
         value: diacono.nome
     }));
 
+    // setPosition((previous: IPosition) => {
+    //     const previousArr = [...previous.skills];
+    //
+    //     previousArr.forEach((skill: ISkillsPosition) => {
+    //         skill.level = experienceLevel;
+    //         skill.experienceLevel = experienceLevel;
+    //         skill.minYearsOfKnowledge = skillTimeExperienceRange[0];
+    //         skill.maxYearsOfKnowledge = skillTimeExperienceRange[1];
+    //     });
+    //     return { ...previous, skills: previousArr };
+    // });
+
     const ministeriosSelected = (ministerios) => {
         setMinisterio((previous: number[]) => {
             return (
@@ -79,12 +91,24 @@ export function MembersList() {
                         setMembers(response.data);
                         setMembersToFilter(response.data);
                         console.log('members: ', response.data);
+
                         setOpenBackLoadingMembros(false);
                         setShowBackLoadingMessage('');
+                        return;
                     }
+
+                    setMembers([]);
+                    setMembersToFilter([]);
+                    setOpenBackLoadingMembros(false);
+                    setShowBackLoadingMessage('');
                 })
                 .catch((error) => {
                     console.log(error);
+                    setMembers([]);
+                    setMembersToFilter([]);
+                    setOpenBackLoadingMembros(false);
+                    setShowBackLoadingMessage('');
+
                     switch (error.code) {
                         case 'ERR_BAD_REQUEST':
                             setShowErrorMessageApi('Falha na requisição, tente novamente!');
@@ -265,6 +289,21 @@ export function MembersList() {
 
             <Card>
                 <CardHeader>
+                    <div className="flex justify-end items-center -mt-6 -mr-6">
+                        <Button size="sm" className="font-bold sm:inline-flex md:inline-flex bg-zinc-500"
+                                onClick={() => {
+                                    setOpenBackLoadingMembros(true);
+                                    setShowBackLoadingMessage('Carregando membros');
+
+                                    setMembers([]);
+                                    setMembersToFilter([]);
+
+                                    setTimeout(() => getAllMembers(), 500);
+                                }}>
+                            <ReloadIcon className="w-4 h-4 mr-1"/>
+                            Recarregar
+                        </Button>
+                    </div>
                     <Collapsible
                         open={isOpenFilter}
                         onOpenChange={setIsOpenFilter}

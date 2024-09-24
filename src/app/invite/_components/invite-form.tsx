@@ -1,10 +1,10 @@
 'use client'
 
+import * as React from "react";
 import {useEffect, useState} from "react";
-import {useRouter, useSearchParams } from "next/navigation";
+import {useRouter, useSearchParams} from "next/navigation";
 import {IMinisteriosSelect, IMisterios} from "@/lib/models/misterios";
 import {ministerios} from "@/lib/constants/misterios";
-import api from "@/lib/api/api";
 import {Backdrop, CircularProgress} from "@mui/material";
 import {Button} from "@/components/ui/button";
 import {ChevronLeftIcon} from "@radix-ui/react-icons";
@@ -18,48 +18,191 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
 import {ToastSuccess} from "@/components/toast/toast-success";
 import {ITempInvite} from "@/lib/models/invite";
+import {StatusEnum, UserRoles} from "@/lib/models/user";
+import {UserApi} from "@/lib/api/user-api";
+import {AxiosResponse} from "axios";
+import {ToastWarning} from "@/components/toast/toast-warning";
 
 export function InviteForm(props) {
     const [openBackLoading, setOpenBackLoading] = useState(false);
     const [isSuccessSaveInvite, setIsSuccessSaveInvite] = useState(false);
 
-    const [userForm, setUserForm] = useState<ITempInvite>({} as ITempInvite);
+    const [showWarningToast, setShowWarningToast] = useState(false);
+    const [showWarningMessage, setShowWarningMessage] = useState('');
 
-    const user = sessionStorage.getItem('user');
+    const [userForm, setUserForm] = useState<ITempInvite>({} as ITempInvite);
 
     const router = useRouter();
     const searchParams = useSearchParams()
-
-    if (user == null) {
-        router.push('/login');
-    }
 
     const ministeriosCadastrados: IMinisteriosSelect[] = ministerios.map((ministerio: IMisterios): IMinisteriosSelect => ({
         id: ministerio.id,
         label: ministerio.nome
     }));
 
-    const handleInviteCreateUser = (e) => {
+    const handleInviteCreateUser = async (e) => {
         e.preventDefault();
         setOpenBackLoading(true);
 
-        console.log('userForm: ', userForm)
+        userForm.status = StatusEnum.congregado;
+
+        validateForm();
+
         try {
-            // your code here
-            console.log(api.defaults.headers.Authorization)
-            setTimeout(() => {
-                setOpenBackLoading(false);
-                setIsSuccessSaveInvite(true);
-            }, 1000);
-        } catch (error) {
-            console.log('[TRY-CATCH] error: ', error);
+            userForm.role = UserRoles.MEMBRO;
+            userForm.possui_filhos = Boolean(userForm.possui_filhos);
+
+            userForm.login = {
+                password: '12345678'
+            };
+
+            console.log('userForm: ', userForm)
+
+            await UserApi.createMemberByInvite(userForm);
+            setIsSuccessSaveInvite(true);
+            setShowWarningToast(false);
+            setShowWarningMessage('');
+
             setOpenBackLoading(false);
+            setTimeout(() => {
+                router.push('/user');
+            }, 1000);
+
+        } catch (error: AxiosResponse) {
+            setIsSuccessSaveInvite(false);
+
+            setShowWarningToast(false);
+            setShowWarningMessage('');
+
+            setOpenBackLoading(false);
+            console.log('[TRY-CATCH] error: ', error);
+            const fields = [];
+
+            if (error && error['response'] && error['response']['data'] && error['response']['data']['statusCode'] === 400) {
+                if (error['response']['data']['message'] && typeof error['response']['data']['message'] === "string") {
+                    switch (error['response']['data']['message']) {
+                        case 'Status inválido!':
+                            break;
+
+                        case 'Estado civil inválido!':
+                            break;
+                        case 'Email já em uso!':
+                            setShowWarningMessage('Email já em uso, tente com outro.');
+                            break;
+                        default:
+                            setShowWarningMessage(`Erro na requisição: ${error['response']['data']['message']}`);
+                            break;
+                    }
+                } else {
+                    error['response']['data']['message'].forEach((message: string) => {
+                        switch (message) {
+                            case "nome should not be empty":
+                                fields.push('NOME');
+                                break;
+
+                            case "cpf should not be empty":
+                                fields.push('CPF');
+                                break;
+
+                            case "rg should not be empty":
+                                fields.push('RG');
+                                break;
+
+                            case "telefone should not be empty":
+                                fields.push('TELEFONE');
+                                break;
+
+                            case "data_nascimento should not be empty":
+                                fields.push('DATA DE NASCIMENTO');
+                                break;
+
+                            case "estado_civil should not be empty":
+                                fields.push('ESTADO CIVIL');
+                                break;
+                            default:
+                                setShowWarningMessage(`Erro na requisição: ${error['response']['data']['message']}`);
+                                break;
+                        }
+                    });
+
+                    setShowWarningMessage(`${fields.length === 1 ? 'O campo ' + fields.join('') + ' está vazio!' : 'Os campos ' + fields.join(', ') + ' estão vazios!'}`);
+                }
+            } else {
+                setShowWarningMessage(`Erro na requisição, tente novamente`);
+            }
+            setOpenBackLoading(false);
+            setTimeout(() => setShowWarningToast(true), 500);
         }
     };
 
+    const validateForm = () => {
+        if (Object.keys(userForm).length === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Preencha o formulário');
+            setOpenBackLoading(false);
+            return;
+        }
+
+        if (!userForm.nome || userForm.nome.length === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Campo NOME está vazio!');
+            setOpenBackLoading(false);
+            return;
+        }
+
+        if (!userForm.cpf || userForm.cpf.length === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Campo CPF está vazio!');
+            setOpenBackLoading(false);
+            return;
+        }
+
+        if (!userForm.rg || userForm.rg.length === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Campo RG está vazio!');
+            setOpenBackLoading(false);
+            return;
+        }
+
+        if (!userForm.telefone || userForm.telefone.length === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Campo TELEFONE está vazio!');
+            setOpenBackLoading(false);
+            return;
+        }
+
+        const dt_nasc = new Date(userForm.data_nascimento).getTime();
+        if (dt_nasc === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Campo DATA DE NASCIMENTO está vazio!');
+            setOpenBackLoading(false);
+            return;
+        }
+
+        if (!userForm.status || userForm.status.length === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Campo STATUS está vazio!');
+            setOpenBackLoading(false);
+            return;
+        }
+
+        if (!userForm.ministerio || userForm.ministerio.length === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Campo MINISTÉRIO está vazio!');
+            setOpenBackLoading(false);
+            return;
+        }
+
+        if (!userForm.estado_civil || userForm.estado_civil.length === 0) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Campo ESTADO CIVIL está vazio!');
+            setOpenBackLoading(false);
+            return;
+        }
+    }
+
     const ministeriosSelected = (ministerios) => {
-        // handleCreateUserForm('ministerio', ministerios)
-        // console.log('mini: ', ministerios);
+        handleCreateUserForm('ministerio', ministerios)
     }
 
     const handleCreateUserForm = (key: string, event: any) => {
@@ -68,8 +211,7 @@ export function InviteForm(props) {
         if (key == 'status' ||
             key == 'ministerio' ||
             key == 'estado_civil' ||
-            key == 'possui_filhos' ||
-            key == 'diacono'
+            key == 'possui_filhos'
         )
             fieldValue = event;
         else
@@ -82,17 +224,16 @@ export function InviteForm(props) {
     }
 
     useEffect(() => {
-        const emailParam =  searchParams.get('email') ?? '';
+        const emailParam = searchParams.get('email') ?? '';
 
         if (emailParam.length > 0) {
-            console.log('emailParam ', emailParam);
             setUserForm((prevState) => ({
                 ...prevState,
                 'email': emailParam
             }));
         }
     }, [searchParams]);
-    
+
     return (
         <div className="container mx-auto mt-4">
             <Backdrop
@@ -105,6 +246,13 @@ export function InviteForm(props) {
                 </div>
             </Backdrop>
 
+            {
+                showWarningToast && (
+                    <ToastWarning data={{message: showWarningMessage}} visible={true}
+                                  setShowParentComponent={setShowWarningToast}/>
+                )
+            }
+
             <section>
                 <Button variant="outline" className="text-black" onClick={() => router.back()}>
                     <ChevronLeftIcon className="h-4 w-4"/> voltar
@@ -114,12 +262,14 @@ export function InviteForm(props) {
 
             {
                 isSuccessSaveInvite && (
-                    <ToastSuccess data={{message: 'Membro cadastrado com sucesso.'}} visible={true} setShowParentComponent={setIsSuccessSaveInvite}/>
+                    <ToastSuccess data={{message: 'Membro cadastrado com sucesso.'}} visible={true}
+                                  setShowParentComponent={setIsSuccessSaveInvite}/>
                 )
             }
 
             <div className="space-y-6">
-                <p className="text-muted-foreground flex justify-items-start items-start flex-col">Preencha os campos abaixo para se cadastrar como novo membro após o envio do convite.</p>
+                <p className="text-muted-foreground flex justify-items-start items-start flex-col">Preencha os campos
+                    abaixo para se cadastrar como novo membro após o envio do convite.</p>
 
                 <Card className="w-full">
                     <CardContent className="mt-10">
@@ -224,6 +374,16 @@ export function InviteForm(props) {
 
                             <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
                                 <div className="space-y-2">
+                                    <Label htmlFor="ministerio">Ministério</Label>
+                                    <MultiSelectDropdown
+                                        id="ministerio"
+                                        dataSelected={ministeriosSelected}
+                                        data={ministeriosCadastrados}/>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
+                                <div className="space-y-2">
                                     <Label htmlFor="estado_civil">Estado civil</Label>
                                     <Select id="estado_civil"
                                             value={userForm && userForm.estado_civil ? userForm.estado_civil : ''}
@@ -244,7 +404,7 @@ export function InviteForm(props) {
                                 <div className="space-y-2">
                                     <Label htmlFor="possui_filhos">Tem filhos?</Label>
                                     <Select id="possui_filhos"
-                                            value={userForm && userForm.possui_filhos ? userForm.possui_filhos : ''}
+                                            value={userForm && userForm.possui_filhos ? 'true' : 'false'}
                                             onValueChange={(value: string) => handleCreateUserForm('possui_filhos', value)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Selecione uma opção"/>
@@ -275,23 +435,12 @@ export function InviteForm(props) {
                                         <div className="space-y-2">
                                             <Label htmlFor="conjugue">Nome do(a) cônjugue</Label>
                                             <Input id="conjugue"
-                                                   value={userForm && userForm.conjugue && userForm.conjugue.nome ? userForm.conjugue.nome : ''}
                                                    onChange={(e: any) => handleCreateUserForm('conjugue', e)}
                                                    placeholder="Digite o nome do(a) conjugue"/>
                                         </div>
                                     </div>
                                 )
                             }
-
-                            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="ministerio">Ministério</Label>
-                                    <MultiSelectDropdown
-                                        id="ministerio"
-                                        dataSelected={ministeriosSelected}
-                                        data={ministeriosCadastrados}/>
-                                </div>
-                            </div>
 
                             <div className="flex flex-1 justify-end">
                                 <Button type="submit" className="ml-auto" onClick={(e) => handleInviteCreateUser(e)}>
