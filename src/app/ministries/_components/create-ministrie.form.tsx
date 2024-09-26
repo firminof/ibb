@@ -1,57 +1,42 @@
 'use client'
 
 import {Label} from "@/components/ui/label"
-import {Input} from "@/components/ui/input"
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
 import {Button} from "@/components/ui/button"
 import {Card, CardContent} from "@/components/ui/card";
 import {useRouter} from "next/navigation";
 import {Backdrop, CircularProgress} from "@mui/material";
 import * as React from "react";
-import {useState} from "react";
-import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
-import {ministerios} from "@/lib/constants/misterios";
-import {IMinisteriosSelect, IMisterios} from "@/lib/models/misterios";
+import {useEffect, useState} from "react";
 import {ITempUserCreate, IUser} from "@/lib/models/user";
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
-import {obterIniciaisPrimeiroUltimo} from "@/lib/helpers/helpers";
 import {diaconos} from "@/lib/constants/diaconos";
 import {IDiaconoSelect} from "@/lib/models/diaconos";
-import {CPFInput, EmailInput, PhoneInput, RGInput} from "@/components/form-inputs/form-inputs";
 import {ChevronLeftIcon} from "@radix-ui/react-icons";
 import {ToastError} from "@/components/toast/toast-error";
-import {z} from "zod";
-import {useForm} from "react-hook-form";
-import {zodResolver} from "@hookform/resolvers/zod";
-
-const formSchema = z.object({
-    nome: z.string({required_error: 'NOME é obrigatório'}),
-    cpf: z.string({required_error: 'CPF é obrigatório'}),
-    rg: z.string({required_error: 'RG é obrigatório'}),
-    telefone: z.string({required_error: 'TELEFONE é obrigatório'}),
-    data_nascimento: z.date({required_error: 'DATA DE NASCIMENTO é obrigatório'}),
-    email: z.string({required_error: 'EMAIL é obrigatório'}),
-    status: z.string({required_error: 'STATUS é obrigatório'}),
-    diacono: z.string({required_error: 'DIÁCONO/DIACONISA é obrigatório'}),
-    ministerio: z.number({required_error: 'MINISTÉRIO(S) é obrigatório'}),
-    estado_civil: z.string({required_error: 'ESTADO CIVIL é obrigatório'}),
-    foto: z.string(),
-})
-
-type MemberSchema = z.infer<typeof formSchema>;
+import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
+import {ICreateMinisterio, IMinisteriosSelect, IMisterios} from "@/lib/models/misterios";
+import {ministerios} from "@/lib/constants/misterios";
+import {IUserResponseApi} from "@/lib/models/user-response-api";
+import {UserApi} from "@/lib/api/user-api";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {ToastSuccess} from "@/components/toast/toast-success";
 
 export default function CreateMinistrieForm() {
-    const {handleSubmit} = useForm<MemberSchema>({
-        mode: "onBlur",
-        resolver: zodResolver(formSchema)
-    });
-
+    const [members, setMembers] = useState<IUserResponseApi[]>([]);
+    const [membrosMultiSelect, setMembrosMultiSelect] = useState<IMinisteriosSelect[]>([] as IMinisteriosSelect[]);
     const [openBackLoading, setOpenBackLoading] = useState(false);
 
-    const [ministrieForm, setMinistrieForm] = useState<ITempUserCreate>({} as ITempUserCreate);
+    const [ministrieForm, setMinistrieForm] = useState<ICreateMinisterio>({} as ICreateMinisterio);
 
     const [showWarningToast, setShowWarningToast] = useState(false);
     const [showWarningMessage, setShowWarningMessage] = useState('');
+
+    const [showErrorApi, setShowErrorApi] = useState(false);
+    const [showErrorMessageApi, setShowErrorMessageApi] = useState<string>('');
+
+    const [openBackLoadingMembros, setOpenBackLoadingMembros] = useState(false);
+    const [showBackLoadingMessage, setShowBackLoadingMessage] = useState<string>('');
+
+    const [isSuccessSaveMinister, setIsSuccessSaveMinister] = useState<boolean>(false);
 
     const user = sessionStorage.getItem('user');
 
@@ -61,33 +46,56 @@ export default function CreateMinistrieForm() {
         router.push('/login');
     }
 
-    const diaconosCadastrados: IDiaconoSelect[] = diaconos.map((diacono: IUser): IDiaconoSelect => ({
-        id: diacono.id,
-        label: diacono.nome,
-        value: diacono.nome
-    }));
-
     const handleCreateMinistrie = async () => {
         setOpenBackLoading(true);
 
-        console.log('ministrieForm 1: ', ministrieForm);
         validateForm();
 
         try {
-            return console.log('ministrieForm: ', ministrieForm);
-            // const saveMember = await UserApi.createMember(ministrieForm);
-            // console.log(saveMember);
+            // @ts-ignore
+            const responsaveis: IUser[] = membrosMultiSelect
+                .filter((item: IMinisteriosSelect) => ministrieForm.responsavel.includes(item.id)) // Filtra apenas os itens que estão no segundo array
+                .map((item: IMinisteriosSelect) => ({ id: item.id, nome: item.label })); // Mapeia para o formato { id, nome }
+
+            const body: ICreateMinisterio = {
+                nome: ministrieForm.nome,
+                categoria: ministrieForm.categoria,
+                responsavel: responsaveis
+            }
+
+            const saveMember = await UserApi.createMinistrie(body);
             setTimeout(() => {
                 setOpenBackLoading(false);
+                setIsSuccessSaveMinister(true);
+
+                setShowErrorMessageApi('');
+                setShowErrorApi(false);
+
+                setShowWarningToast(false);
+                setShowWarningMessage('');
+
+                setOpenBackLoadingMembros(false);
+                setShowBackLoadingMessage('');
             }, 1000);
         } catch (error) {
             console.log('[TRY-CATCH] error: ', error);
+
             setOpenBackLoading(false);
+            setIsSuccessSaveMinister(false);
+
+            setShowErrorMessageApi('Erro ao cadastrar o ministério, tente novamente!');
+            setShowErrorApi(true);
+
+            setShowWarningToast(false);
+            setShowWarningMessage('');
+
+            setOpenBackLoadingMembros(false);
+            setShowBackLoadingMessage('');
         }
     };
 
     const validateForm = () => {
-        if (Object.keys(ministrieForm).length === 0) {
+        if (Object.keys(ministrieForm).length === 0 || Object.keys(ministrieForm).length === 1 || Object.keys(ministrieForm).length === 2) {
             setShowWarningToast(true);
             setShowWarningMessage('Preencha o formulário');
             setOpenBackLoading(false);
@@ -101,16 +109,16 @@ export default function CreateMinistrieForm() {
             return;
         }
 
-        if (ministrieForm && ministrieForm.diacono.nome.length === 0) {
+        if (ministrieForm && ministrieForm.categoria.length === 0) {
             setShowWarningToast(true);
-            setShowWarningMessage('Campo DIÁCONO/DIACONISA está vazio!');
+            setShowWarningMessage('Campo CATEGORIA está vazio!');
             setOpenBackLoading(false);
             return;
         }
 
-        if (ministrieForm && ministrieForm.estado_civil.length === 0) {
+        if (ministrieForm && ministrieForm.responsavel.length === 0) {
             setShowWarningToast(true);
-            setShowWarningMessage('Campo ESTADO CIVIL está vazio!');
+            setShowWarningMessage('Campo RESPONSÁVEL está vazio!');
             setOpenBackLoading(false);
             return;
         }
@@ -119,11 +127,7 @@ export default function CreateMinistrieForm() {
     const handleCreateMinistrieForm = (key: string, event: any) => {
         let fieldValue = '';
 
-        if (key == 'status' ||
-            key == 'ministerio' ||
-            key == 'estado_civil' ||
-            key == 'possui_filhos' ||
-            key == 'diacono'
+        if (key == 'categoria'
         )
             fieldValue = event;
         else
@@ -135,6 +139,85 @@ export default function CreateMinistrieForm() {
         }));
     }
 
+    const dataSelected = (membersSelected) => {
+        console.log(membersSelected);
+        setMinistrieForm((previous: ICreateMinisterio) => {
+            return {...previous, responsavel: membersSelected}
+        });
+    }
+
+    const getAllMembers = async (): Promise<void> => {
+        setOpenBackLoadingMembros(true);
+        setShowBackLoadingMessage('Carregando responsáveis...');
+
+        try {
+            UserApi.fetchMembers()
+                .then((response) => {
+                    if (response.data.length > 0) {
+                        let mapMembersToSelect: IMinisteriosSelect[] = response.data.map((member: IUserResponseApi): IMinisteriosSelect => ({
+                            id: member._id,
+                            label: member.nome
+                        }));
+
+                        setTimeout(() => {
+                            setMembers(response.data);
+                            setMembrosMultiSelect(mapMembersToSelect);
+
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                        }, 250);
+                        return;
+                    }
+
+                    setMembers([]);
+                    setOpenBackLoadingMembros(false);
+                    setShowBackLoadingMessage('');
+                })
+                .catch((error) => {
+                    console.log(error);
+                    setMembers([]);
+                    setOpenBackLoadingMembros(false);
+                    setShowBackLoadingMessage('');
+
+                    switch (error.code) {
+                        case 'ERR_BAD_REQUEST':
+                            setShowErrorMessageApi('Falha na requisição, tente novamente!');
+                            setShowErrorApi(true);
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                            setMembers([]);
+                            break;
+                        case 'ERR_NETWORK':
+                            setShowErrorMessageApi('Erro na conexão, tente novamente!');
+                            setShowErrorApi(true);
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                            setMembers([]);
+                            break;
+
+                        default:
+                            setShowErrorMessageApi('Erro genérico do servidor, tente novamente!');
+                            setShowErrorApi(true);
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                            setMembers([]);
+                            break;
+                    }
+                });
+        } catch (e) {
+            setShowErrorMessageApi('Erro desconhecido, tente novamente!');
+            setShowErrorApi(true);
+
+            setOpenBackLoadingMembros(false);
+            setShowBackLoadingMessage('');
+            setMembers([]);
+        }
+    }
+
+    useEffect(() => {
+        getAllMembers();
+    }, []);
+
     return (
         <div className="container mx-auto mt-4">
             <Backdrop
@@ -143,14 +226,28 @@ export default function CreateMinistrieForm() {
             >
                 <div className="flex flex-col items-center">
                     <CircularProgress color="inherit"/>
-                    <p>Criando ministério...</p>
+                    <p>Cadastrando ministério...</p>
                 </div>
             </Backdrop>
+
+            {
+                isSuccessSaveMinister && (
+                    <ToastSuccess data={{message: 'Ministério cadastrado com sucesso.'}} visible={true}
+                                  setShowParentComponent={setIsSuccessSaveMinister}/>
+                )
+            }
 
             {
                 showWarningToast && (
                     <ToastError data={{message: showWarningMessage}} visible={true}
                                 setShowParentComponent={setShowWarningToast}/>
+                )
+            }
+
+            {
+                showErrorApi && (
+                    <ToastError data={{message: showErrorMessageApi}} visible={true}
+                                setShowParentComponent={setShowErrorApi}/>
                 )
             }
 
@@ -179,28 +276,30 @@ export default function CreateMinistrieForm() {
                                 </div>
                             </div>
 
-                            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-1">
+                            <div className="grid sm:grid-cols-1 md:grid-cols-1">
                                 <div className="space-y-2">
-                                    <Label htmlFor="diacono">Diácono</Label>
-                                    <Select id="diacono"
-                                            required
-                                            onValueChange={(value: string) => handleCreateMinistrieForm('diacono', value)}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Selecione uma opção"/>
+                                    <Label htmlFor="categoria">Categoria</Label>
+                                    <Select onValueChange={(value: string) => handleCreateMinistrieForm('categoria', value)}>
+                                        <SelectTrigger id="categoria" aria-label="categoria"
+                                                       className="mt-2 sm:mt-2">
+                                            <SelectValue placeholder="Selecionar categoria"/>
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {
-                                                diaconosCadastrados && diaconosCadastrados.length > 0 && (
-                                                    diaconosCadastrados.map((diacono: IDiaconoSelect) => (
-                                                        <SelectItem key={diacono.id}
-                                                                    value={diacono.value}>
-                                                            {diacono.label}
-                                                        </SelectItem>
-                                                    ))
-                                                )
-                                            }
+                                            <SelectItem value="eclesiastico">Eclesiástico</SelectItem>
+                                            <SelectItem value="pessoas">Pessoas</SelectItem>
+                                            <SelectItem value="coordenacao">Coordenação</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-1">
+                                <div className="space-y-2">
+                                    <Label htmlFor="diacono">Responsável</Label>
+                                    <MultiSelectDropdown
+                                        id="responsaveis"
+                                        dataSelected={dataSelected}
+                                        data={membrosMultiSelect}/>
                                 </div>
                             </div>
                             <div className="flex flex-1 justify-end">

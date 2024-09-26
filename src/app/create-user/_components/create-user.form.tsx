@@ -178,6 +178,7 @@ export default function CreateUserForm() {
         if (userForm.status && userForm.status.length > 0) {
             switch (userForm) {
                 case StatusEnum.ativo:
+                    // @ts-ignore
                     if (!userForm.data_ingresso) {
                         setShowWarningToast(true);
                         setShowWarningMessage('Campo DATA DE INGRESSO está vazio!');
@@ -185,12 +186,15 @@ export default function CreateUserForm() {
                         return;
                     }
 
+                    // @ts-ignore
                     if (!userForm.forma_ingresso) {
                         setShowWarningToast(true);
                         setShowWarningMessage('Campo FORMA DE INGRESSO está vazio!');
                         setOpenBackLoading(false);
                         return;
                     }
+
+                    // @ts-ignore
                     if (!userForm.local_ingresso) {
                         setShowWarningToast(true);
                         setShowWarningMessage('Campo LOCAL DE INGRESSO está vazio!');

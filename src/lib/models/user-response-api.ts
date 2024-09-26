@@ -20,4 +20,5 @@ export interface IUserResponseApi {
     ministerio: number[];
     role?: string;
     updatedAt: string;
+    _id: string;
 }

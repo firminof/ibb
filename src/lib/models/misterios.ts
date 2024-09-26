@@ -8,6 +8,12 @@ export interface IMisterios {
 }
 
 export interface IMinisteriosSelect {
-    id: number;
+    id: number | string;
     label: string;
+}
+
+export interface ICreateMinisterio {
+    nome: string;
+    categoria: string;
+    responsavel: [] | IUser[];
 }
