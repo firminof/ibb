@@ -1,11 +1,15 @@
 import api from "@/lib/api/api";
 import {IInviteByEmail, ITempInvite} from "@/lib/models/invite";
-import {ITempUserCreate} from "@/lib/models/user";
+import {ITempUserCreate, ITempUserUpdate} from "@/lib/models/user";
 import {ICreateMinisterio} from "@/lib/models/misterios";
 
 export class UserApi {
     static async fetchMembers(): Promise<any | undefined> {
         return await api.get(`/user/all`);
+    }
+
+    static async fetchMemberById(id: string): Promise<any | undefined> {
+        return await api.get(`/user/get-by-id/${id}`);
     }
 
     static async fetchBirthdaysMembers(month: number): Promise<any | undefined> {
@@ -18,8 +22,20 @@ export class UserApi {
         return user.data;
     }
 
+    static async updateMember(id: string, body: ITempUserUpdate): Promise<any | undefined> {
+        const user = await api.put(`/user/${id}`, body);
+
+        return user.data;
+    }
+
     static async createMemberByInvite(body: ITempInvite): Promise<any | undefined> {
         const user = await api.post(`/user/accept-invite`, body);
+
+        return user.data;
+    }
+
+    static async updateInfo(body: string[]): Promise<any | undefined> {
+        const user = await api.post(`/user/update-info`, body);
 
         return user.data;
     }

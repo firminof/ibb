@@ -1,4 +1,4 @@
-import {IUser} from "@/lib/models/user";
+import {IUser, StatusEnum} from "@/lib/models/user";
 
 export interface IUserResponseApi {
     nome: string;
@@ -9,16 +9,30 @@ export interface IUserResponseApi {
     telefone: string;
     foto: string;
     data_nascimento: string;
-    estado_civil: boolean;
+    estado_civil: string;
     conjugue: IUser | null;
     data_casamento?: string | null;
     possui_filhos: boolean;
     filhos: IUser[] | null;
-    status: string;
-    transferencia: string | null;
+    status: StatusEnum;
     diacono: IUser;
     ministerio: number[];
     role?: string;
     updatedAt: string;
     _id: string;
+
+    transferencia: string | null;
+    data_ingresso?: string | null;
+    forma_ingresso?: string | null;
+    local_ingresso?: string | null;
+
+    motivo_transferencia?: string | null;
+
+    falecimento?: string | null;
+    motivo_falecimento?: string | null;
+
+    excluido?: string | null;
+    motivo_exclusao?: string | null;
+
+    motivo_visita?: string | null;
 }

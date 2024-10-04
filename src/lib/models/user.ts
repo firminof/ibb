@@ -72,3 +72,39 @@ export interface ITempUserCreate {
 
     motivo_visita?: string;
 }
+
+export interface ITempUserUpdate {
+    _id?: string;
+    role?: UserRoles;
+    nome?: string;
+    cpf?: string;
+    rg?: string;
+    email?: string;
+    telefone?: string;
+    foto?: string;
+    data_nascimento?: Date;
+    estado_civil?: EstadoCivilEnum;
+    conjugue?: IUser;
+    data_casamento?: Date;
+    possui_filhos?: string | boolean;
+    filhos?: IUser[];
+    status?: StatusEnum;
+    transferencia?: Date | null;
+    diacono?: IUser;
+    ministerio?: number[];
+    endereco?: UserAddress;
+
+    data_ingresso?: Date | null;
+    forma_ingresso?: string;
+    local_ingresso?: string;
+
+    motivo_transferencia?: string;
+
+    falecimento?: Date | null;
+    motivo_falecimento?: string;
+
+    excluido?: Date | null;
+    motivo_exclusao?: string;
+
+    motivo_visita?: string;
+}

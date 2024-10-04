@@ -4,18 +4,18 @@ import {IMinisteriosSelect, IMisterios} from "@/lib/models/misterios";
 import {ministerios} from "@/lib/constants/misterios";
 import {IDiaconoSelect} from "@/lib/models/diaconos";
 import {diaconos} from "@/lib/constants/diaconos";
-import {IUser} from "@/lib/models/user";
+import {ITempUserUpdate, IUser, StatusEnum} from "@/lib/models/user";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Label} from "@/components/ui/label";
 import {Input} from "@/components/ui/input";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import Link from "next/link";
 import {PhoneIcon} from "@/components/phone-icon/phone-icon";
 import {ChevronDownIcon, ChevronLeftIcon, ChevronUpIcon, ReloadIcon} from "@radix-ui/react-icons";
 import {Button} from "@/components/ui/button";
 import {useRouter} from "next/navigation";
+import * as React from "react";
 import {useEffect, useState} from "react";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import {UserApi} from "@/lib/api/user-api";
@@ -23,10 +23,21 @@ import {IUserResponseApi} from "@/lib/models/user-response-api";
 import {ToastError} from "@/components/toast/toast-error";
 import {Backdrop, CircularProgress} from "@mui/material";
 import {PlusIcon} from "@/components/plus-icon/plus-icon";
+import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,} from "@/components/ui/dialog"
+import {ToastSuccess} from "@/components/toast/toast-success";
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
+import {EditIcon, EyeIcon} from "lucide-react";
+import {UserForm} from "@/app/user/_components/user.form";
+import {Checkbox} from "@/components/ui/checkbox";
+import {Textarea} from "@/components/ui/textarea";
+import {SendIcon} from "@/components/send-icon/send-icon";
 
 export function MembersList() {
     const [showErrorApi, setShowErrorApi] = useState(false);
     const [showErrorMessageApi, setShowErrorMessageApi] = useState<string>('');
+
+    const [isSuccess, setIsSuccess] = useState(false);
+    const [showSuccessMessageApi, setShowSucessMessageApi] = useState<string>('');
 
     const [openBackLoadingMembros, setOpenBackLoadingMembros] = useState(false);
     const [showBackLoadingMessage, setShowBackLoadingMessage] = useState<string>('');
@@ -37,6 +48,23 @@ export function MembersList() {
 
     const [members, setMembers] = useState<IUserResponseApi[]>([]);
     const [membersToFilter, setMembersToFilter] = useState<IUserResponseApi[]>([]);
+    const [memberSelected, setMemberSelected] = useState<IUserResponseApi>({} as IUserResponseApi);
+    const [memberSelectedCheckbox, setMemberSelectedCheckbox] = useState<string[]>([]);
+    const [messageWhatsApp, setMessageWhatsApp] = useState<string>('');
+
+    const [openDialogStatus, setOpenDialogStatus] = useState(false);
+    const [openDialogSendMessage, setOpenDialogSendMessage] = useState(false);
+    const [isOpenMemberDetail, setIsOpenMemberDetail] = useState(false)
+
+    const [mudarStatusIdMembro, setMudarStatusIdMembro] = useState<string>('');
+    const [mudarStatus, setMudarStatus] = useState<StatusEnum>(() => StatusEnum);
+
+    const [mudarMotivo, setMudarMotivo] = useState<string>('');
+    const [mudarData, setMudarData] = useState<Date>(new Date());
+
+    // Gerencia o estado para controlar se o botão deve ser exibido ou não
+    const [hoveredRow, setHoveredRow] = useState<number | null>(null);
+    const [hoveredMembers, setHoveredMembers] = useState<IUserResponseApi>({} as IUserResponseApi);
 
     const [nome, setNome] = useState<string>('');
     const [status, setStatus] = useState<string>('');
@@ -253,6 +281,106 @@ export function MembersList() {
         setMinisterio([]);
     }
 
+    const handleMudarStatus = (e) => {
+        e.preventDefault();
+
+        setOpenBackLoadingMembros(true);
+        setShowBackLoadingMessage('Atualizando status de membresia...');
+
+        const body: ITempUserUpdate = {
+            status: mudarStatus
+        };
+
+        switch (body.status) {
+            case StatusEnum.transferido:
+                body.transferencia = new Date(mudarData);
+                body.motivo_transferencia = mudarMotivo;
+                break;
+            case StatusEnum.falecido:
+                body.falecimento = new Date(mudarData);
+                body.motivo_falecimento = mudarMotivo;
+                break;
+            case StatusEnum.excluido:
+                body.excluido = new Date(mudarData);
+                body.motivo_exclusao = mudarMotivo;
+                break;
+        }
+
+        UserApi.updateMember(mudarStatusIdMembro, body)
+            .then(() => {
+                getAllMembers();
+
+                setIsSuccess(true);
+                setShowSucessMessageApi('Sucesso ao atualizar o status!');
+
+                setShowErrorApi(false);
+                setShowErrorMessageApi('')
+            })
+            .catch(() => {
+                setIsSuccess(false);
+                setShowSucessMessageApi('');
+
+                setShowErrorApi(true);
+                setShowErrorMessageApi('Erro ao atualizar o status, tente novamente!');
+            })
+            .finally(() => {
+                setOpenBackLoadingMembros(false);
+                setShowBackLoadingMessage('');
+                setOpenDialogStatus(false);
+            })
+    }
+
+    const changeStatusMudar = (value: string) => {
+        switch (value) {
+            case StatusEnum.visitante:
+                setMudarStatus(StatusEnum.visitante);
+                break;
+            case StatusEnum.congregado:
+                setMudarStatus(StatusEnum.congregado);
+                break;
+            case StatusEnum.ativo:
+                setMudarStatus(StatusEnum.ativo);
+                break;
+            case StatusEnum.inativo:
+                setMudarStatus(StatusEnum.inativo);
+                break;
+            case StatusEnum.transferido:
+                setMudarStatus(StatusEnum.transferido);
+                break;
+            case StatusEnum.falecido:
+                setMudarStatus(StatusEnum.falecido);
+                break;
+            case StatusEnum.excluido:
+                setMudarStatus(StatusEnum.excluido);
+                break;
+        }
+    }
+
+    const handleSendMessageWhatsapp = (e) => {
+        e.preventDefault();
+
+        console.log('Enviar mensagem pro whatsapp');
+    }
+
+    const handleUpdateInfo = (e) => {
+        setOpenBackLoadingMembros(true);
+        setShowBackLoadingMessage('Solicitando atualização cadastral...');
+
+        UserApi.updateInfo(memberSelectedCheckbox)
+                .then(() => {
+                    setIsSuccess(true);
+                    setShowSucessMessageApi('Sucesso ao solicitar atualização cadastral em massa!');
+                })
+                .catch(() => {
+                    setShowErrorApi(true);
+                    setShowErrorMessageApi('Erro ao solicitar atualização cadastral em massa!');
+                })
+                .finally(() => {
+                    setOpenBackLoadingMembros(false);
+                    setShowBackLoadingMessage('');
+                })
+    }
+
     return (
         <div className="mt-4 container mx-auto">
             <section>
@@ -287,9 +415,146 @@ export function MembersList() {
                 )
             }
 
+            {
+                isSuccess && (
+                    <ToastSuccess data={{message: showSuccessMessageApi}} visible={true}
+                                  setShowParentComponent={setIsSuccess}/>
+                )
+            }
+
+            <Dialog open={openDialogStatus} onOpenChange={setOpenDialogStatus}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Alterar status</DialogTitle>
+                        <DialogDescription>
+                            Chegou o momento de alterar o status de membresia.
+                        </DialogDescription>
+                        <DialogDescription>
+                            Escolha abaixo o novo status do membro.
+                        </DialogDescription>
+                        <DialogDescription>
+                            Aproveite para informar a data de atualização e uma descrição breve.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="mudar-status">Status</Label>
+                            <Select
+                                value={mudarStatus}
+                                onValueChange={(value: string) => changeStatusMudar(value)}>
+                                <SelectTrigger id="mudar-status" aria-label="Status"
+                                               className="mt-2 sm:mt-2">
+                                    <SelectValue placeholder="Selecionar status"/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="visitante">Visitante</SelectItem>
+                                    <SelectItem value="congregado">Congregado</SelectItem>
+                                    <SelectItem value="ativo">Ativo</SelectItem>
+                                    <SelectItem value="inativo">Inativo</SelectItem>
+                                    <SelectItem value="transferido">Transferido</SelectItem>
+                                    <SelectItem value="falecido">Falecido</SelectItem>
+                                    <SelectItem value="excluido">Excluído</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="mudar_data">Data</Label>
+                            <Input
+                                id="mudar_data"
+                                required
+                                onChange={(e: any) => setMudarData(e.target.value)}
+                                type="date"/>
+                            <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
+                               id="file_input_help_transferencia">
+                                Informe a data de atualização do status
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="mudar_motivo">Motivo/Descrição</Label>
+                            <Input id="mudar_motivo"
+                                   type="text"
+                                   onChange={(e: any) => setMudarMotivo(e.target.value)}
+                                   placeholder="Digite o motivo..."/>
+                        </div>
+
+                        <div className="flex justify-end items-center space-y-2">
+                            <Button type="submit" size="sm" className="px-3" disabled={mudarStatus.length < 1}
+                                    onClick={(e) => handleMudarStatus(e)}>
+                                Salvar
+                            </Button>
+                        </div>
+
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={openDialogSendMessage} onOpenChange={setOpenDialogSendMessage}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Enviar mensagem via WhatsApp</DialogTitle>
+
+                        <DialogDescription>
+                            Número do membro: {memberSelected.telefone}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid gap-4">
+                        <div className="grid w-full gap-1.5">
+                            <Label htmlFor="mensagem-whatsapp">Sua mensagem</Label>
+                            <Textarea placeholder="Escreva sua mensagem aqui."
+                                      id="mensagem-whatsapp"
+                                      value={messageWhatsApp}
+                                      onChange={(e) => setMessageWhatsApp(e.target.value)} />
+                            <p className="text-sm text-muted-foreground">
+                                Preencha a mensagem com pelo menos 20 caracteres: {messageWhatsApp.length}
+                            </p>
+                        </div>
+
+                        <div className="flex justify-end items-center space-y-2">
+                            <Button type="submit" size="sm" className="px-3" disabled={messageWhatsApp.length < 20}
+                                    onClick={(e) => handleSendMessageWhatsapp(e)}>
+                                <SendIcon className="w-4 h-4 mr-2"/>
+                                Enviar
+                            </Button>
+                        </div>
+
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isOpenMemberDetail} onOpenChange={setIsOpenMemberDetail}>
+                <DialogContent
+                    className="sm:max-w-[80vw] md:max-w-[95vw] lg:max-w-[95vw] xl:max-w-[75vw] h-[90vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>Detalhes do Membro</DialogTitle>
+                        <DialogDescription>
+                            Informações detalhadas sobre o membro da igreja.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div
+                        className="flex-grow overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400 transition-colors duration-200">
+                        <UserForm memberParam={memberSelected}/>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
             <Card>
                 <CardHeader>
-                    <div className="flex justify-end items-center -mt-6 -mr-6">
+                    <div className="flex justify-end items-center -mt-6 -mr-6 gap-4">
+                        {
+                            memberSelectedCheckbox && memberSelectedCheckbox.length > 0 && (
+                                <Button size="sm" className="font-bold sm:inline-flex md:inline-flex bg-yellow-600 hover:bg-yellow-700"
+                                        onClick={(e) => handleUpdateInfo(e)}>
+                                    <EditIcon className="w-4 h-4 mr-1"/>
+                                    Solicitar atualização cadastral
+                                </Button>
+                            )
+                        }
+
                         <Button size="sm" className="font-bold sm:inline-flex md:inline-flex bg-zinc-500"
                                 onClick={() => {
                                     setOpenBackLoadingMembros(true);
@@ -436,6 +701,7 @@ export function MembersList() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
+                                        <TableHead className="font-semibold"></TableHead>
                                         <TableHead className="font-semibold">Nome</TableHead>
                                         <TableHead className="font-semibold">Aniversário</TableHead>
                                         <TableHead className="font-semibold">Diácono/Diaconisa</TableHead>
@@ -449,7 +715,28 @@ export function MembersList() {
                                 <TableBody>
                                     {
                                         members.map((membro: IUserResponseApi, index: number) => (
-                                            <TableRow key={index}>
+                                            <TableRow
+                                                key={membro._id}
+                                                onMouseEnter={() => {
+                                                    setHoveredRow(index);
+                                                    setHoveredMembers(membro);
+                                                }}
+                                                onMouseLeave={() => setHoveredRow(null)}
+                                                className="hover:bg-gray-100 transition"
+                                            >
+                                                <TableCell>
+                                                    <Checkbox id="member-checkbox" onClick={() => {
+                                                        setMemberSelectedCheckbox((previous: string[]) => {
+                                                            if (previous.includes(membro._id)) {
+                                                                // Se o item já estiver selecionado, removemos ele do array
+                                                                return previous.filter((id) => id !== membro._id);
+                                                            } else {
+                                                                // Se o item não estiver selecionado, adicionamos ele ao array
+                                                                return [...previous, membro._id];
+                                                            }
+                                                        })
+                                                    }}/>
+                                                </TableCell>
                                                 <TableCell>{membro.nome}</TableCell>
                                                 <TableCell>{membro.data_nascimento}</TableCell>
                                                 <TableCell>{membro.diacono.nome ? membro.diacono.nome : (
@@ -467,37 +754,77 @@ export function MembersList() {
                                                 )}</TableCell>
                                                 <TableCell>
                                                     {
-                                                        membro.status === 'ativo' ? (
-                                                            <div className="px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold">Ativo</div>
-                                                        ) : membro.status === 'inativo' ? (
-                                                            <div className="px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">Inativo</div>
-                                                        ) : membro.status === 'transferido' ? (
-                                                            <div className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-semibold">Transferido</div>
-                                                        ) : membro.status === 'falecido' ? (
-                                                            <div className="px-2 py-1 rounded-full bg-gray-100 text-gray-700 font-semibold">Falecido</div>
-                                                        ) : membro.status === 'excluido' ? (
-                                                            <div className="px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">Excluído</div>
-                                                        ) : membro.status === 'visitante' ? (
-                                                            <div className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold">Visitante</div>
-                                                        ) : membro.status === 'congregado' ? (
-                                                            <div className="px-2 py-1 rounded-full bg-purple-100 text-purple-700 font-semibold">Congregado</div>
+                                                        hoveredRow === index ? (
+                                                            <Button
+                                                                className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-gray-700 text-primary-foreground hover:bg-gray-700/90 focus:outline-none focus:ring-1 focus:ring-gray/50"
+                                                                onClick={() => {
+                                                                    setMudarStatusIdMembro(membro._id);
+                                                                    setOpenDialogStatus(true);
+                                                                    changeStatusMudar(membro.status);
+                                                                }}
+                                                            >
+                                                                Alterar status
+                                                            </Button>
                                                         ) : (
-                                                            membro.status.toUpperCase()
+                                                            <>
+                                                                {
+                                                                    membro.status === 'ativo' ? (
+                                                                        <div
+                                                                            className="px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold">Ativo</div>
+                                                                    ) : membro.status === 'inativo' ? (
+                                                                        <div
+                                                                            className="px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">Inativo</div>
+                                                                    ) : membro.status === 'transferido' ? (
+                                                                        <div
+                                                                            className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-semibold">Transferido</div>
+                                                                    ) : membro.status === 'falecido' ? (
+                                                                        <div
+                                                                            className="px-2 py-1 rounded-full bg-gray-100 text-gray-700 font-semibold">Falecido</div>
+                                                                    ) : membro.status === 'excluido' ? (
+                                                                        <div
+                                                                            className="px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">Excluído</div>
+                                                                    ) : membro.status === 'visitante' ? (
+                                                                        <div
+                                                                            className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold">Visitante</div>
+                                                                    ) : membro.status === 'congregado' ? (
+                                                                        <div
+                                                                            className="px-2 py-1 rounded-full bg-purple-100 text-purple-700 font-semibold">Congregado</div>
+                                                                    ) : (
+                                                                        membro.status.toUpperCase()
+                                                                    )
+                                                                }
+                                                            </>
                                                         )
                                                     }
-
-                                                </TableCell>
+                                                < /TableCell>
                                                 <TableCell>{membro.updatedAt}</TableCell>
-                                                <TableCell>
-                                                    <Link
-                                                        href="#"
-                                                        target="_blank"
+                                                <TableCell className="inline-flex items-center gap-2">
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button variant="outline" onClick={() => {
+                                                                    setMemberSelected(membro);
+                                                                    setIsOpenMemberDetail(true);
+                                                                }}>
+                                                                    <EyeIcon/>
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>Visualizar membro</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+
+                                                    <Button
                                                         className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                                        prefetch={false}
+                                                        onClick={() => {
+                                                            setMemberSelected(membro);
+                                                            setOpenDialogSendMessage(true);
+                                                        }}
                                                     >
                                                         <PhoneIcon className="w-4 h-4"/>
                                                         Enviar Mensagem
-                                                    </Link>
+                                                    </Button>
                                                 </TableCell>
                                             </TableRow>
                                         ))
