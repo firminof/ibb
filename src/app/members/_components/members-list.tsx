@@ -563,6 +563,10 @@ export function MembersList() {
                                     setMembers([]);
                                     setMembersToFilter([]);
 
+                                    setMemberSelected({} as IUserResponseApi);
+
+                                    setMemberSelectedCheckbox([]);
+
                                     setTimeout(() => getAllMembers(), 500);
                                 }}>
                             <ReloadIcon className="w-4 h-4 mr-1"/>
