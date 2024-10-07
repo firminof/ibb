@@ -26,7 +26,7 @@ import {PlusIcon} from "@/components/plus-icon/plus-icon";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,} from "@/components/ui/dialog"
 import {ToastSuccess} from "@/components/toast/toast-success";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
-import {EditIcon, EyeIcon} from "lucide-react";
+import {DeleteIcon, EditIcon, EyeIcon} from "lucide-react";
 import {UserForm} from "@/app/user/_components/user.form";
 import {Checkbox} from "@/components/ui/checkbox";
 import {Textarea} from "@/components/ui/textarea";
@@ -362,23 +362,49 @@ export function MembersList() {
         console.log('Enviar mensagem pro whatsapp');
     }
 
-    const handleUpdateInfo = (e) => {
+    const handleRequestRegistrationUpdate = (e) => {
         setOpenBackLoadingMembros(true);
         setShowBackLoadingMessage('Solicitando atualização cadastral...');
 
         UserApi.updateInfo(memberSelectedCheckbox)
-                .then(() => {
-                    setIsSuccess(true);
-                    setShowSucessMessageApi('Sucesso ao solicitar atualização cadastral em massa!');
-                })
-                .catch(() => {
-                    setShowErrorApi(true);
-                    setShowErrorMessageApi('Erro ao solicitar atualização cadastral em massa!');
-                })
-                .finally(() => {
-                    setOpenBackLoadingMembros(false);
-                    setShowBackLoadingMessage('');
-                })
+            .then(() => {
+                setIsSuccess(true);
+                setShowSucessMessageApi('Sucesso ao solicitar atualização cadastral em massa!');
+            })
+            .catch(() => {
+                setShowErrorApi(true);
+                setShowErrorMessageApi('Erro ao solicitar atualização cadastral em massa!');
+            })
+            .finally(() => {
+                setOpenBackLoadingMembros(false);
+                setShowBackLoadingMessage('');
+                setMemberSelectedCheckbox([]);
+            })
+    }
+
+    const handleDeleteMembers = (e) => {
+        setOpenBackLoadingMembros(true);
+        setShowBackLoadingMessage(`${memberSelectedCheckbox.length === 1 ? 'Excluindo membro' : 'Excluindo membros'}`);
+
+        Promise.all(
+            memberSelectedCheckbox.map((member: string) => {
+                return UserApi.deleteMember(member);
+            })
+        )
+            .then(() => {
+                setIsSuccess(true);
+                setShowSucessMessageApi(`${memberSelectedCheckbox.length === 1 ? 'Sucesso ao excluir o membro!' : 'Sucesso ao excluir os membros!'}`);
+            })
+            .catch(() => {
+                setShowErrorApi(true);
+                setShowErrorMessageApi(`${memberSelectedCheckbox.length === 1 ? 'Erro ao excluir o membro!' : 'Sucesso ao excluir os membros!'}`);
+            })
+            .finally(() => {
+                setOpenBackLoadingMembros(false);
+                setShowBackLoadingMessage('');
+                getAllMembers();
+                setMemberSelectedCheckbox([]);
+            });
     }
 
     return (
@@ -507,7 +533,7 @@ export function MembersList() {
                             <Textarea placeholder="Escreva sua mensagem aqui."
                                       id="mensagem-whatsapp"
                                       value={messageWhatsApp}
-                                      onChange={(e) => setMessageWhatsApp(e.target.value)} />
+                                      onChange={(e) => setMessageWhatsApp(e.target.value)}/>
                             <p className="text-sm text-muted-foreground">
                                 Preencha a mensagem com pelo menos 20 caracteres: {messageWhatsApp.length}
                             </p>
@@ -547,11 +573,23 @@ export function MembersList() {
                     <div className="flex justify-end items-center -mt-6 -mr-6 gap-4">
                         {
                             memberSelectedCheckbox && memberSelectedCheckbox.length > 0 && (
-                                <Button size="sm" className="font-bold sm:inline-flex md:inline-flex bg-yellow-600 hover:bg-yellow-700"
-                                        onClick={(e) => handleUpdateInfo(e)}>
-                                    <EditIcon className="w-4 h-4 mr-1"/>
-                                    Solicitar atualização cadastral
-                                </Button>
+                                <>
+                                    <Button size="sm"
+                                            className="font-bold sm:inline-flex md:inline-flex bg-red-600 hover:bg-red-700"
+                                            onClick={(e) => handleDeleteMembers(e)}>
+                                        <DeleteIcon className="w-4 h-4 mr-1"/>
+                                        {
+                                            memberSelectedCheckbox.length > 1 ? 'Excluir membros' : 'Excluir membro'
+                                        }
+                                    </Button>
+
+                                    <Button size="sm"
+                                            className="font-bold sm:inline-flex md:inline-flex bg-yellow-600 hover:bg-yellow-700"
+                                            onClick={(e) => handleRequestRegistrationUpdate(e)}>
+                                        <EditIcon className="w-4 h-4 mr-1"/>
+                                        Solicitar atualização cadastral
+                                    </Button>
+                                </>
                             )
                         }
 
@@ -800,7 +838,7 @@ export function MembersList() {
                                                             </>
                                                         )
                                                     }
-                                                < /TableCell>
+                                                </TableCell>
                                                 <TableCell>{membro.updatedAt}</TableCell>
                                                 <TableCell className="inline-flex items-center gap-2">
                                                     <TooltipProvider>

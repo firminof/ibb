@@ -34,6 +34,12 @@ export class UserApi {
         return user.data;
     }
 
+    static async deleteMember(id: string): Promise<any | undefined> {
+        const user = await api.delete(`/user/${id}`);
+
+        return user.data;
+    }
+
     static async updateInfo(body: string[]): Promise<any | undefined> {
         const user = await api.post(`/user/update-info`, body);
 
