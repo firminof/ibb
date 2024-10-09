@@ -17,13 +17,14 @@ import {useEffect, useState} from "react";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import {Button} from "@/components/ui/button";
 import {ChevronDownIcon, ChevronUpIcon, ReloadIcon} from "@radix-ui/react-icons";
-import {IUserResponseApi} from "@/lib/models/user-response-api";
+import {IMinistries, IUserResponseApi} from "@/lib/models/user-response-api";
 import {ToastError} from "@/components/toast/toast-error";
 import {Backdrop, CircularProgress} from "@mui/material";
 import {useRouter} from "next/navigation";
 import {UserApi} from "@/lib/api/user-api";
 import {obterMesAtual} from "@/lib/helpers/helpers";
 import {IMesAtual} from "@/lib/models/mes-atual";
+import * as React from "react";
 
 export function Birthdays(props) {
     const [showErrorApi, setShowErrorApi] = useState(false);
@@ -37,6 +38,7 @@ export function Birthdays(props) {
     const [isOpenFilter, setIsOpenFilter] = useState(false);
     const [members, setMembers] = useState<IUserResponseApi[]>([]);
     const [membersToFilter, setMembersToFilter] = useState<IUserResponseApi[]>([]);
+    const [ministries, setMinistries] = useState<IMinistries[]>([]);
 
     const [mesAtual, setMesAtual] = useState<string>('');
 
@@ -68,6 +70,63 @@ export function Birthdays(props) {
         });
     }
 
+    const getAllMinistries = () => {
+        setOpenBackLoadingMembros(true);
+        setShowBackLoadingMessage('Buscando pelos ministérios...');
+
+        try {
+            UserApi.fetchMinistries()
+                .then((response: IMinistries[]) => {
+                    console.log('ministries: ', response);
+                    if (response && response.length > 0) {
+                        setMinistries(response);
+                    } else {
+                        setMinistries([]);
+                        setOpenBackLoadingMembros(false);
+                        setShowBackLoadingMessage('');
+                    }
+                })
+                .catch((error) => {
+                    console.log(error);
+                    setMinistries([]);
+                    setOpenBackLoadingMembros(false);
+                    setShowBackLoadingMessage('');
+
+                    switch (error.code) {
+                        case 'ERR_BAD_REQUEST':
+                            setShowErrorMessageApi('Falha na requisição, tente novamente!');
+                            setShowErrorApi(true);
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                            setMinistries([]);
+                            break;
+                        case 'ERR_NETWORK':
+                            setShowErrorMessageApi('Erro na conexão, tente novamente!');
+                            setShowErrorApi(true);
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                            setMinistries([]);
+                            break;
+
+                        default:
+                            setShowErrorMessageApi('Erro genérico do servidor, tente novamente!');
+                            setShowErrorApi(true);
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                            setMinistries([]);
+                            break;
+                    }
+                });
+        } catch (e) {
+            setShowErrorMessageApi('Erro desconhecido, tente novamente!');
+            setShowErrorApi(true);
+
+            setOpenBackLoadingMembros(false);
+            setShowBackLoadingMessage('');
+            setMinistries([]);
+        }
+    }
+
     const getAllMembers = async (): Promise<void> => {
         setOpenBackLoadingMembros(true);
         setShowBackLoadingMessage('Carregando membros...');
@@ -79,9 +138,18 @@ export function Birthdays(props) {
             UserApi.fetchBirthdaysMembers(codigo)
                 .then((response) => {
                     if (response.data.length > 0) {
-                        setMembers(response.data);
-                        setMembersToFilter(response.data);
-                        console.log('members: ', response.data);
+                        // Mapeando ministérios para todos os membros
+                        const mappedMembers: IUserResponseApi[] = response.data.map(member => {
+                            return {
+                                ...member,
+                                ministerio: member.ministerio.map(ministerioId => {
+                                    return ministries.find(ministerio => ministerio._id === ministerioId.toString()) || null;
+                                })
+                            };
+                        });
+                        setMembers(mappedMembers);
+                        setMembersToFilter(mappedMembers);
+                        console.log('members: ', mappedMembers);
                         setOpenBackLoadingMembros(false);
                         setShowBackLoadingMessage('');
                         return;
@@ -129,10 +197,6 @@ export function Birthdays(props) {
         }
     }
 
-    useEffect(() => {
-        getAllMembers();
-    }, []);
-
     const filtros = (chave, valor, event) => {
         if (event) {
             event.preventDefault();
@@ -155,7 +219,7 @@ export function Birthdays(props) {
                 break;
             case 'ministerio':
                 const resultMinisterio: IUserResponseApi[] = membersToFilter.filter((member: IUserResponseApi) => {
-                    if (member.ministerio.find((ministerio: number) => ministerio.toString() === valor))
+                    if (member.ministerio.find((ministerio: IMinistries) => ministerio.nome.toString() === valor))
                         return member;
                 })
                 console.log(resultMinisterio);
@@ -233,6 +297,26 @@ export function Birthdays(props) {
         setMembers(membersToFilter);
     }
 
+    const fetchMembers = () => {
+        getAllMinistries();
+
+        if (ministries && ministries.length > 0 && members.length === 0) {
+            getAllMembers();
+        }
+    }
+
+    useEffect(() => {
+        if (ministries.length === 0) {
+            getAllMinistries();
+        }
+    }, []);
+
+    useEffect(() => {
+        if (ministries && ministries.length > 0 && members.length === 0) {
+            getAllMembers();
+        }
+    }, [ministries]);
+
     return (
         <div className="mt-5">
             <Backdrop
@@ -267,7 +351,7 @@ export function Birthdays(props) {
                                             setMembers([]);
                                             setMembersToFilter([]);
 
-                                            setTimeout(() => getAllMembers(), 500);
+                                            setTimeout(() => fetchMembers(), 500);
                                         }}>
                                     <ReloadIcon className="w-4 h-4 mr-1"/>
                                     Recarregar
@@ -428,12 +512,26 @@ export function Birthdays(props) {
                                                     </div>
                                                 )}</TableCell>
                                                 <TableCell>{membro.idade}</TableCell>
-                                                <TableCell>{membro.ministerio.length > 0 ? membro.ministerio.join(', ') : (
-                                                    <div
-                                                        className="py-1 text-yellow-700 font-semibold">Nenhum
-                                                        ministério cadastrado
-                                                    </div>
-                                                )}</TableCell>
+                                                <TableCell>
+                                                    {
+                                                        membro.ministerio.map((ministerio: IMinistries, index: number) => {
+                                                            if (ministerio) {
+                                                                return (
+                                                                    <div key={index}>
+                                                                        {ministerio.nome}
+                                                                    </div>
+                                                                )
+                                                            }
+
+                                                            return (
+                                                                <div
+                                                                    key={index}
+                                                                    className="py-1 text-yellow-700 font-semibold">-
+                                                                </div>
+                                                            )
+                                                        })
+                                                    }
+                                                </TableCell>
                                                 <TableCell>
                                                     {
                                                         membro.status === 'ativo' ? (

@@ -11,12 +11,15 @@ import {SettingsIcon} from "@/components/settings-icon/settings-icon";
 import {useAuthState} from "react-firebase-hooks/auth";
 import Image from "next/image";
 import {useState} from "react";
+import {getContextAuth, UserRoles} from "@/lib/helpers/helpers";
 
 export function Header() {
+    const contextAuth = getContextAuth();
+    const user = contextAuth.user;
+
     const [signOut] = useSignOut(auth);
     const router = useRouter();
     const [menuOpen, setMenuOpen] = useState(false);
-    const [user] = useAuthState(auth);
 
     const handleSignOut = (e) => {
         e.preventDefault();
@@ -25,9 +28,10 @@ export function Header() {
             signOut()
                 .then(r => {
                     sessionStorage.removeItem('user');
+                    localStorage.removeItem('headerRequestApi');
 
                     setTimeout(() => {
-                        router.push('/login')
+                        router.push('/login');
                     }, 1000);
                 })
                 .catch(e => console.log('[PROMISE] error: ', e))
@@ -37,9 +41,11 @@ export function Header() {
 
     }
 
+    console.log('contextAuth.role === UserRoles.ADMIN: ', contextAuth.role === UserRoles.ADMIN);
+    console.log('contextAuth.role: ', contextAuth.role);
     return (
         <header className="bg-background border-b-2 border-border px-4 py-3 flex items-center justify-between sm:px-6">
-            <Link href="/dashboard" prefetch={false}>
+            <Link href={`${contextAuth.role === UserRoles.MEMBRO ? '/user' : '/dashboard'}`} prefetch={false}>
                 <div>
                     <Image
                         src="/ibb_azul.png"
@@ -53,43 +59,49 @@ export function Header() {
 
             <div className="flex items-center gap-4">
                 {/* Mobile menu button */}
-                <div className="sm:hidden">
-                    <button
-                        type="button"
-                        className="text-black hover:text-gray-400 focus:outline-none"
-                        onClick={() => setMenuOpen(!menuOpen)}
-                    >
-                        <svg
-                            className="h-6 w-6"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            aria-hidden="true"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M4 6h16M4 12h16M4 18h16"
-                            />
-                        </svg>
-                    </button>
-                </div>
+                {
+                    contextAuth.role === UserRoles.ADMIN && (
+                        <div>
+                            <div className="sm:hidden">
+                                <button
+                                    type="button"
+                                    className="text-black hover:text-gray-400 focus:outline-none"
+                                    onClick={() => setMenuOpen(!menuOpen)}
+                                >
+                                    <svg
+                                        className="h-6 w-6"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth="2"
+                                            d="M4 6h16M4 12h16M4 18h16"
+                                        />
+                                    </svg>
+                                </button>
+                            </div>
 
-                {/* Navigation Menu */}
-                <nav
-                    className={`${
-                        menuOpen ? "block" : "hidden"
-                    } sm:flex items-center gap-4`}
-                >
-                    <Link href="/members" className="font-medium text-primary text-black hover:text-gray-400" prefetch={false}>
-                        Membros
-                    </Link>
-                    <Link href="/ministries" className="font-medium text-primary text-black hover:text-gray-400" prefetch={false}>
-                        Ministérios
-                    </Link>
-                </nav>
+                            {/* Navigation Menu */}
+                            <nav
+                                className={`${
+                                    menuOpen ? "block" : "hidden"
+                                } sm:flex items-center gap-4`}
+                            >
+                                <Link href="/members" className="font-medium text-primary text-black hover:text-gray-400" prefetch={false}>
+                                    Membros
+                                </Link>
+                                <Link href="/ministries" className="font-medium text-primary text-black hover:text-gray-400" prefetch={false}>
+                                    Ministérios
+                                </Link>
+                            </nav>
+                        </div>
+                    )
+                }
 
                 {/* User Profile Dropdown */}
                 <div className="relative">
@@ -100,14 +112,13 @@ export function Header() {
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-56 p-2 bg-background shadow-lg rounded-md right-0 sm:right-auto">
-                            <Link
-                                href="#"
-                                className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-accent hover:text-accent-foreground"
-                                prefetch={false}
-                            >
-                                <SettingsIcon className="w-4 h-4"/>
-                                Minha conta
-                            </Link>
+                            {/*<Link*/}
+                            {/*    href="/user"*/}
+                            {/*    className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-accent hover:text-accent-foreground"*/}
+                            {/*>*/}
+                            {/*    <SettingsIcon className="w-4 h-4"/>*/}
+                            {/*    Minha conta*/}
+                            {/*</Link>*/}
                             <Link
                                 href="#"
                                 className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-accent hover:text-accent-foreground"

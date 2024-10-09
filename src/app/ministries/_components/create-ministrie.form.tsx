@@ -7,18 +7,16 @@ import {useRouter} from "next/navigation";
 import {Backdrop, CircularProgress} from "@mui/material";
 import * as React from "react";
 import {useEffect, useState} from "react";
-import {ITempUserCreate, IUser} from "@/lib/models/user";
-import {diaconos} from "@/lib/constants/diaconos";
-import {IDiaconoSelect} from "@/lib/models/diaconos";
+import {IUser, UserRoles} from "@/lib/models/user";
 import {ChevronLeftIcon} from "@radix-ui/react-icons";
 import {ToastError} from "@/components/toast/toast-error";
 import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
-import {ICreateMinisterio, IMinisteriosSelect, IMisterios} from "@/lib/models/misterios";
-import {ministerios} from "@/lib/constants/misterios";
+import {ICreateMinisterio, IMinisteriosSelect} from "@/lib/models/misterios";
 import {IUserResponseApi} from "@/lib/models/user-response-api";
 import {UserApi} from "@/lib/api/user-api";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {ToastSuccess} from "@/components/toast/toast-success";
+import {getContextAuth} from "@/lib/helpers/helpers";
 
 export default function CreateMinistrieForm() {
     const [members, setMembers] = useState<IUserResponseApi[]>([]);
@@ -40,6 +38,11 @@ export default function CreateMinistrieForm() {
 
     const user = sessionStorage.getItem('user');
 
+    const contextAuth = getContextAuth();
+    if (contextAuth.role === UserRoles.MEMBRO) {
+        router.push('/user');
+    }
+
     const router = useRouter();
 
     if (user == null) {
@@ -55,7 +58,7 @@ export default function CreateMinistrieForm() {
             // @ts-ignore
             const responsaveis: IUser[] = membrosMultiSelect
                 .filter((item: IMinisteriosSelect) => ministrieForm.responsavel.includes(item.id)) // Filtra apenas os itens que estão no segundo array
-                .map((item: IMinisteriosSelect) => ({ id: item.id, nome: item.label })); // Mapeia para o formato { id, nome }
+                .map((item: IMinisteriosSelect) => ({id: item.id, nome: item.label})); // Mapeia para o formato { id, nome }
 
             const body: ICreateMinisterio = {
                 nome: ministrieForm.nome,
@@ -279,7 +282,8 @@ export default function CreateMinistrieForm() {
                             <div className="grid sm:grid-cols-1 md:grid-cols-1">
                                 <div className="space-y-2">
                                     <Label htmlFor="categoria">Categoria</Label>
-                                    <Select onValueChange={(value: string) => handleCreateMinistrieForm('categoria', value)}>
+                                    <Select
+                                        onValueChange={(value: string) => handleCreateMinistrieForm('categoria', value)}>
                                         <SelectTrigger id="categoria" aria-label="categoria"
                                                        className="mt-2 sm:mt-2">
                                             <SelectValue placeholder="Selecionar categoria"/>

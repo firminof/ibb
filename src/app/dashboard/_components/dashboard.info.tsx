@@ -25,6 +25,8 @@ import {ToastWarning} from "@/components/toast/toast-warning";
 import * as React from "react";
 import {UserApi} from "@/lib/api/user-api";
 import {IInviteByEmail} from "@/lib/models/invite";
+import {emailRegex, getContextAuth} from "@/lib/helpers/helpers";
+import {UserRoles} from "@/lib/models/user";
 
 export function DashboardInfo() {
     const [openBackLoading, setOpenBackLoading] = useState(false);
@@ -43,7 +45,10 @@ export function DashboardInfo() {
 
     const user = sessionStorage.getItem('user');
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const contextAuth = getContextAuth();
+    if (contextAuth.role === UserRoles.MEMBRO) {
+        router.push('/user');
+    }
 
     if (user == null) {
         router.push('/login');

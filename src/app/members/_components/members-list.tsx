@@ -4,7 +4,7 @@ import {IMinisteriosSelect, IMisterios} from "@/lib/models/misterios";
 import {ministerios} from "@/lib/constants/misterios";
 import {IDiaconoSelect} from "@/lib/models/diaconos";
 import {diaconos} from "@/lib/constants/diaconos";
-import {ITempUserUpdate, IUser, StatusEnum} from "@/lib/models/user";
+import {ITempUserUpdate, IUser, StatusEnum, UserRoles} from "@/lib/models/user";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Label} from "@/components/ui/label";
 import {Input} from "@/components/ui/input";
@@ -19,7 +19,7 @@ import * as React from "react";
 import {useEffect, useState} from "react";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import {UserApi} from "@/lib/api/user-api";
-import {IUserResponseApi} from "@/lib/models/user-response-api";
+import {IMinistries, IUserResponseApi} from "@/lib/models/user-response-api";
 import {ToastError} from "@/components/toast/toast-error";
 import {Backdrop, CircularProgress} from "@mui/material";
 import {PlusIcon} from "@/components/plus-icon/plus-icon";
@@ -31,6 +31,7 @@ import {UserForm} from "@/app/user/_components/user.form";
 import {Checkbox} from "@/components/ui/checkbox";
 import {Textarea} from "@/components/ui/textarea";
 import {SendIcon} from "@/components/send-icon/send-icon";
+import {getContextAuth} from "@/lib/helpers/helpers";
 
 export function MembersList() {
     const [showErrorApi, setShowErrorApi] = useState(false);
@@ -45,6 +46,8 @@ export function MembersList() {
     const router = useRouter();
 
     const [isOpenFilter, setIsOpenFilter] = useState(false);
+
+    const [ministries, setMinistries] = useState<IMinistries[]>([]);
 
     const [members, setMembers] = useState<IUserResponseApi[]>([]);
     const [membersToFilter, setMembersToFilter] = useState<IUserResponseApi[]>([]);
@@ -74,6 +77,11 @@ export function MembersList() {
     const [updatedAt, setUpdatedAt] = useState<string>('');
     const [filterPreviousModified, setFilterPreviousModified] = useState(false);
 
+    const contextAuth = getContextAuth();
+    if (contextAuth.role === UserRoles.MEMBRO) {
+        router.push('/user');
+    }
+
     const ministeriosCadastrados: IMinisteriosSelect[] = ministerios.map((ministerio: IMisterios): IMinisteriosSelect => ({
         id: ministerio.id,
         label: ministerio.nome
@@ -84,18 +92,6 @@ export function MembersList() {
         label: diacono.nome,
         value: diacono.nome
     }));
-
-    // setPosition((previous: IPosition) => {
-    //     const previousArr = [...previous.skills];
-    //
-    //     previousArr.forEach((skill: ISkillsPosition) => {
-    //         skill.level = experienceLevel;
-    //         skill.experienceLevel = experienceLevel;
-    //         skill.minYearsOfKnowledge = skillTimeExperienceRange[0];
-    //         skill.maxYearsOfKnowledge = skillTimeExperienceRange[1];
-    //     });
-    //     return { ...previous, skills: previousArr };
-    // });
 
     const ministeriosSelected = (ministerios) => {
         setMinisterio((previous: number[]) => {
@@ -108,6 +104,63 @@ export function MembersList() {
         filtros('ministerio', ministerios, null);
     }
 
+    const getAllMinistries = () => {
+        setOpenBackLoadingMembros(true);
+        setShowBackLoadingMessage('Buscando pelos ministérios...');
+
+        try {
+            UserApi.fetchMinistries()
+                .then((response: IMinistries[]) => {
+                    console.log('ministries: ', response);
+                    if (response && response.length > 0) {
+                        setMinistries(response);
+                    } else {
+                        setMinistries([]);
+                        setOpenBackLoadingMembros(false);
+                        setShowBackLoadingMessage('');
+                    }
+                })
+                .catch((error) => {
+                    console.log(error);
+                    setMinistries([]);
+                    setOpenBackLoadingMembros(false);
+                    setShowBackLoadingMessage('');
+
+                    switch (error.code) {
+                        case 'ERR_BAD_REQUEST':
+                            setShowErrorMessageApi('Falha na requisição, tente novamente!');
+                            setShowErrorApi(true);
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                            setMinistries([]);
+                            break;
+                        case 'ERR_NETWORK':
+                            setShowErrorMessageApi('Erro na conexão, tente novamente!');
+                            setShowErrorApi(true);
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                            setMinistries([]);
+                            break;
+
+                        default:
+                            setShowErrorMessageApi('Erro genérico do servidor, tente novamente!');
+                            setShowErrorApi(true);
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                            setMinistries([]);
+                            break;
+                    }
+                });
+        } catch (e) {
+            setShowErrorMessageApi('Erro desconhecido, tente novamente!');
+            setShowErrorApi(true);
+
+            setOpenBackLoadingMembros(false);
+            setShowBackLoadingMessage('');
+            setMinistries([]);
+        }
+    }
+
     const getAllMembers = async (): Promise<void> => {
         setOpenBackLoadingMembros(true);
         setShowBackLoadingMessage('Carregando membros...');
@@ -116,9 +169,18 @@ export function MembersList() {
             UserApi.fetchMembers()
                 .then((response) => {
                     if (response.data.length > 0) {
-                        setMembers(response.data);
-                        setMembersToFilter(response.data);
-                        console.log('members: ', response.data);
+                        // Mapeando ministérios para todos os membros
+                        const mappedMembers: IUserResponseApi[] = response.data.map(member => {
+                            return {
+                                ...member,
+                                ministerio: member.ministerio.map(ministerioId => {
+                                    return ministries.find(ministerio => ministerio._id === ministerioId.toString()) || null;
+                                })
+                            };
+                        });
+                        setMembers(mappedMembers);
+                        setMembersToFilter(mappedMembers);
+                        console.log('members: ', mappedMembers);
 
                         setOpenBackLoadingMembros(false);
                         setShowBackLoadingMessage('');
@@ -172,9 +234,25 @@ export function MembersList() {
         }
     }
 
+    const fetchMembers = () => {
+        getAllMinistries();
+
+        if (ministries && ministries.length > 0 && members.length === 0) {
+            getAllMembers();
+        }
+    }
+
     useEffect(() => {
-        getAllMembers();
+        if (ministries.length === 0) {
+            getAllMinistries();
+        }
     }, []);
+
+    useEffect(() => {
+        if (ministries && ministries.length > 0 && members.length === 0) {
+            getAllMembers();
+        }
+    }, [ministries]);
 
     const filtros = (chave, valor, event) => {
         if (event) {
@@ -201,7 +279,7 @@ export function MembersList() {
                 if (valor.length > 0) {
                     const resultMinisterio: IUserResponseApi[] = membersToFilter.filter((member: IUserResponseApi) => {
                         if (member && member.ministerio.length > 0) {
-                            const filterMemberByMinisterio: number[] = member.ministerio.filter(a => valor.includes(a));
+                            const filterMemberByMinisterio: IMinistries[] = member.ministerio.filter((a: IMinistries) => valor.includes(a.nome));
                             console.log('filterMemberByMinisterio: ', filterMemberByMinisterio);
                             if (filterMemberByMinisterio.length > 0) return member;
                         }
@@ -424,150 +502,6 @@ export function MembersList() {
                 </div>
             </section>
 
-            <Backdrop
-                sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
-                open={openBackLoadingMembros}
-            >
-                <div className="flex flex-col items-center">
-                    <CircularProgress color="inherit"/>
-                    <p>{showBackLoadingMessage}</p>
-                </div>
-            </Backdrop>
-
-            {
-                showErrorApi && (
-                    <ToastError data={{message: showErrorMessageApi}} visible={true}
-                                setShowParentComponent={setShowErrorApi}/>
-                )
-            }
-
-            {
-                isSuccess && (
-                    <ToastSuccess data={{message: showSuccessMessageApi}} visible={true}
-                                  setShowParentComponent={setIsSuccess}/>
-                )
-            }
-
-            <Dialog open={openDialogStatus} onOpenChange={setOpenDialogStatus}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Alterar status</DialogTitle>
-                        <DialogDescription>
-                            Chegou o momento de alterar o status de membresia.
-                        </DialogDescription>
-                        <DialogDescription>
-                            Escolha abaixo o novo status do membro.
-                        </DialogDescription>
-                        <DialogDescription>
-                            Aproveite para informar a data de atualização e uma descrição breve.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="grid gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="mudar-status">Status</Label>
-                            <Select
-                                value={mudarStatus}
-                                onValueChange={(value: string) => changeStatusMudar(value)}>
-                                <SelectTrigger id="mudar-status" aria-label="Status"
-                                               className="mt-2 sm:mt-2">
-                                    <SelectValue placeholder="Selecionar status"/>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="visitante">Visitante</SelectItem>
-                                    <SelectItem value="congregado">Congregado</SelectItem>
-                                    <SelectItem value="ativo">Ativo</SelectItem>
-                                    <SelectItem value="inativo">Inativo</SelectItem>
-                                    <SelectItem value="transferido">Transferido</SelectItem>
-                                    <SelectItem value="falecido">Falecido</SelectItem>
-                                    <SelectItem value="excluido">Excluído</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="mudar_data">Data</Label>
-                            <Input
-                                id="mudar_data"
-                                required
-                                onChange={(e: any) => setMudarData(e.target.value)}
-                                type="date"/>
-                            <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
-                               id="file_input_help_transferencia">
-                                Informe a data de atualização do status
-                            </p>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="mudar_motivo">Motivo/Descrição</Label>
-                            <Input id="mudar_motivo"
-                                   type="text"
-                                   onChange={(e: any) => setMudarMotivo(e.target.value)}
-                                   placeholder="Digite o motivo..."/>
-                        </div>
-
-                        <div className="flex justify-end items-center space-y-2">
-                            <Button type="submit" size="sm" className="px-3" disabled={mudarStatus.length < 1}
-                                    onClick={(e) => handleMudarStatus(e)}>
-                                Salvar
-                            </Button>
-                        </div>
-
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={openDialogSendMessage} onOpenChange={setOpenDialogSendMessage}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Enviar mensagem via WhatsApp</DialogTitle>
-
-                        <DialogDescription>
-                            Número do membro: {memberSelected.telefone}
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="grid gap-4">
-                        <div className="grid w-full gap-1.5">
-                            <Label htmlFor="mensagem-whatsapp">Sua mensagem</Label>
-                            <Textarea placeholder="Escreva sua mensagem aqui."
-                                      id="mensagem-whatsapp"
-                                      value={messageWhatsApp}
-                                      onChange={(e) => setMessageWhatsApp(e.target.value)}/>
-                            <p className="text-sm text-muted-foreground">
-                                Preencha a mensagem com pelo menos 20 caracteres: {messageWhatsApp.length}
-                            </p>
-                        </div>
-
-                        <div className="flex justify-end items-center space-y-2">
-                            <Button type="submit" size="sm" className="px-3" disabled={messageWhatsApp.length < 20}
-                                    onClick={(e) => handleSendMessageWhatsapp(e)}>
-                                <SendIcon className="w-4 h-4 mr-2"/>
-                                Enviar
-                            </Button>
-                        </div>
-
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={isOpenMemberDetail} onOpenChange={setIsOpenMemberDetail}>
-                <DialogContent
-                    className="sm:max-w-[80vw] md:max-w-[95vw] lg:max-w-[95vw] xl:max-w-[75vw] h-[90vh] flex flex-col">
-                    <DialogHeader>
-                        <DialogTitle>Detalhes do Membro</DialogTitle>
-                        <DialogDescription>
-                            Informações detalhadas sobre o membro da igreja.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div
-                        className="flex-grow overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400 transition-colors duration-200">
-                        <UserForm memberParam={memberSelected}/>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
             <Card>
                 <CardHeader>
                     <div className="flex justify-end items-center -mt-6 -mr-6 gap-4">
@@ -605,7 +539,7 @@ export function MembersList() {
 
                                     setMemberSelectedCheckbox([]);
 
-                                    setTimeout(() => getAllMembers(), 500);
+                                    setTimeout(() => fetchMembers(), 500);
                                 }}>
                             <ReloadIcon className="w-4 h-4 mr-1"/>
                             Recarregar
@@ -788,12 +722,26 @@ export function MembersList() {
                                                     </div>
                                                 )}</TableCell>
                                                 <TableCell>{membro.idade}</TableCell>
-                                                <TableCell>{membro.ministerio.length > 0 ? membro.ministerio.join(', ') : (
-                                                    <div
-                                                        className="py-1 text-yellow-700 font-semibold">Nenhum
-                                                        ministério cadastrado
-                                                    </div>
-                                                )}</TableCell>
+                                                <TableCell>
+                                                    {
+                                                        membro.ministerio.map((ministerio: IMinistries, index: number) => {
+                                                            if (ministerio) {
+                                                                return (
+                                                                    <div key={index}>
+                                                                        {ministerio.nome}
+                                                                    </div>
+                                                                )
+                                                            }
+
+                                                            return (
+                                                                <div
+                                                                    key={index}
+                                                                    className="py-1 text-yellow-700 font-semibold">-
+                                                                </div>
+                                                            )
+                                                        })
+                                                    }
+                                                </TableCell>
                                                 <TableCell>
                                                     {
                                                         hoveredRow === index ? (
@@ -883,6 +831,147 @@ export function MembersList() {
                     }
                 </CardContent>
             </Card>
+
+            <Backdrop sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}} open={openBackLoadingMembros}>
+                <div className="flex flex-col items-center">
+                    <CircularProgress color="inherit"/>
+                    <p>{showBackLoadingMessage}</p>
+                </div>
+            </Backdrop>
+
+            {
+                showErrorApi && (
+                    <ToastError data={{message: showErrorMessageApi}} visible={true}
+                                setShowParentComponent={setShowErrorApi}/>
+                )
+            }
+
+            {
+                isSuccess && (
+                    <ToastSuccess data={{message: showSuccessMessageApi}} visible={true}
+                                  setShowParentComponent={setIsSuccess}/>
+                )
+            }
+
+            <Dialog open={openDialogStatus} onOpenChange={setOpenDialogStatus}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Alterar status</DialogTitle>
+                        <DialogDescription>
+                            Chegou o momento de alterar o status de membresia.
+                        </DialogDescription>
+                        <DialogDescription>
+                            Escolha abaixo o novo status do membro.
+                        </DialogDescription>
+                        <DialogDescription>
+                            Aproveite para informar a data de atualização e uma descrição breve.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="mudar-status">Status</Label>
+                            <Select
+                                value={mudarStatus}
+                                onValueChange={(value: string) => changeStatusMudar(value)}>
+                                <SelectTrigger id="mudar-status" aria-label="Status"
+                                               className="mt-2 sm:mt-2">
+                                    <SelectValue placeholder="Selecionar status"/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="visitante">Visitante</SelectItem>
+                                    <SelectItem value="congregado">Congregado</SelectItem>
+                                    <SelectItem value="ativo">Ativo</SelectItem>
+                                    <SelectItem value="inativo">Inativo</SelectItem>
+                                    <SelectItem value="transferido">Transferido</SelectItem>
+                                    <SelectItem value="falecido">Falecido</SelectItem>
+                                    <SelectItem value="excluido">Excluído</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="mudar_data">Data</Label>
+                            <Input
+                                id="mudar_data"
+                                required
+                                onChange={(e: any) => setMudarData(e.target.value)}
+                                type="date"/>
+                            <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
+                               id="file_input_help_transferencia">
+                                Informe a data de atualização do status
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="mudar_motivo">Motivo/Descrição</Label>
+                            <Input id="mudar_motivo"
+                                   type="text"
+                                   onChange={(e: any) => setMudarMotivo(e.target.value)}
+                                   placeholder="Digite o motivo..."/>
+                        </div>
+
+                        <div className="flex justify-end items-center space-y-2">
+                            <Button type="submit" size="sm" className="px-3" disabled={mudarStatus.length < 1}
+                                    onClick={(e) => handleMudarStatus(e)}>
+                                Salvar
+                            </Button>
+                        </div>
+
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={openDialogSendMessage} onOpenChange={setOpenDialogSendMessage}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Enviar mensagem via WhatsApp</DialogTitle>
+
+                        <DialogDescription>
+                            Número do membro: {memberSelected.telefone}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid gap-4">
+                        <div className="grid w-full gap-1.5">
+                            <Label htmlFor="mensagem-whatsapp">Sua mensagem</Label>
+                            <Textarea placeholder="Escreva sua mensagem aqui."
+                                      id="mensagem-whatsapp"
+                                      value={messageWhatsApp}
+                                      onChange={(e) => setMessageWhatsApp(e.target.value)}/>
+                            <p className="text-sm text-muted-foreground">
+                                Preencha a mensagem com pelo menos 20 caracteres: {messageWhatsApp.length}
+                            </p>
+                        </div>
+
+                        <div className="flex justify-end items-center space-y-2">
+                            <Button type="submit" size="sm" className="px-3" disabled={messageWhatsApp.length < 20}
+                                    onClick={(e) => handleSendMessageWhatsapp(e)}>
+                                <SendIcon className="w-4 h-4 mr-2"/>
+                                Enviar
+                            </Button>
+                        </div>
+
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isOpenMemberDetail} onOpenChange={setIsOpenMemberDetail}>
+                <DialogContent
+                    className="sm:max-w-[80vw] md:max-w-[95vw] lg:max-w-[95vw] xl:max-w-[75vw] h-[90vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>Detalhes do Membro</DialogTitle>
+                        <DialogDescription>
+                            Informações detalhadas sobre o membro da igreja.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div
+                        className="flex-grow overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400 transition-colors duration-200">
+                        <UserForm memberParam={memberSelected}/>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

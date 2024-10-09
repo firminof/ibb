@@ -6,7 +6,7 @@ import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar"
 import {Badge} from "@/components/ui/badge"
 import {BookOpenIcon, CalendarIcon, HeartIcon, MailIcon, MessageSquareText, PhoneIcon, UserIcon} from "lucide-react"
 import {Separator} from "@/components/ui/separator"
-import {IUserResponseApi} from "@/lib/models/user-response-api";
+import {IMinistries, IUserResponseApi} from "@/lib/models/user-response-api";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {ReloadIcon} from "@radix-ui/react-icons";
@@ -17,6 +17,7 @@ import {SendIcon} from "@/components/send-icon/send-icon";
 import {UserApi} from "@/lib/api/user-api";
 import {Backdrop, CircularProgress} from "@mui/material";
 import {ToastError} from "@/components/toast/toast-error";
+import {getContextAuth} from "@/lib/helpers/helpers";
 
 export function UserForm({memberParam}: IUserResponseApi) {
     const [openDialogSendMessage, setOpenDialogSendMessage] = useState(false);
@@ -28,6 +29,8 @@ export function UserForm({memberParam}: IUserResponseApi) {
 
     const [showErrorApi, setShowErrorApi] = useState(false);
     const [showErrorMessageApi, setShowErrorMessageApi] = useState<string>('');
+
+    const contextAuth = getContextAuth();
 
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
@@ -57,6 +60,38 @@ export function UserForm({memberParam}: IUserResponseApi) {
         </div>
     )
 
+    const InfoItemMinisterios = ({icon, label, value}: {
+        icon: React.ReactNode,
+        label: string,
+        value: IMinistries[]
+    }) => (
+        <div className="flex flex-col items-start">
+            <div className="flex items-center space-x-2">
+                {icon}
+                <span className="font-semibold">{label}:</span>
+            </div>
+
+            {
+                value.map((ministerio: IMinistries, index: number) => {
+                    if (ministerio) {
+                        return (
+                            <div key={index.toString()}>
+                                - {ministerio.nome}
+                            </div>
+                        )
+                    }
+
+                    return (
+                        <div
+                            key={index.toString()}
+                            className="py-1 text-yellow-700 font-semibold">-
+                        </div>
+                    )
+                })
+            }
+        </div>
+    )
+
     const handleSendMessageWhatsapp = (e) => {
         e.preventDefault();
 
@@ -64,27 +99,54 @@ export function UserForm({memberParam}: IUserResponseApi) {
     }
 
     const getMember = () => {
-        UserApi.fetchMemberById("66f234a9d319c560cdbfe7de")
-            .then(({data}: IUserResponseApi) => {
-                setMember(data);
-            })
-            .catch(() => {
-                console.log('Erro ao buscar por membro!')
-            })
-            .finally(() => {
-                setOpenBackLoadingMembros(false);
-                setShowBackLoadingMessage('');
-            })
+        if (contextAuth.mongoId !== '') {
+            UserApi.fetchMemberById(contextAuth.mongoId)
+                .then(({data}: IUserResponseApi) => {
+                    setMember(data);
+                })
+                .catch(() => {
+                    console.log('Erro ao buscar por membro!')
+                })
+                .finally(() => {
+                    setOpenBackLoadingMembros(false);
+                    setShowBackLoadingMessage('');
+                })
+        }
     }
 
     useEffect(() => {
-        if (!memberParam) {
+        console.log('contextAuth: ', contextAuth);
+        if (!memberParam && contextAuth) {
             getMember();
         }
         setMember(null);
         console.log('memberParam? ', memberParam);
         setMember(memberParam);
     }, []);
+
+    const handleReloadUser = () => {
+        const userStorage = JSON.parse(sessionStorage.getItem('user'));
+
+        UserApi.getUserByEmail(userStorage['user']['email'])
+            .then((result) => {
+                if (result) {
+                    UserApi.fetchMemberById(result.customClaims.mongoId)
+                        .then(({data}: IUserResponseApi) => {
+                            setMember(data);
+                        })
+                        .catch(() => {
+                            console.log('Erro ao buscar por membro!')
+                        })
+                        .finally(() => {
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                        })
+                }
+            })
+            .catch((error) => {
+                console.log('Erro ao recuperar os dados do membro!');
+            })
+    }
 
     return (
         <div className="mt-6 container mx-auto">
@@ -207,8 +269,11 @@ export function UserForm({memberParam}: IUserResponseApi) {
                                         <InfoItem icon={<UserIcon className="w-4 h-4"/>} label="Local de Ingresso"
                                                   value={member.local_ingresso || 'Não informado'}/>
 
-                                        <InfoItem icon={<BookOpenIcon className="w-4 h-4"/>} label="Ministérios"
-                                                  value={member.ministerio.join(', ')}/>
+                                        <InfoItemMinisterios
+                                            icon={<BookOpenIcon className="w-4 h-4"/>}
+                                            label="Ministérios"
+                                            value={member.ministerio}
+                                        />
 
                                         <Separator/>
                                         <div className="space-y-4">
@@ -271,7 +336,7 @@ export function UserForm({memberParam}: IUserResponseApi) {
                             <CardHeader>
                                 <div className="flex justify-end items-center -mt-6 -mr-6">
                                     <Button size="sm" className="font-bold sm:inline-flex md:inline-flex bg-zinc-500"
-                                            onClick={() => console.log('recarregar')}>
+                                            onClick={() => handleReloadUser()}>
                                         <ReloadIcon className="w-4 h-4 mr-1"/>
                                         Recarregar
                                     </Button>

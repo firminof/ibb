@@ -2,6 +2,7 @@ import api from "@/lib/api/api";
 import {IInviteByEmail, ITempInvite} from "@/lib/models/invite";
 import {ITempUserCreate, ITempUserUpdate} from "@/lib/models/user";
 import {ICreateMinisterio} from "@/lib/models/misterios";
+import {IMinistries} from "@/lib/models/user-response-api";
 
 export class UserApi {
     static async fetchMembers(): Promise<any | undefined> {
@@ -52,14 +53,26 @@ export class UserApi {
         return user.data;
     }
 
-    static async fetchMinistries (): Promise<any | undefined> {
-        const user = await api.get(`/ministrie`);
+    static async fetchMinistries (): Promise<IMinistries[]> {
+        const user = await api.get(`/ministrie/all`);
 
         return user.data;
     }
 
     static async createMinistrie(body: ICreateMinisterio): Promise<any | undefined> {
         const user = await api.post(`/ministrie`, body);
+
+        return user.data;
+    }
+
+    static async getUserByEmail(email: string): Promise<any> {
+        const user = await api.get(`/auth/find-user/${email}`);
+
+        return user.data;
+    }
+
+    static async getUserByEmailResetPassword(email: string): Promise<any> {
+        const user = await api.get(`/auth/reset-password/${email}`);
 
         return user.data;
     }

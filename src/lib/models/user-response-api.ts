@@ -16,7 +16,7 @@ export interface IUserResponseApi {
     filhos: IUser[] | null;
     status: StatusEnum;
     diacono: IUser;
-    ministerio: number[];
+    ministerio: IMinistries[];
     role?: string;
     updatedAt: string;
     _id: string;
@@ -35,4 +35,13 @@ export interface IUserResponseApi {
     motivo_exclusao?: string | null;
 
     motivo_visita?: string | null;
+}
+
+export interface IMinistries {
+    _id?: string;
+    nome: string;
+    categoria: string;
+    responsavel: IUser[];
+    createdAt: Date;
+    updatedAt: Date;
 }

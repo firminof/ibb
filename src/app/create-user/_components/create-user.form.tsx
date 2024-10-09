@@ -8,13 +8,13 @@ import {Card, CardContent} from "@/components/ui/card";
 import {useRouter} from "next/navigation";
 import {Backdrop, CircularProgress} from "@mui/material";
 import * as React from "react";
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
 import {ministerios} from "@/lib/constants/misterios";
 import {IMinisteriosSelect, IMisterios} from "@/lib/models/misterios";
 import {ITempUserCreate, IUser, StatusEnum, UserRoles} from "@/lib/models/user";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
-import {obterIniciaisPrimeiroUltimo} from "@/lib/helpers/helpers";
+import {getContextAuth, obterIniciaisPrimeiroUltimo} from "@/lib/helpers/helpers";
 import {diaconos} from "@/lib/constants/diaconos";
 import {IDiaconoSelect} from "@/lib/models/diaconos";
 import {CPFInput, EmailInput, PhoneInput, RGInput} from "@/components/form-inputs/form-inputs";
@@ -26,6 +26,7 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {ToastWarning} from "@/components/toast/toast-warning";
 import {UserApi} from "@/lib/api/user-api";
 import {ToastSuccess} from "@/components/toast/toast-success";
+import {IMinistries} from "@/lib/models/user-response-api";
 
 export default function CreateUserForm() {
     const [isSuccessSaveMember, setIsSuccessSaveMember] = useState<boolean>(false);
@@ -37,18 +38,35 @@ export default function CreateUserForm() {
     const [showWarningToast, setShowWarningToast] = useState<boolean>(false);
     const [showWarningMessage, setShowWarningMessage] = useState('');
 
+    const [showErrorApi, setShowErrorApi] = useState(false);
+    const [showErrorMessageApi, setShowErrorMessageApi] = useState<string>('');
+
+    const [ministries, setMinistries] = useState<IMinistries[]>([]);
+
     const user = sessionStorage.getItem('user');
 
     const router = useRouter();
 
+    const contextAuth = getContextAuth();
+    if (contextAuth.role === UserRoles.MEMBRO) {
+        router.push('/user');
+    }
+
+    console.log('CREATE USER contextAuth: ', contextAuth);
     if (user == null) {
         router.push('/login');
     }
 
-    const ministeriosCadastrados: IMinisteriosSelect[] = ministerios.map((ministerio: IMisterios): IMinisteriosSelect => ({
-        id: ministerio.id,
-        label: ministerio.nome
-    }));
+
+
+    const ministeriosCadastrados: IMinisteriosSelect[] = ministries.map((ministerio: IMinistries): IMinisteriosSelect => {
+        if (ministerio) {
+            return {
+                id: ministerio._id ? ministerio._id : '',
+                label: ministerio.nome
+            }
+        }
+    });
 
     const diaconosCadastrados: IDiaconoSelect[] = diaconos.map((diacono: IUser): IDiaconoSelect => ({
         id: diacono.id,
@@ -63,7 +81,6 @@ export default function CreateUserForm() {
         validateForm();
 
         try {
-            userForm.role = UserRoles.MEMBRO;
             userForm.possui_filhos = userForm.possui_filhos === 'sim';
 
             const diacono: number = diaconosCadastrados.findIndex((diacono: IDiaconoSelect): boolean => diacono.id === Number(userForm.diacono));
@@ -80,7 +97,6 @@ export default function CreateUserForm() {
                 }
             }
 
-            // return console.log('userForm: ', userForm);
             const saveMember = await UserApi.createMember(userForm);
             setTimeout(() => {
                 setOpenBackLoading(false);
@@ -93,13 +109,17 @@ export default function CreateUserForm() {
 
             setTimeout(() => router.push('members'), 1500);
 
-        } catch (error) {
+        } catch (error: any) {
             console.log('[TRY-CATCH] error: ', error);
             setOpenBackLoading(false);
             setIsSuccessSaveMember(false);
 
             setShowWarningMessage('');
             setShowWarningToast(false);
+
+            setShowErrorApi(true);
+
+            setShowErrorMessageApi(error.response.data.message);
         }
     };
 
@@ -161,12 +181,12 @@ export default function CreateUserForm() {
             return;
         }
 
-        // if (!userForm.diacono) {
-        //     setShowWarningToast(true);
-        //     setShowWarningMessage('Campo DIÁCONO/DIACONISA está vazio!');
-        //     setOpenBackLoading(false);
-        //     return;
-        // }
+        if (!userForm.role) {
+            setShowWarningToast(true);
+            setShowWarningMessage('Campo NÍVEL DE ACESSO está vazio!');
+            setOpenBackLoading(false);
+            return;
+        }
 
         if (!userForm.estado_civil || userForm.estado_civil.length === 0) {
             setShowWarningToast(true);
@@ -218,7 +238,8 @@ export default function CreateUserForm() {
             key == 'estado_civil' ||
             key == 'possui_filhos' ||
             key == 'diacono' ||
-            key == 'forma_ingresso'
+            key == 'forma_ingresso' ||
+            key == 'role'
         )
             fieldValue = event;
         else
@@ -229,6 +250,52 @@ export default function CreateUserForm() {
             [key]: fieldValue
         }));
     }
+
+    const getAllMinistries = () => {
+        try {
+            UserApi.fetchMinistries()
+                .then((response: IMinistries[]) => {
+                    if (response && response.length > 0) {
+                        setMinistries(response);
+                        return;
+                    }
+
+                    setMinistries([]);
+                })
+                .catch((error) => {
+                    console.log(error);
+                    setMinistries([]);
+
+                    switch (error.code) {
+                        case 'ERR_BAD_REQUEST':
+                            setShowErrorMessageApi('Falha na requisição, tente novamente!');
+                            setShowErrorApi(true);
+                            setMinistries([]);
+                            break;
+                        case 'ERR_NETWORK':
+                            setShowErrorMessageApi('Erro na conexão, tente novamente!');
+                            setShowErrorApi(true);
+                            setMinistries([]);
+                            break;
+
+                        default:
+                            setShowErrorMessageApi('Erro genérico do servidor, tente novamente!');
+                            setShowErrorApi(true);
+                            setMinistries([]);
+                            break;
+                    }
+                });
+        } catch (e) {
+            setShowErrorMessageApi('Erro desconhecido, tente novamente!');
+            setShowErrorApi(true);
+
+            setMinistries([]);
+        }
+    }
+
+    useEffect(() => {
+        getAllMinistries();
+    }, []);
 
     return (
         <div className="container mx-auto mt-4">
@@ -253,6 +320,13 @@ export default function CreateUserForm() {
                 isSuccessSaveMember && (
                     <ToastSuccess data={{message: 'Membro cadastrado com sucesso.'}} visible={true}
                                   setShowParentComponent={setIsSuccessSaveMember}/>
+                )
+            }
+
+            {
+                showErrorApi && (
+                    <ToastError data={{message: showErrorMessageApi}} visible={true}
+                                setShowParentComponent={setShowErrorApi}/>
                 )
             }
 
@@ -319,13 +393,28 @@ export default function CreateUserForm() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-4">
+                            <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="email">Email</Label>
                                     <EmailInput
                                         id="email"
                                         required
                                         onChange={(e: any) => handleCreateUserForm('email', e)}/>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="role">Nível de acesso</Label>
+                                    <Select id="role"
+                                            required
+                                            onValueChange={(value: string) => handleCreateUserForm('role', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione o nível de acesso"/>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value={UserRoles.ADMIN}>Administrador</SelectItem>
+                                            <SelectItem value={UserRoles.MEMBRO}>Membro</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
 
