@@ -43,8 +43,6 @@ export default function CreateUserForm() {
 
     const [ministries, setMinistries] = useState<IMinistries[]>([]);
 
-    const user = sessionStorage.getItem('user');
-
     const router = useRouter();
 
     const contextAuth = getContextAuth();
@@ -52,20 +50,18 @@ export default function CreateUserForm() {
         router.push('/user');
     }
 
-    console.log('CREATE USER contextAuth: ', contextAuth);
-    if (user == null) {
+    if (contextAuth.user == null) {
         router.push('/login');
     }
 
-
-
-    const ministeriosCadastrados: IMinisteriosSelect[] = ministries.map((ministerio: IMinistries): IMinisteriosSelect => {
+    const ministeriosCadastrados: IMinisteriosSelect[] | any[] = ministries.map((ministerio: IMinistries): IMinisteriosSelect | any[] => {
         if (ministerio) {
             return {
                 id: ministerio._id ? ministerio._id : '',
                 label: ministerio.nome
             }
         }
+        return [];
     });
 
     const diaconosCadastrados: IDiaconoSelect[] = diaconos.map((diacono: IUser): IDiaconoSelect => ({
@@ -77,7 +73,6 @@ export default function CreateUserForm() {
     const handleCreateUser = async () => {
         setOpenBackLoading(true);
 
-        console.log('userForm 1: ', userForm);
         validateForm();
 
         try {
@@ -196,7 +191,7 @@ export default function CreateUserForm() {
         }
 
         if (userForm.status && userForm.status.length > 0) {
-            switch (userForm) {
+            switch (userForm as any) {
                 case StatusEnum.ativo:
                     // @ts-ignore
                     if (!userForm.data_ingresso) {
@@ -226,7 +221,7 @@ export default function CreateUserForm() {
         }
     }
 
-    const ministeriosSelected = (ministerios) => {
+    const ministeriosSelected = (ministerios: any) => {
         handleCreateUserForm('ministerio', ministerios);
     }
 
@@ -403,8 +398,8 @@ export default function CreateUserForm() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="role">Nível de acesso</Label>
-                                    <Select id="role"
+                                    <Label htmlFor="role_select">Nível de acesso</Label>
+                                    <Select
                                             required
                                             onValueChange={(value: string) => handleCreateUserForm('role', value)}>
                                         <SelectTrigger>
@@ -461,8 +456,8 @@ export default function CreateUserForm() {
 
                             <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="status">Status</Label>
-                                    <Select id="status"
+                                    <Label>Status</Label>
+                                    <Select
                                             required
                                             onValueChange={(value) => handleCreateUserForm('status', value)}>
                                         <SelectTrigger>
@@ -507,8 +502,8 @@ export default function CreateUserForm() {
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label htmlFor="forma_ingresso">Forma de ingresso</Label>
-                                            <Select id="forma_ingresso"
+                                            <Label>Forma de ingresso</Label>
+                                            <Select
                                                     required
                                                     onValueChange={(value: string) => handleCreateUserForm('forma_ingresso', value)}>
                                                 <SelectTrigger>
@@ -626,8 +621,8 @@ export default function CreateUserForm() {
 
                             <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-1">
                                 <div className="space-y-2">
-                                    <Label htmlFor="diacono">Diácono</Label>
-                                    <Select id="diacono"
+                                    <Label>Diácono</Label>
+                                    <Select
                                             required
                                             onValueChange={(value: string) => handleCreateUserForm('diacono', value)}>
                                         <SelectTrigger>
@@ -651,8 +646,8 @@ export default function CreateUserForm() {
 
                             <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="estado_civil">Estado civil</Label>
-                                    <Select id="estado_civil"
+                                    <Label>Estado civil</Label>
+                                    <Select
                                             required
                                             onValueChange={(value: string) => handleCreateUserForm('estado_civil', value)}>
                                         <SelectTrigger>
@@ -669,8 +664,8 @@ export default function CreateUserForm() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="possui_filhos">Tem filhos?</Label>
-                                    <Select id="possui_filhos"
+                                    <Label>Tem filhos?</Label>
+                                    <Select
                                             required
                                             onValueChange={(value: string) => handleCreateUserForm('possui_filhos', value)}>
                                         <SelectTrigger>

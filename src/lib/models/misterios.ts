@@ -15,5 +15,5 @@ export interface IMinisteriosSelect {
 export interface ICreateMinisterio {
     nome: string;
     categoria: string;
-    responsavel: [] | IUser[];
+    responsavel: any[] | IUser[];
 }

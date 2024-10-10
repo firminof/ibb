@@ -4,8 +4,9 @@ import {auth} from "@/app/firebase/config";
 import {UserApi} from "@/lib/api/user-api";
 
 let emailStorage = '';
+let user: any = {};
 
-export const obterIniciaisPrimeiroUltimo = (nomeCompleto) => {
+export const obterIniciaisPrimeiroUltimo = (nomeCompleto: string) => {
     if (nomeCompleto && nomeCompleto.length > 0) {
         const partes = nomeCompleto.split(' ');
         const primeiroNome = partes[0][0].toUpperCase();
@@ -25,7 +26,7 @@ export const obterMesAtual = (): IMesAtual => {
 
     const month: number = date.getMonth() + 1;
 
-    return {codigo: 7, descricao: 'Julho'}
+    // return {codigo: 7, descricao: 'Julho'}
     switch (month) {
         case 1:
             return {codigo: 1, descricao: 'Janeiro'};
@@ -68,9 +69,9 @@ export const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const getContextAuth = (): any => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    let [user] = useAuthState(auth);
-    let role = '';
-    let mongoId = '';
+    let [user]: any = useAuthState(auth);
+    let role: string = '';
+    let mongoId: string = '';
 
     if (user) {
         const customAttributes = user['reloadUserInfo']['customAttributes'];
@@ -82,20 +83,28 @@ export const getContextAuth = (): any => {
             mongoId = getAttributes['mongoId'];
         }
     } else {
-        const userStorage = JSON.parse(sessionStorage.getItem('user'));
+        const storage = getUser();
 
-        if (sessionStorage.getItem('user')) {
-            UserApi.getUserByEmail(userStorage['user']['email'])
-                .then((result) => {
-                    if (result) {
-                        user = result;
-                        role = result.customClaims.role;
-                        mongoId = result.customClaims.mongoId;
-                    }
-                })
-                .catch((error) => {
-                    console.log('Erro ao recuperar os dados do membro!');
-                })
+        if (storage && storage.length > 0) {
+            const userStorage = JSON.parse(storage);
+
+            if (userStorage && userStorage['user']) {
+                UserApi.getUserByEmail(userStorage['user']['email'])
+                    .then((result: any) => {
+                        if (result) {
+                            user = result;
+                            role = result.customClaims.role;
+                            mongoId = result.customClaims.mongoId;
+                        }
+                    })
+                    .catch((error: any) => {
+                        console.log('Erro ao recuperar os dados do membro!');
+                    })
+            } else {
+                user = null;
+                role = '';
+                mongoId = '';
+            }
         }
     }
 
@@ -104,6 +113,15 @@ export const getContextAuth = (): any => {
         mongoId,
         user,
     }
+}
+
+export const setUser = (newUser: any) => {
+    user = newUser;
+    // console.log('HELPER [USER]: ', user);
+}
+
+export const getUser = (): any => {
+    return user;
 }
 
 export enum UserRoles {

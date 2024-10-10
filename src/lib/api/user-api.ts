@@ -10,7 +10,9 @@ export class UserApi {
     }
 
     static async fetchMemberById(id: string): Promise<any | undefined> {
-        return await api.get(`/user/get-by-id/${id}`);
+        const user = await api.get(`/user/get-by-id/${id}`);
+
+        return user.data;
     }
 
     static async fetchBirthdaysMembers(month: number): Promise<any | undefined> {

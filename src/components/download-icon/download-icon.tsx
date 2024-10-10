@@ -1,4 +1,4 @@
-export function DownloadIcon(props) {
+export function DownloadIcon(props: any) {
     return (
         <svg
             {...props}

@@ -23,7 +23,7 @@ import {UserApi} from "@/lib/api/user-api";
 import {AxiosResponse} from "axios";
 import {ToastWarning} from "@/components/toast/toast-warning";
 
-export function InviteForm(props) {
+export function InviteForm(props: any) {
     const [openBackLoading, setOpenBackLoading] = useState(false);
     const [isSuccessSaveInvite, setIsSuccessSaveInvite] = useState(false);
 
@@ -40,7 +40,7 @@ export function InviteForm(props) {
         label: ministerio.nome
     }));
 
-    const handleInviteCreateUser = async (e) => {
+    const handleInviteCreateUser = async (e: any) => {
         e.preventDefault();
         setOpenBackLoading(true);
 
@@ -68,7 +68,7 @@ export function InviteForm(props) {
                 router.push('/user');
             }, 1000);
 
-        } catch (error: AxiosResponse) {
+        } catch (error: any) {
             setIsSuccessSaveInvite(false);
 
             setShowWarningToast(false);
@@ -76,7 +76,7 @@ export function InviteForm(props) {
 
             setOpenBackLoading(false);
             console.log('[TRY-CATCH] error: ', error);
-            const fields = [];
+            const fields: any[] = [];
 
             if (error && error['response'] && error['response']['data'] && error['response']['data']['statusCode'] === 400) {
                 if (error['response']['data']['message'] && typeof error['response']['data']['message'] === "string") {
@@ -201,7 +201,7 @@ export function InviteForm(props) {
         }
     }
 
-    const ministeriosSelected = (ministerios) => {
+    const ministeriosSelected = (ministerios: any) => {
         handleCreateUserForm('ministerio', ministerios)
     }
 
@@ -384,8 +384,8 @@ export function InviteForm(props) {
 
                             <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="estado_civil">Estado civil</Label>
-                                    <Select id="estado_civil"
+                                    <Label>Estado civil</Label>
+                                    <Select
                                             value={userForm && userForm.estado_civil ? userForm.estado_civil : ''}
                                             onValueChange={(value: string) => handleCreateUserForm('estado_civil', value)}>
                                         <SelectTrigger>
@@ -402,8 +402,8 @@ export function InviteForm(props) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="possui_filhos">Tem filhos?</Label>
-                                    <Select id="possui_filhos"
+                                    <Label>Tem filhos?</Label>
+                                    <Select
                                             value={userForm && userForm.possui_filhos ? 'true' : 'false'}
                                             onValueChange={(value: string) => handleCreateUserForm('possui_filhos', value)}>
                                         <SelectTrigger>

@@ -36,16 +36,14 @@ export default function CreateMinistrieForm() {
 
     const [isSuccessSaveMinister, setIsSuccessSaveMinister] = useState<boolean>(false);
 
-    const user = sessionStorage.getItem('user');
+    const router = useRouter();
 
     const contextAuth = getContextAuth();
     if (contextAuth.role === UserRoles.MEMBRO) {
         router.push('/user');
     }
 
-    const router = useRouter();
-
-    if (user == null) {
+    if (contextAuth.user == null) {
         router.push('/login');
     }
 
@@ -57,7 +55,7 @@ export default function CreateMinistrieForm() {
         try {
             // @ts-ignore
             const responsaveis: IUser[] = membrosMultiSelect
-                .filter((item: IMinisteriosSelect) => ministrieForm.responsavel.includes(item.id)) // Filtra apenas os itens que estão no segundo array
+                .filter((item: IMinisteriosSelect) => (ministrieForm.responsavel as string[]).includes(item.id as string)) // Filtra apenas os itens que estão no segundo array
                 .map((item: IMinisteriosSelect) => ({id: item.id, nome: item.label})); // Mapeia para o formato { id, nome }
 
             const body: ICreateMinisterio = {
@@ -142,7 +140,7 @@ export default function CreateMinistrieForm() {
         }));
     }
 
-    const dataSelected = (membersSelected) => {
+    const dataSelected = (membersSelected: any) => {
         console.log(membersSelected);
         setMinistrieForm((previous: ICreateMinisterio) => {
             return {...previous, responsavel: membersSelected}

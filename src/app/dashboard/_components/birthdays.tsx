@@ -26,7 +26,7 @@ import {obterMesAtual} from "@/lib/helpers/helpers";
 import {IMesAtual} from "@/lib/models/mes-atual";
 import * as React from "react";
 
-export function Birthdays(props) {
+export function Birthdays(props: any) {
     const [showErrorApi, setShowErrorApi] = useState(false);
     const [showErrorMessageApi, setShowErrorMessageApi] = useState<string>('');
 
@@ -60,13 +60,10 @@ export function Birthdays(props) {
         value: diacono.nome
     }));
 
-    const ministeriosSelected = (ministerios) => {
+    const ministeriosSelected = (ministerios: any) => {
         console.log(ministerios);
         setMinisterio((previous: number[]) => {
-            return (
-                {...previous},
-                    ministerios
-            );
+            return {...ministerios}
         });
     }
 
@@ -139,11 +136,11 @@ export function Birthdays(props) {
                 .then((response) => {
                     if (response.data.length > 0) {
                         // Mapeando ministérios para todos os membros
-                        const mappedMembers: IUserResponseApi[] = response.data.map(member => {
+                        const mappedMembers: IUserResponseApi[] = response.data.map((member: any) => {
                             return {
                                 ...member,
-                                ministerio: member.ministerio.map(ministerioId => {
-                                    return ministries.find(ministerio => ministerio._id === ministerioId.toString()) || null;
+                                ministerio: member.ministerio.map((ministerioId: string) => {
+                                    return ministries.find((ministerio: IMinistries) => ministerio._id === ministerioId.toString()) || null;
                                 })
                             };
                         });
@@ -197,7 +194,7 @@ export function Birthdays(props) {
         }
     }
 
-    const filtros = (chave, valor, event) => {
+    const filtros = (chave: string, valor: any, event: any) => {
         if (event) {
             event.preventDefault();
         }
@@ -417,8 +414,8 @@ export function Birthdays(props) {
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label htmlFor="diacono-filter">Filtrar por Diácono</Label>
-                                            <Select id="diacono-filter"
+                                            <Label>Filtrar por Diácono</Label>
+                                            <Select
                                                     value={diacono}
                                                     onValueChange={(value: string) => filtros('diacono', value, null)}>
                                                 <SelectTrigger>
@@ -440,8 +437,7 @@ export function Birthdays(props) {
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label htmlFor="age-range-filter" className="md:ml-4">Filtrar por Faixa
-                                                Etária</Label>
+                                            <Label className="md:ml-4">Filtrar por Faixa Etária</Label>
                                             <Select
                                                 value={idade}
                                                 onValueChange={(value: string) => filtros('idade', value, null)}>
@@ -460,8 +456,7 @@ export function Birthdays(props) {
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label htmlFor="age-range-filter" className="md:ml-4">Filtrar por período de
-                                                tempo</Label>
+                                            <Label className="md:ml-4">Filtrar por período de tempo</Label>
                                             <Select
                                                 value={updatedAt}
                                                 onValueChange={(value: string) => filtros('updatedAt', value, null)}>
@@ -556,7 +551,7 @@ export function Birthdays(props) {
                                                             <div
                                                                 className="px-2 py-1 rounded-full bg-purple-100 text-purple-700 font-semibold">Congregado</div>
                                                         ) : (
-                                                            membro.status.toUpperCase()
+                                                            membro.status
                                                         )
                                                     }
 

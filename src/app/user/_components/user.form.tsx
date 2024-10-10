@@ -17,18 +17,20 @@ import {SendIcon} from "@/components/send-icon/send-icon";
 import {UserApi} from "@/lib/api/user-api";
 import {Backdrop, CircularProgress} from "@mui/material";
 import {ToastError} from "@/components/toast/toast-error";
-import {getContextAuth} from "@/lib/helpers/helpers";
+import {getContextAuth, getUser} from "@/lib/helpers/helpers";
 
-export function UserForm({memberParam}: IUserResponseApi) {
+export function UserForm({memberParam}: any) {
     const [openDialogSendMessage, setOpenDialogSendMessage] = useState(false);
     const [messageWhatsApp, setMessageWhatsApp] = useState<string>('');
-    const [member, setMember] = useState<IUserResponseApi | null>(null);
+    const [member, setMember] = useState<any | null>(null);
 
     const [openBackLoadingMembros, setOpenBackLoadingMembros] = useState(false);
     const [showBackLoadingMessage, setShowBackLoadingMessage] = useState<string>('');
 
     const [showErrorApi, setShowErrorApi] = useState(false);
     const [showErrorMessageApi, setShowErrorMessageApi] = useState<string>('');
+
+    const [ministries, setMinistries] = useState<IMinistries[]>([]);
 
     const contextAuth = getContextAuth();
 
@@ -72,27 +74,37 @@ export function UserForm({memberParam}: IUserResponseApi) {
             </div>
 
             {
-                value.map((ministerio: IMinistries, index: number) => {
-                    if (ministerio) {
-                        return (
-                            <div key={index.toString()}>
-                                - {ministerio.nome}
-                            </div>
-                        )
-                    }
+                value && value.length > 0 ? (
+                    <>
+                        {
+                            value.map((ministerio: IMinistries, index: number) => {
+                                if (ministerio) {
+                                    return (
+                                        <div key={index.toString()}>
+                                            - {ministerio.nome}
+                                        </div>
+                                    )
+                                }
 
-                    return (
-                        <div
-                            key={index.toString()}
-                            className="py-1 text-yellow-700 font-semibold">-
-                        </div>
-                    )
-                })
+                                return (
+                                    <div
+                                        key={index.toString()}
+                                        className="py-1 text-yellow-700 font-semibold">-
+                                    </div>
+                                )
+                            })
+                        }
+                    </>
+                ) : (
+                    <span
+                        className="py-1 text-yellow-700 font-semibold">Nenhum ministério vinculado
+                    </span>
+                )
             }
         </div>
     )
 
-    const handleSendMessageWhatsapp = (e) => {
+    const handleSendMessageWhatsapp = (e: any) => {
         e.preventDefault();
 
         console.log('Enviar mensagem pro whatsapp');
@@ -100,52 +112,136 @@ export function UserForm({memberParam}: IUserResponseApi) {
 
     const getMember = () => {
         if (contextAuth.mongoId !== '') {
-            UserApi.fetchMemberById(contextAuth.mongoId)
-                .then(({data}: IUserResponseApi) => {
-                    setMember(data);
-                })
-                .catch(() => {
-                    console.log('Erro ao buscar por membro!')
-                })
-                .finally(() => {
-                    setOpenBackLoadingMembros(false);
-                    setShowBackLoadingMessage('');
-                })
+            fetchMember(contextAuth.mongoId);
+        } else {
+            handleReloadUser();
         }
     }
 
     useEffect(() => {
-        console.log('contextAuth: ', contextAuth);
-        if (!memberParam && contextAuth) {
-            getMember();
+        if (ministries.length === 0) {
+            getAllMinistries();
         }
-        setMember(null);
-        console.log('memberParam? ', memberParam);
-        setMember(memberParam);
     }, []);
 
-    const handleReloadUser = () => {
-        const userStorage = JSON.parse(sessionStorage.getItem('user'));
+    useEffect(() => {
+        if (!memberParam && contextAuth && ministries.length > 0) {
+            getMember();
+        }
 
-        UserApi.getUserByEmail(userStorage['user']['email'])
-            .then((result) => {
-                if (result) {
-                    UserApi.fetchMemberById(result.customClaims.mongoId)
-                        .then(({data}: IUserResponseApi) => {
-                            setMember(data);
-                        })
-                        .catch(() => {
-                            console.log('Erro ao buscar por membro!')
-                        })
-                        .finally(() => {
+        setMember(null);
+        setMember(memberParam);
+
+    }, [memberParam, ministries]);
+
+    const handleReloadUser = () => {
+        const storage = getUser();
+
+        if (storage && storage.length > 0) {
+            const userStorage = JSON.parse(storage);
+
+            if (userStorage && userStorage['user']) {
+                UserApi.getUserByEmail(userStorage['user']['email'])
+                    .then((result: any) => {
+                        if (result) {
+                            fetchMember(result.customClaims.mongoId);
+                        }
+                    })
+                    .catch((error) => {
+                        console.log('Erro ao recuperar os dados do membro!');
+                    })
+            }
+        }
+    }
+
+    const fetchMember = (mongoId: string) => {
+        UserApi.fetchMemberById(mongoId)
+            .then((response: IUserResponseApi) => {
+                const ministerioMapeado = response.ministerio.map((ministerioResponse: IMinistries | string) => {
+                    const findMinistrie: IMinistries | undefined = ministries.find((ministrie: IMinistries) => {
+                        return ministrie._id === ministerioResponse
+                    });
+
+                    if (findMinistrie) {
+                        return findMinistrie
+                    }
+                    return null;
+                })
+
+                // Mapeamento da propriedade ministerio
+                const membroComMinisterios = {
+                    ...response,
+                    ministerio: ministerioMapeado
+                };
+
+                setMember(membroComMinisterios);
+            })
+            .catch(() => {
+                console.log('Erro ao buscar por membro!')
+            })
+            .finally(() => {
+                setOpenBackLoadingMembros(false);
+                setShowBackLoadingMessage('');
+            })
+    }
+
+    const getAllMinistries = () => {
+        setOpenBackLoadingMembros(true);
+        setShowBackLoadingMessage('Buscando pelos ministérios...');
+
+        try {
+            UserApi.fetchMinistries()
+                .then((response: IMinistries[]) => {
+                    if (response && response.length > 0) {
+                        setMinistries(response);
+
+                        setOpenBackLoadingMembros(false);
+                        setShowBackLoadingMessage('');
+                    } else {
+                        setMinistries([]);
+                        setOpenBackLoadingMembros(false);
+                        setShowBackLoadingMessage('');
+                    }
+                })
+                .catch((error) => {
+                    console.log(error);
+                    setMinistries([]);
+                    setOpenBackLoadingMembros(false);
+                    setShowBackLoadingMessage('');
+
+                    switch (error.code) {
+                        case 'ERR_BAD_REQUEST':
+                            setShowErrorMessageApi('Falha na requisição, tente novamente!');
+                            setShowErrorApi(true);
                             setOpenBackLoadingMembros(false);
                             setShowBackLoadingMessage('');
-                        })
-                }
-            })
-            .catch((error) => {
-                console.log('Erro ao recuperar os dados do membro!');
-            })
+                            setMinistries([]);
+                            break;
+                        case 'ERR_NETWORK':
+                            setShowErrorMessageApi('Erro na conexão, tente novamente!');
+                            setShowErrorApi(true);
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                            setMinistries([]);
+                            break;
+
+                        default:
+                            setShowErrorMessageApi('Erro genérico do servidor, tente novamente!');
+                            setShowErrorApi(true);
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                            setMinistries([]);
+                            break;
+                    }
+                });
+        } catch (e) {
+            setShowErrorMessageApi('Erro desconhecido, tente novamente!');
+            setShowErrorApi(true);
+
+            setOpenBackLoadingMembros(false);
+            setShowBackLoadingMessage('');
+            setMinistries([]);
+        }
     }
 
     return (
@@ -207,7 +303,7 @@ export function UserForm({memberParam}: IUserResponseApi) {
                                     <Avatar className="w-24 h-24">
                                         <AvatarImage src={member.foto || "/placeholder.svg?height=96&width=96"}
                                                      alt={member.nome}/>
-                                        <AvatarFallback>{member.nome.split(' ').map(n => n[0]).join('').substring(0, 2)}</AvatarFallback>
+                                        <AvatarFallback>{member.nome.split(' ').map((n: any[]) => n[0]).join('').substring(0, 2)}</AvatarFallback>
                                     </Avatar>
 
                                     <div>

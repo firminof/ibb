@@ -43,18 +43,16 @@ export function DashboardInfo() {
 
     const router = useRouter();
 
-    const user = sessionStorage.getItem('user');
-
     const contextAuth = getContextAuth();
     if (contextAuth.role === UserRoles.MEMBRO) {
         router.push('/user');
     }
 
-    if (user == null) {
+    if (contextAuth.user == null) {
         router.push('/login');
     }
 
-    const handleExportToExcel = (e) => {
+    const handleExportToExcel = (e: any) => {
         e.preventDefault();
         setIsLoading(true);
         setMessageLoading('Exportando membros para Excel');
@@ -75,7 +73,7 @@ export function DashboardInfo() {
         }
     }
 
-    const handleConvidarMembro = async (e) => {
+    const handleConvidarMembro = async (e: any) => {
         e.preventDefault();
         setIsLoading(true);
         setMessageLoading('Enviando convite por email');

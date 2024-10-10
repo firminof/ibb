@@ -15,7 +15,7 @@ import Image from "next/image";
 import {ToastSuccess} from "@/components/toast/toast-success";
 import {UserApi} from "@/lib/api/user-api";
 import {useRouter} from "next/navigation";
-import {emailRegex, getContextAuth} from "@/lib/helpers/helpers";
+import {emailRegex, getContextAuth, setUser} from "@/lib/helpers/helpers";
 import {
     Dialog,
     DialogContent,
@@ -57,7 +57,7 @@ export function LoginForm() {
         setIsDarkMode(!isDarkMode)
     }
 
-    const handleLogin = (e) => {
+    const handleLogin = (e: any) => {
         e.preventDefault();
         setShowErrorLogin(false);
 
@@ -80,7 +80,7 @@ export function LoginForm() {
 
         try {
             signInWithEmailAndPassword(email, password)
-                .then(async (result: UserCredential | undefined) => {
+                .then(async (result: any) => {
                     console.log(result)
                     if (!result) {
                         setShowErrorLogin(true);
@@ -110,8 +110,7 @@ export function LoginForm() {
                                         setShowSuccess(true);
                                         setShowSuccessMessage('Login efetuado com sucesso!');
 
-                                        sessionStorage.removeItem('user');
-                                        sessionStorage.setItem('user', JSON.stringify(result));
+                                        setUser(JSON.stringify(result));
 
                                         router.push('/dashboard');
                                         break;
@@ -119,8 +118,7 @@ export function LoginForm() {
                                         setShowSuccess(true);
                                         setShowSuccessMessage('Login efetuado com sucesso!');
 
-                                        sessionStorage.removeItem('user');
-                                        sessionStorage.setItem('user', JSON.stringify(result));
+                                        setUser(JSON.stringify(result));
 
                                         router.push('/user');
                                         break;
@@ -185,7 +183,7 @@ export function LoginForm() {
                     setOpenBackLoading(false);
                     setOpenBackLoadingMessage('');
                 })
-        } catch (error) {
+        } catch (error: any) {
             console.log('[TRY-CATCH] error: ', error);
             setOpenBackLoading(false);
             setOpenBackLoadingMessage('');
@@ -231,7 +229,7 @@ export function LoginForm() {
                     setShowDialogForgotPass(false);
                     setEmailForgotPass('');
                 })
-        } catch (error) {
+        } catch (error: any) {
             console.log('[TRY-CATCH] error: ', error);
             setOpenBackLoading(false);
             setOpenBackLoadingMessage('');
@@ -427,7 +425,7 @@ export function LoginForm() {
     )
 }
 
-function MoonIcon(props) {
+function MoonIcon(props: any) {
     return (
         <svg
             {...props}
@@ -446,7 +444,7 @@ function MoonIcon(props) {
     )
 }
 
-function EyeOffIcon(props) {
+function EyeOffIcon(props: any) {
     return (
         <svg
             {...props}
@@ -468,7 +466,7 @@ function EyeOffIcon(props) {
     )
 }
 
-function SunIcon(props) {
+function SunIcon(props: any) {
     return (
         <svg
             {...props}

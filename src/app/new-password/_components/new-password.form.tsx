@@ -203,7 +203,7 @@ export function NewPasswordForm() {
     )
 }
 
-function MoonIcon(props) {
+function MoonIcon(props: any) {
     return (
         <svg
             {...props}
@@ -222,7 +222,7 @@ function MoonIcon(props) {
     )
 }
 
-function EyeOffIcon(props) {
+function EyeOffIcon(props: any) {
     return (
         <svg
             {...props}
@@ -244,7 +244,7 @@ function EyeOffIcon(props) {
     )
 }
 
-function SunIcon(props) {
+function SunIcon(props: any) {
     return (
         <svg
             {...props}

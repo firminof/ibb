@@ -1,4 +1,4 @@
-export function PhoneIcon(props) {
+export function PhoneIcon(props: any) {
     return (
         <svg
             {...props}

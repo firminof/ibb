@@ -1,12 +1,13 @@
 "use client"
 import Dashboard from "@/app/dashboard/page";
 import {useRouter} from "next/navigation";
+import {getContextAuth} from "@/lib/helpers/helpers";
 
 export default function App() {
     const router = useRouter();
-    const user = sessionStorage.getItem('user');
+    const contextAuth = getContextAuth();
 
-    if (user == null) {
+    if (contextAuth.user == null) {
         router.push('/login');
     }
 

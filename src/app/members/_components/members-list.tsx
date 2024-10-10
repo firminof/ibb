@@ -60,7 +60,7 @@ export function MembersList() {
     const [isOpenMemberDetail, setIsOpenMemberDetail] = useState(false)
 
     const [mudarStatusIdMembro, setMudarStatusIdMembro] = useState<string>('');
-    const [mudarStatus, setMudarStatus] = useState<StatusEnum>(() => StatusEnum);
+    const [mudarStatus, setMudarStatus] = useState('');
 
     const [mudarMotivo, setMudarMotivo] = useState<string>('');
     const [mudarData, setMudarData] = useState<Date>(new Date());
@@ -93,12 +93,9 @@ export function MembersList() {
         value: diacono.nome
     }));
 
-    const ministeriosSelected = (ministerios) => {
+    const ministeriosSelected = (ministerios: any) => {
         setMinisterio((previous: number[]) => {
-            return (
-                {...previous},
-                    ministerios
-            );
+            return ({...ministerios});
         });
 
         filtros('ministerio', ministerios, null);
@@ -111,7 +108,6 @@ export function MembersList() {
         try {
             UserApi.fetchMinistries()
                 .then((response: IMinistries[]) => {
-                    console.log('ministries: ', response);
                     if (response && response.length > 0) {
                         setMinistries(response);
                     } else {
@@ -170,17 +166,16 @@ export function MembersList() {
                 .then((response) => {
                     if (response.data.length > 0) {
                         // Mapeando ministérios para todos os membros
-                        const mappedMembers: IUserResponseApi[] = response.data.map(member => {
+                        const mappedMembers: IUserResponseApi[] = response.data.map((member: any) => {
                             return {
                                 ...member,
-                                ministerio: member.ministerio.map(ministerioId => {
-                                    return ministries.find(ministerio => ministerio._id === ministerioId.toString()) || null;
+                                ministerio: member.ministerio.map((ministerioId: any) => {
+                                    return ministries.find((ministerio: IMinistries) => ministerio._id === ministerioId.toString()) || null;
                                 })
                             };
                         });
                         setMembers(mappedMembers);
                         setMembersToFilter(mappedMembers);
-                        console.log('members: ', mappedMembers);
 
                         setOpenBackLoadingMembros(false);
                         setShowBackLoadingMessage('');
@@ -192,7 +187,7 @@ export function MembersList() {
                     setOpenBackLoadingMembros(false);
                     setShowBackLoadingMessage('');
                 })
-                .catch((error) => {
+                .catch((error: any) => {
                     console.log(error);
                     setMembers([]);
                     setMembersToFilter([]);
@@ -254,7 +249,7 @@ export function MembersList() {
         }
     }, [ministries]);
 
-    const filtros = (chave, valor, event) => {
+    const filtros = (chave: string, valor: any, event: any) => {
         if (event) {
             event.preventDefault();
         }
@@ -275,16 +270,13 @@ export function MembersList() {
                 setMembers(resultStatus);
                 break;
             case 'ministerio':
-                console.log('pesquisa: ', valor);
                 if (valor.length > 0) {
                     const resultMinisterio: IUserResponseApi[] = membersToFilter.filter((member: IUserResponseApi) => {
                         if (member && member.ministerio.length > 0) {
                             const filterMemberByMinisterio: IMinistries[] = member.ministerio.filter((a: IMinistries) => valor.includes(a.nome));
-                            console.log('filterMemberByMinisterio: ', filterMemberByMinisterio);
                             if (filterMemberByMinisterio.length > 0) return member;
                         }
                     })
-                    console.log('resultMinisterio: ', resultMinisterio);
                     setMembers(resultMinisterio);
                     setFilterPreviousModified(true);
                 }
@@ -302,7 +294,7 @@ export function MembersList() {
                 break;
             case 'idade':
                 const resultIdade: IUserResponseApi[] = membersToFilter.filter((member: IUserResponseApi) => {
-                    switch (valor) {
+                    switch (valor as any) {
                         case 'infantil':
                             if (member.idade >= 0 && member.idade < 12) {
                                 return member;
@@ -359,17 +351,17 @@ export function MembersList() {
         setMinisterio([]);
     }
 
-    const handleMudarStatus = (e) => {
+    const handleMudarStatus = (e: any) => {
         e.preventDefault();
 
         setOpenBackLoadingMembros(true);
         setShowBackLoadingMessage('Atualizando status de membresia...');
 
         const body: ITempUserUpdate = {
-            status: mudarStatus
+            status: mudarStatus as StatusEnum
         };
 
-        switch (body.status) {
+        switch (body.status as any) {
             case StatusEnum.transferido:
                 body.transferencia = new Date(mudarData);
                 body.motivo_transferencia = mudarMotivo;
@@ -409,7 +401,7 @@ export function MembersList() {
     }
 
     const changeStatusMudar = (value: string) => {
-        switch (value) {
+        switch (value as any) {
             case StatusEnum.visitante:
                 setMudarStatus(StatusEnum.visitante);
                 break;
@@ -434,13 +426,13 @@ export function MembersList() {
         }
     }
 
-    const handleSendMessageWhatsapp = (e) => {
+    const handleSendMessageWhatsapp = (e: any) => {
         e.preventDefault();
 
         console.log('Enviar mensagem pro whatsapp');
     }
 
-    const handleRequestRegistrationUpdate = (e) => {
+    const handleRequestRegistrationUpdate = (e: any) => {
         setOpenBackLoadingMembros(true);
         setShowBackLoadingMessage('Solicitando atualização cadastral...');
 
@@ -460,7 +452,7 @@ export function MembersList() {
             })
     }
 
-    const handleDeleteMembers = (e) => {
+    const handleDeleteMembers = (e: any) => {
         setOpenBackLoadingMembros(true);
         setShowBackLoadingMessage(`${memberSelectedCheckbox.length === 1 ? 'Excluindo membro' : 'Excluindo membros'}`);
 
@@ -577,8 +569,8 @@ export function MembersList() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="status-filter">Filtrar por Status</Label>
-                                    <Select onValueChange={(value) => filtros('status', value, null)} value={status}>
+                                    <Label>Filtrar por Status</Label>
+                                    <Select onValueChange={(value: string) => filtros('status', value, null)} value={status}>
                                         <SelectTrigger id="status-filter" aria-label="Status"
                                                        className="mt-2 sm:mt-2">
                                             <SelectValue placeholder="Selecionar status"/>
@@ -604,8 +596,8 @@ export function MembersList() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="diacono-filter">Filtrar por Diácono</Label>
-                                    <Select id="diacono-filter"
+                                    <Label>Filtrar por Diácono</Label>
+                                    <Select
                                             value={diacono}
                                             onValueChange={(value: string) => filtros('diacono', value, null)}>
                                         <SelectTrigger>
@@ -627,8 +619,7 @@ export function MembersList() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="age-range-filter" className="md:ml-4">Filtrar por Faixa
-                                        Etária</Label>
+                                    <Label className="md:ml-4">Filtrar por Faixa Etária</Label>
                                     <Select
                                         value={idade}
                                         onValueChange={(value: string) => filtros('idade', value, null)}>
@@ -647,8 +638,7 @@ export function MembersList() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="age-range-filter" className="md:ml-4">Filtrar por período de
-                                        tempo</Label>
+                                    <Label className="md:ml-4">Filtrar por período de tempo</Label>
                                     <Select
                                         value={updatedAt}
                                         onValueChange={(value: string) => filtros('updatedAt', value, null)}>
@@ -780,7 +770,7 @@ export function MembersList() {
                                                                         <div
                                                                             className="px-2 py-1 rounded-full bg-purple-100 text-purple-700 font-semibold">Congregado</div>
                                                                     ) : (
-                                                                        membro.status.toUpperCase()
+                                                                        membro.status
                                                                     )
                                                                 }
                                                             </>

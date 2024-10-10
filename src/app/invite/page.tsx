@@ -1,11 +1,10 @@
-import {Header} from "@/components/header/header";
 import {InviteForm} from "@/app/invite/_components/invite-form";
+import {Suspense} from "react";
 
 export default function Invite() {
     return (
-        <>
-            <Header/>
+        <Suspense>
             <InviteForm/>
-        </>
+        </Suspense>
     )
 }

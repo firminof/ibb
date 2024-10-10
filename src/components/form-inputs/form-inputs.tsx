@@ -1,7 +1,7 @@
 import InputMask from 'react-input-mask';
 import {cn} from "@/lib/utils";
 
-export const EmailInput = (props) => {
+export const EmailInput = (props: any) => {
     return (
         <input
             type="email"
@@ -15,7 +15,7 @@ export const EmailInput = (props) => {
     );
 };
 
-export const CPFInput = (props) => {
+export const CPFInput = (props: any) => {
     return (
         <InputMask
             mask="999.999.999-99"
@@ -29,7 +29,7 @@ export const CPFInput = (props) => {
     );
 };
 
-export const RGInput = (props) => {
+export const RGInput = (props: any) => {
     return (
         <InputMask
             mask="99.999.999"
@@ -43,7 +43,7 @@ export const RGInput = (props) => {
     );
 };
 
-export const PhoneInput = (props) => {
+export const PhoneInput = (props: any) => {
     return (
         <InputMask
             mask="(99) 99999-9999"

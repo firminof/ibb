@@ -11,7 +11,7 @@ import {SettingsIcon} from "@/components/settings-icon/settings-icon";
 import {useAuthState} from "react-firebase-hooks/auth";
 import Image from "next/image";
 import {useState} from "react";
-import {getContextAuth, UserRoles} from "@/lib/helpers/helpers";
+import {getContextAuth, setUser, UserRoles} from "@/lib/helpers/helpers";
 
 export function Header() {
     const contextAuth = getContextAuth();
@@ -21,14 +21,13 @@ export function Header() {
     const router = useRouter();
     const [menuOpen, setMenuOpen] = useState(false);
 
-    const handleSignOut = (e) => {
+    const handleSignOut = (e: any) => {
         e.preventDefault();
 
         try {
             signOut()
                 .then(r => {
-                    sessionStorage.removeItem('user');
-                    localStorage.removeItem('headerRequestApi');
+                    setUser(JSON.stringify({role: '', mongoId: '', user: null}));
 
                     setTimeout(() => {
                         router.push('/login');
@@ -41,8 +40,6 @@ export function Header() {
 
     }
 
-    console.log('contextAuth.role === UserRoles.ADMIN: ', contextAuth.role === UserRoles.ADMIN);
-    console.log('contextAuth.role: ', contextAuth.role);
     return (
         <header className="bg-background border-b-2 border-border px-4 py-3 flex items-center justify-between sm:px-6">
             <Link href={`${contextAuth.role === UserRoles.MEMBRO ? '/user' : '/dashboard'}`} prefetch={false}>

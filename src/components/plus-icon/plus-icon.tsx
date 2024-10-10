@@ -1,4 +1,4 @@
-export function PlusIcon(props) {
+export function PlusIcon(props: any) {
     return (
         <svg
             {...props}

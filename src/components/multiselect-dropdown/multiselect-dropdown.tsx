@@ -1,16 +1,16 @@
 import React, {useEffect, useRef, useState} from 'react';
 
-const MultiSelectDropdown = (props) => {
+const MultiSelectDropdown = (props: any) => {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOptions, setSelectedOptions] = useState([]);
     const dropdownRef = useRef(null);
 
     const toggleDropdown = () => setIsOpen(!isOpen);
 
-    const handleSelect = (option) => {
-        setSelectedOptions((prevSelected) => {
+    const handleSelect = (option: any) => {
+        setSelectedOptions((prevSelected: any) => {
             if (prevSelected.includes(option.id)) {
-                return prevSelected.filter((id) => id !== option.id);
+                return prevSelected.filter((id: any) => id !== option.id);
             } else {
                 return [...prevSelected, option.id];
             }
@@ -21,12 +21,12 @@ const MultiSelectDropdown = (props) => {
         props.dataSelected(selectedOptions);
     }, [selectedOptions]);
 
-    const isSelected = (optionId) => selectedOptions.includes(optionId);
+    const isSelected = (optionId: any) => (selectedOptions as string[]).includes(optionId as string);
 
     // Close dropdown if click is outside
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        const handleClickOutside = (event: any) => {
+            if (dropdownRef.current && !(dropdownRef.current as any).contains(event.target)) {
                 setIsOpen(false);
             }
         };
@@ -70,7 +70,7 @@ const MultiSelectDropdown = (props) => {
             {isOpen && (
                 <div className="absolute mt-2 w-full border border-gray-300 bg-white rounded-md shadow-lg z-30">
                     <ul className="max-h-60 overflow-y-auto">
-                        {props.data.map((option) => (
+                        {props.data.map((option: any) => (
                             <li
                                 key={option.id}
                                 className="flex items-center p-2 hover:bg-gray-100 cursor-pointer"

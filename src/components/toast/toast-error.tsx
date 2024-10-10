@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 
-export function ToastError(props) {
+export function ToastError(props: any) {
     const [visible, setVisible] = useState(false);
     const timeVisible = 5000;
     

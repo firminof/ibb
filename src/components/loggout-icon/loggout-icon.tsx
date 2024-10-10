@@ -1,4 +1,4 @@
-export function LoggoutIcon(props) {
+export function LoggoutIcon(props: any) {
     return (
         <svg
             {...props}

@@ -1,4 +1,4 @@
-export function SendIcon(props) {
+export function SendIcon(props: any) {
     return (
         <svg
             {...props}

@@ -1,4 +1,4 @@
-export function SettingsIcon(props) {
+export function SettingsIcon(props: any) {
     return (
         <svg
             {...props}
