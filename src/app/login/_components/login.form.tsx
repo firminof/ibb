@@ -27,8 +27,12 @@ import {
 import {EmailInput} from "@/components/form-inputs/form-inputs";
 import {ArrowRightIcon} from "@radix-ui/react-icons";
 import {UserRoles} from "@/lib/models/user";
+import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
+
 
 export function LoginForm() {
+    const useStoreIbbZus: IStore = useStoreIbb((state: IStore) => state);
+
     const [email, setEmail] = useState("");
     const [emailForgotPass, setEmailForgotPass] = useState("");
 
@@ -91,6 +95,7 @@ export function LoginForm() {
 
                     if (result && result.user) {
                         let role = '';
+                        let mongoId = '';
 
                         token = result.user['stsTokenManager']['accessToken'];
                         const customAttributes = result.user['reloadUserInfo']['customAttributes']
@@ -99,6 +104,7 @@ export function LoginForm() {
                             const getAttributes = JSON.parse(customAttributes);
 
                             role = getAttributes['role'];
+                            mongoId = getAttributes['mongoId'];
                         }
                         if (token) {
                             setTimeout(() => {
@@ -110,7 +116,9 @@ export function LoginForm() {
                                         setShowSuccess(true);
                                         setShowSuccessMessage('Login efetuado com sucesso!');
 
-                                        setUser(JSON.stringify(result));
+                                        useStoreIbbZus.addUser(JSON.stringify(result));
+                                        useStoreIbbZus.addRole(role);
+                                        useStoreIbbZus.addMongoId(mongoId);
 
                                         router.push('/dashboard');
                                         break;
@@ -118,9 +126,12 @@ export function LoginForm() {
                                         setShowSuccess(true);
                                         setShowSuccessMessage('Login efetuado com sucesso!');
 
-                                        setUser(JSON.stringify(result));
+                                        useStoreIbbZus.addUser(JSON.stringify(result));
+                                        useStoreIbbZus.addRole(role);
+                                        useStoreIbbZus.addMongoId(mongoId);
 
                                         router.push('/user');
+
                                         break;
                                     default:
                                         setShowErrorLogin(true);

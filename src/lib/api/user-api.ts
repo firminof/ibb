@@ -68,6 +68,7 @@ export class UserApi {
     }
 
     static async getUserByEmail(email: string): Promise<any> {
+        console.log('api: ', process.env.URL_BACKEND_LOCAL)
         const user = await api.get(`/auth/find-user/${email}`);
 
         return user.data;

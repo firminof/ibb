@@ -7,15 +7,14 @@ import {useSignOut} from "react-firebase-hooks/auth";
 import {auth} from "@/app/firebase/config";
 import {useRouter} from "next/navigation";
 import {LoggoutIcon} from "@/components/loggout-icon/loggout-icon";
-import {SettingsIcon} from "@/components/settings-icon/settings-icon";
-import {useAuthState} from "react-firebase-hooks/auth";
 import Image from "next/image";
 import {useState} from "react";
-import {getContextAuth, setUser, UserRoles} from "@/lib/helpers/helpers";
+import {UserRoles} from "@/lib/helpers/helpers";
+import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
 
 export function Header() {
-    const contextAuth = getContextAuth();
-    const user = contextAuth.user;
+    const useStoreIbbZus: IStore = useStoreIbb((state: IStore) => state);
+    const user = useStoreIbbZus.user;
 
     const [signOut] = useSignOut(auth);
     const router = useRouter();
@@ -27,7 +26,10 @@ export function Header() {
         try {
             signOut()
                 .then(r => {
-                    setUser(JSON.stringify({role: '', mongoId: '', user: null}));
+                    useStoreIbbZus.addUser(null);
+                    useStoreIbbZus.addRole('');
+                    useStoreIbbZus.addMongoId('');
+                    useStoreIbbZus.setHasHydrated(false);
 
                     setTimeout(() => {
                         router.push('/login');
@@ -42,7 +44,7 @@ export function Header() {
 
     return (
         <header className="bg-background border-b-2 border-border px-4 py-3 flex items-center justify-between sm:px-6">
-            <Link href={`${contextAuth.role === UserRoles.MEMBRO ? '/user' : '/dashboard'}`} prefetch={false}>
+            <Link href={`${useStoreIbbZus.role === UserRoles.MEMBRO ? '/user' : '/dashboard'}`} prefetch={false}>
                 <div>
                     <Image
                         src="/ibb_azul.png"
@@ -57,7 +59,7 @@ export function Header() {
             <div className="flex items-center gap-4">
                 {/* Mobile menu button */}
                 {
-                    contextAuth.role === UserRoles.ADMIN && (
+                    useStoreIbbZus.role === UserRoles.ADMIN && (
                         <div>
                             <div className="sm:hidden">
                                 <button
@@ -89,10 +91,12 @@ export function Header() {
                                     menuOpen ? "block" : "hidden"
                                 } sm:flex items-center gap-4`}
                             >
-                                <Link href="/members" className="font-medium text-primary text-black hover:text-gray-400" prefetch={false}>
+                                <Link href="/members" className="font-medium text-primary text-black hover:text-gray-400"
+                                      prefetch={false}>
                                     Membros
                                 </Link>
-                                <Link href="/ministries" className="font-medium text-primary text-black hover:text-gray-400" prefetch={false}>
+                                <Link href="/ministries" className="font-medium text-primary text-black hover:text-gray-400"
+                                      prefetch={false}>
                                     Ministérios
                                 </Link>
                             </nav>
@@ -105,7 +109,8 @@ export function Header() {
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button variant="ghost" size="icon" className="rounded-full">
-                                <img src={user && user.photoURL ? user.photoURL : '/vercel.svg'} width="32" height="32" className="rounded-full" alt="User Avatar"/>
+                                <img src={user && user.photoURL ? user.photoURL : '/vercel.svg'} width="32" height="32"
+                                     className="rounded-full" alt="User Avatar"/>
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-56 p-2 bg-background shadow-lg rounded-md right-0 sm:right-auto">

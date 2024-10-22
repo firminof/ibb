@@ -10,25 +10,24 @@ import {Backdrop, CircularProgress} from "@mui/material";
 import * as React from "react";
 import {useEffect, useState} from "react";
 import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
-import {ministerios} from "@/lib/constants/misterios";
-import {IMinisteriosSelect, IMisterios} from "@/lib/models/misterios";
+import {IMinisteriosSelect} from "@/lib/models/misterios";
 import {ITempUserCreate, IUser, StatusEnum, UserRoles} from "@/lib/models/user";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
-import {getContextAuth, obterIniciaisPrimeiroUltimo} from "@/lib/helpers/helpers";
+import {formatDateUS, obterIniciaisPrimeiroUltimo} from "@/lib/helpers/helpers";
 import {diaconos} from "@/lib/constants/diaconos";
 import {IDiaconoSelect} from "@/lib/models/diaconos";
-import {CPFInput, EmailInput, PhoneInput, RGInput} from "@/components/form-inputs/form-inputs";
+import {CPFInput, DateInput, EmailInput, PhoneInput, RGInput} from "@/components/form-inputs/form-inputs";
 import {ChevronLeftIcon} from "@radix-ui/react-icons";
 import {ToastError} from "@/components/toast/toast-error";
-import {z} from "zod";
-import {useForm} from "react-hook-form";
-import {zodResolver} from "@hookform/resolvers/zod";
 import {ToastWarning} from "@/components/toast/toast-warning";
 import {UserApi} from "@/lib/api/user-api";
 import {ToastSuccess} from "@/components/toast/toast-success";
 import {IMinistries} from "@/lib/models/user-response-api";
+import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
 
 export default function CreateUserForm() {
+    const useStoreIbbZus: IStore = useStoreIbb((state: IStore) => state);
+
     const [isSuccessSaveMember, setIsSuccessSaveMember] = useState<boolean>(false);
 
     const [openBackLoading, setOpenBackLoading] = useState<boolean>(false);
@@ -45,13 +44,77 @@ export default function CreateUserForm() {
 
     const router = useRouter();
 
-    const contextAuth = getContextAuth();
-    if (contextAuth.role === UserRoles.MEMBRO) {
-        router.push('/user');
+    const getAllMinistries = () => {
+        try {
+            UserApi.fetchMinistries()
+                .then((response: IMinistries[]) => {
+                    if (response && response.length > 0) {
+                        setMinistries(response);
+                        return;
+                    }
+
+                    setMinistries([]);
+                })
+                .catch((error) => {
+                    console.log(error);
+                    setMinistries([]);
+
+                    switch (error.code) {
+                        case 'ERR_BAD_REQUEST':
+                            setShowErrorMessageApi('Falha na requisição, tente novamente!');
+                            setShowErrorApi(true);
+                            setMinistries([]);
+                            break;
+                        case 'ERR_NETWORK':
+                            setShowErrorMessageApi('Erro na conexão, tente novamente!');
+                            setShowErrorApi(true);
+                            setMinistries([]);
+                            break;
+
+                        default:
+                            setShowErrorMessageApi('Erro genérico do servidor, tente novamente!');
+                            setShowErrorApi(true);
+                            setMinistries([]);
+                            break;
+                    }
+                });
+        } catch (e) {
+            setShowErrorMessageApi('Erro desconhecido, tente novamente!');
+            setShowErrorApi(true);
+
+            setMinistries([]);
+        }
     }
 
-    if (contextAuth.user == null) {
-        router.push('/login');
+    useEffect(() => {
+        if (useStoreIbbZus.hasHydrated && useStoreIbbZus.role === UserRoles.MEMBRO) {
+            router.push('/user');
+            return;
+        }
+        if (useStoreIbbZus.hasHydrated && useStoreIbbZus.user == null) {
+            router.push('/login');
+            return;
+        }
+        getAllMinistries();
+    }, [useStoreIbbZus.hasHydrated])
+
+    useEffect(() => {
+        getAllMinistries();
+    }, []);
+
+
+    if (!useStoreIbbZus.hasHydrated) {
+        return (
+            <Backdrop
+                sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
+                open={!useStoreIbbZus.hasHydrated}
+            >
+                <div className="flex flex-col items-center">
+                    <CircularProgress color="inherit"/>
+                    Carregando informações
+                </div>
+            </Backdrop>
+        )
     }
 
     const ministeriosCadastrados: IMinisteriosSelect[] | any[] = ministries.map((ministerio: IMinistries): IMinisteriosSelect | any[] => {
@@ -77,6 +140,7 @@ export default function CreateUserForm() {
 
         try {
             userForm.possui_filhos = userForm.possui_filhos === 'sim';
+            userForm.data_nascimento = formatDateUS(userForm.data_nascimento);
 
             const diacono: number = diaconosCadastrados.findIndex((diacono: IDiaconoSelect): boolean => diacono.id === Number(userForm.diacono));
 
@@ -92,6 +156,7 @@ export default function CreateUserForm() {
                 }
             }
 
+            // return console.log('create form: ', userForm)
             const saveMember = await UserApi.createMember(userForm);
             setTimeout(() => {
                 setOpenBackLoading(false);
@@ -114,7 +179,18 @@ export default function CreateUserForm() {
 
             setShowErrorApi(true);
 
-            setShowErrorMessageApi(error.response.data.message);
+            switch (error.code) {
+                case 'ERR_BAD_REQUEST':
+                    setShowErrorMessageApi('Falha na requisição, tente novamente!');
+                    break;
+                case 'ERR_NETWORK':
+                    setShowErrorMessageApi('Erro na conexão, tente novamente!');
+                    break;
+
+                default:
+                    setShowErrorMessageApi('Erro genérico do servidor, tente novamente!');
+                    break;
+            }
         }
     };
 
@@ -246,52 +322,6 @@ export default function CreateUserForm() {
         }));
     }
 
-    const getAllMinistries = () => {
-        try {
-            UserApi.fetchMinistries()
-                .then((response: IMinistries[]) => {
-                    if (response && response.length > 0) {
-                        setMinistries(response);
-                        return;
-                    }
-
-                    setMinistries([]);
-                })
-                .catch((error) => {
-                    console.log(error);
-                    setMinistries([]);
-
-                    switch (error.code) {
-                        case 'ERR_BAD_REQUEST':
-                            setShowErrorMessageApi('Falha na requisição, tente novamente!');
-                            setShowErrorApi(true);
-                            setMinistries([]);
-                            break;
-                        case 'ERR_NETWORK':
-                            setShowErrorMessageApi('Erro na conexão, tente novamente!');
-                            setShowErrorApi(true);
-                            setMinistries([]);
-                            break;
-
-                        default:
-                            setShowErrorMessageApi('Erro genérico do servidor, tente novamente!');
-                            setShowErrorApi(true);
-                            setMinistries([]);
-                            break;
-                    }
-                });
-        } catch (e) {
-            setShowErrorMessageApi('Erro desconhecido, tente novamente!');
-            setShowErrorApi(true);
-
-            setMinistries([]);
-        }
-    }
-
-    useEffect(() => {
-        getAllMinistries();
-    }, []);
-
     return (
         <div className="container mx-auto mt-4">
             <Backdrop
@@ -379,16 +409,16 @@ export default function CreateUserForm() {
                                 <div className="grid grid-cols-1 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="data_nascimento">Data de Nascimento</Label>
-                                        <Input
+                                        <DateInput
                                             id="data_nascimento"
                                             required={true}
                                             onChange={(e: any) => handleCreateUserForm('data_nascimento', e)}
-                                            type="date"/>
+                                        />
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="email">Email</Label>
                                     <EmailInput
@@ -413,46 +443,46 @@ export default function CreateUserForm() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-4 space-y-2">
-                                <Label htmlFor="foto">Foto</Label>
-                                {
-                                    userForm && userForm.foto && userForm.foto !== '' ? (
-                                        <Avatar className="w-20 h-20">
-                                            <AvatarImage
-                                                src={userForm && userForm.foto ? userForm.foto : 'https://github.com/shadcn.png'}/>
-                                            <AvatarFallback>{obterIniciaisPrimeiroUltimo(userForm.nome)}</AvatarFallback>
-                                        </Avatar>
-                                    ) : (
-                                        <div className="flex items-center justify-center w-full">
-                                            <label htmlFor="foto"
-                                                   className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600">
-                                                <div
-                                                    className="flex flex-col items-center justify-center pt-5 pb-6">
-                                                    <svg className="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400"
-                                                         aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
-                                                         fill="none"
-                                                         viewBox="0 0 20 16">
-                                                        <path stroke="currentColor" strokeLinecap="round"
-                                                              strokeLinejoin="round" strokeWidth="2"
-                                                              d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
-                                                    </svg>
+                            {/*<div className="grid grid-cols-1 gap-4 space-y-2">*/}
+                            {/*    <Label htmlFor="foto">Foto</Label>*/}
+                            {/*    {*/}
+                            {/*        userForm && userForm.foto && userForm.foto !== '' ? (*/}
+                            {/*            <Avatar className="w-20 h-20">*/}
+                            {/*                <AvatarImage*/}
+                            {/*                    src={userForm && userForm.foto ? userForm.foto : 'https://github.com/shadcn.png'}/>*/}
+                            {/*                <AvatarFallback>{obterIniciaisPrimeiroUltimo(userForm.nome)}</AvatarFallback>*/}
+                            {/*            </Avatar>*/}
+                            {/*        ) : (*/}
+                            {/*            <div className="flex items-center justify-center w-full">*/}
+                            {/*                <label htmlFor="foto"*/}
+                            {/*                       className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600">*/}
+                            {/*                    <div*/}
+                            {/*                        className="flex flex-col items-center justify-center pt-5 pb-6">*/}
+                            {/*                        <svg className="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400"*/}
+                            {/*                             aria-hidden="true" xmlns="http://www.w3.org/2000/svg"*/}
+                            {/*                             fill="none"*/}
+                            {/*                             viewBox="0 0 20 16">*/}
+                            {/*                            <path stroke="currentColor" strokeLinecap="round"*/}
+                            {/*                                  strokeLinejoin="round" strokeWidth="2"*/}
+                            {/*                                  d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>*/}
+                            {/*                        </svg>*/}
 
-                                                    <p className="mb-2 text-sm text-gray-500 dark:text-gray-400"><span
-                                                        className="font-semibold">Clique aqui</span> ou arraste e
-                                                        solte</p>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400">Extensões
-                                                        de
-                                                        imagens aceitas: PNG, JPG, JPEG</p>
-                                                </div>
-                                                <input
-                                                    id="foto"
-                                                    onChange={(e: any) => handleCreateUserForm('foto', e)}
-                                                    type="file" className="hidden"/>
-                                            </label>
-                                        </div>
-                                    )
-                                }
-                            </div>
+                            {/*                        <p className="mb-2 text-sm text-gray-500 dark:text-gray-400"><span*/}
+                            {/*                            className="font-semibold">Clique aqui</span> ou arraste e*/}
+                            {/*                            solte</p>*/}
+                            {/*                        <p className="text-xs text-gray-500 dark:text-gray-400">Extensões*/}
+                            {/*                            de*/}
+                            {/*                            imagens aceitas: PNG, JPG, JPEG</p>*/}
+                            {/*                    </div>*/}
+                            {/*                    <input*/}
+                            {/*                        id="foto"*/}
+                            {/*                        onChange={(e: any) => handleCreateUserForm('foto', e)}*/}
+                            {/*                        type="file" className="hidden"/>*/}
+                            {/*                </label>*/}
+                            {/*            </div>*/}
+                            {/*        )*/}
+                            {/*    }*/}
+                            {/*</div>*/}
 
                             <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
                                 <div className="space-y-2">
@@ -490,11 +520,11 @@ export default function CreateUserForm() {
                                     <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-3">
                                         <div className="space-y-2">
                                             <Label htmlFor="data_ingresso">Ingresso</Label>
-                                            <Input
+                                            <DateInput
                                                 id="data_ingresso"
                                                 required
                                                 onChange={(e: any) => handleCreateUserForm('data_ingresso', e)}
-                                                type="date"/>
+                                            />
                                             <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
                                                id="file_input_help_data_ingresso">
                                                 Informe a data de ingresso na igreja
@@ -533,11 +563,11 @@ export default function CreateUserForm() {
                                     <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
                                         <div className="space-y-2">
                                             <Label htmlFor="transferencia">Transferência</Label>
-                                            <Input
+                                            <DateInput
                                                 id="transferencia"
                                                 required
                                                 onChange={(e: any) => handleCreateUserForm('transferencia', e)}
-                                                type="date"/>
+                                            />
                                             <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
                                                id="file_input_help_transferencia">
                                                 Informe a data da transferência do membro
@@ -559,11 +589,11 @@ export default function CreateUserForm() {
                                     <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
                                         <div className="space-y-2">
                                             <Label htmlFor="falecimento">Falecimento</Label>
-                                            <Input
+                                            <DateInput
                                                 id="falecimento"
                                                 required
                                                 onChange={(e: any) => handleCreateUserForm('falecimento', e)}
-                                                type="date"/>
+                                            />
                                             <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
                                                id="file_input_help_falecimento">
                                                 Informe a data de falecimento do membro
@@ -585,11 +615,11 @@ export default function CreateUserForm() {
                                     <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
                                         <div className="space-y-2">
                                             <Label htmlFor="excluido">Exclusão</Label>
-                                            <Input
+                                            <DateInput
                                                 id="excluido"
                                                 required
                                                 onChange={(e: any) => handleCreateUserForm('excluido', e)}
-                                                type="date"/>
+                                            />
                                             <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
                                                id="file_input_help_excluido">
                                                 Informe a data de exclusão do membro
@@ -684,10 +714,10 @@ export default function CreateUserForm() {
                                     <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
                                         <div className="space-y-2">
                                             <Label htmlFor="data_casamento">Data do Casamento</Label>
-                                            <Input
+                                            <DateInput
                                                 id="data_casamento"
                                                 onChange={(e: any) => handleCreateUserForm('data_casamento', e)}
-                                                type="date"/>
+                                            />
                                             <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
                                                id="file_input_help_transferencia">
                                                 Informe a data de casamento do membro (caso saiba)

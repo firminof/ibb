@@ -4,6 +4,7 @@ import {Button} from "@/components/ui/button"
 import {Label} from "@/components/ui/label";
 import {useRouter} from "next/navigation";
 import {Backdrop, CircularProgress} from "@mui/material";
+import * as React from "react";
 import {useState} from "react";
 import {PlusIcon} from "@/components/plus-icon/plus-icon";
 import {DownloadIcon} from "@/components/download-icon/download-icon";
@@ -22,13 +23,16 @@ import {Birthdays} from "@/app/dashboard/_components/birthdays";
 import {Cards} from "@/app/dashboard/_components/cards";
 import {ToastSuccess} from "@/components/toast/toast-success";
 import {ToastWarning} from "@/components/toast/toast-warning";
-import * as React from "react";
 import {UserApi} from "@/lib/api/user-api";
 import {IInviteByEmail} from "@/lib/models/invite";
-import {emailRegex, getContextAuth} from "@/lib/helpers/helpers";
+import {emailRegex} from "@/lib/helpers/helpers";
 import {UserRoles} from "@/lib/models/user";
+import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
+
 
 export function DashboardInfo() {
+    const useStoreIbbZus: IStore = useStoreIbb((state: IStore) => state);
+
     const [openBackLoading, setOpenBackLoading] = useState(false);
     const [openDialogInvite, setOpenDialogInvite] = useState(false);
     const [isSuccessSendInvite, setIsSuccessSendInvite] = useState(false);
@@ -43,12 +47,25 @@ export function DashboardInfo() {
 
     const router = useRouter();
 
-    const contextAuth = getContextAuth();
-    if (contextAuth.role === UserRoles.MEMBRO) {
+    if (!useStoreIbbZus.hasHydrated) {
+        return (
+            <Backdrop
+                sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
+                open={!useStoreIbbZus.hasHydrated}
+            >
+                <div className="flex flex-col items-center">
+                    <CircularProgress color="inherit"/>
+                    Carregando informações
+                </div>
+            </Backdrop>
+        )
+    }
+
+    if (useStoreIbbZus.role === UserRoles.MEMBRO) {
         router.push('/user');
     }
 
-    if (contextAuth.user == null) {
+    if (useStoreIbbZus.user == null) {
         router.push('/login');
     }
 
@@ -98,10 +115,10 @@ export function DashboardInfo() {
             }
 
             const body: IInviteByEmail = {
-              to: email,
-              subject: 'Convite para membresia',
-              text: 'Você está sendo convidado para fazer parte da Igreja Batista do Brooklink',
-              requestName: ''
+                to: email,
+                subject: 'Convite para membresia',
+                text: 'Você está sendo convidado para fazer parte da Igreja Batista do Brooklink',
+                requestName: ''
             };
 
             const sendingEmail = await UserApi.sendInvite(body)
@@ -161,7 +178,8 @@ export function DashboardInfo() {
                     <Dialog open={openDialogInvite} onOpenChange={setOpenDialogInvite}>
                         <DialogTrigger asChild>
                             <Button variant="outline" size="sm"
-                                    className="border-2 font-bold sm:inline-flex md:inline-flex" onClick={() => setOpenDialogInvite(true)}>
+                                    className="border-2 font-bold sm:inline-flex md:inline-flex"
+                                    onClick={() => setOpenDialogInvite(true)}>
                                 <SendIcon className="w-4 h-4 mr-1"/>
                                 Convidar Membro
                             </Button>
@@ -170,7 +188,8 @@ export function DashboardInfo() {
                             <DialogHeader>
                                 <DialogTitle>Convidar Membro</DialogTitle>
                                 <DialogDescription>
-                                    Será enviado um email para o membro solicitando que aceite e atualize as informações de membresia.
+                                    Será enviado um email para o membro solicitando que aceite e atualize as informações
+                                    de membresia.
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="flex items-center space-x-2">
@@ -182,7 +201,9 @@ export function DashboardInfo() {
                                         id="convite_email"
                                         onChange={(e: any) => setEmail(e.target.value)}/>
                                 </div>
-                                <Button type="submit" size="sm" className="px-3" disabled={email.length === 0 || !emailRegex.test(email)} onClick={(e) => handleConvidarMembro(e)}>
+                                <Button type="submit" size="sm" className="px-3"
+                                        disabled={email.length === 0 || !emailRegex.test(email)}
+                                        onClick={(e) => handleConvidarMembro(e)}>
                                     Convidar
                                     <ArrowRightIcon className="w-4 h-4 ml-1"/>
                                 </Button>
@@ -191,7 +212,8 @@ export function DashboardInfo() {
                     </Dialog>
                     {
                         isSuccessSendInvite && (
-                            <ToastSuccess data={{message: 'Convite enviado com sucesso!'}} visible={true} setShowParentComponent={setIsSuccessSendInvite}/>
+                            <ToastSuccess data={{message: 'Convite enviado com sucesso!'}} visible={true}
+                                          setShowParentComponent={setIsSuccessSendInvite}/>
                         )
                     }
                     <Button size="sm" className="font-bold sm:inline-flex md:inline-flex"
@@ -206,5 +228,5 @@ export function DashboardInfo() {
                 <Birthdays/>
             </main>
         </div>
-)
+    )
 }

@@ -4,12 +4,9 @@ COPY package.json ./
 RUN npm install
 COPY ./ ./
 
-# Copia o arquivo .env para o container
-COPY .env.local .env
-
 # Linux + Node + Source + Project dependencies + build assets
 FROM base AS build
-ENV NODE_ENV=production
+ENV ENV=production
 WORKDIR /build
 COPY --from=base /app ./
 

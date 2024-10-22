@@ -12,7 +12,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {PhoneIcon} from "@/components/phone-icon/phone-icon";
-import {ChevronDownIcon, ChevronLeftIcon, ChevronUpIcon, ReloadIcon} from "@radix-ui/react-icons";
+import {ChevronDownIcon, ChevronLeftIcon, ChevronUpIcon, Pencil1Icon, ReloadIcon} from "@radix-ui/react-icons";
 import {Button} from "@/components/ui/button";
 import {useRouter} from "next/navigation";
 import * as React from "react";
@@ -791,6 +791,21 @@ export function MembersList() {
                                                             </TooltipTrigger>
                                                             <TooltipContent>
                                                                 <p>Visualizar membro</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button variant="outline" onClick={() => {
+                                                                    router.push(`/edit-user?id=${membro._id}`)
+                                                                }}>
+                                                                    <Pencil1Icon/>
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>Editar membro</p>
                                                             </TooltipContent>
                                                         </Tooltip>
                                                     </TooltipProvider>
