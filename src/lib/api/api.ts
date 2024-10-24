@@ -6,7 +6,7 @@ let urls: any = {
     production: process.env.URL_BACKEND_PROD,
 }
 const api = Axios.create({
-    baseURL: urls[process.env.ENV],
+    baseURL: urls['production'],
     headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
