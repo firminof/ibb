@@ -810,16 +810,16 @@ export function MembersList() {
                                                         </Tooltip>
                                                     </TooltipProvider>
 
-                                                    <Button
-                                                        className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                                        onClick={() => {
-                                                            setMemberSelected(membro);
-                                                            setOpenDialogSendMessage(true);
-                                                        }}
-                                                    >
-                                                        <PhoneIcon className="w-4 h-4"/>
-                                                        Enviar Mensagem
-                                                    </Button>
+                                                    {/*<Button*/}
+                                                    {/*    className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-1 focus:ring-primary/50"*/}
+                                                    {/*    onClick={() => {*/}
+                                                    {/*        setMemberSelected(membro);*/}
+                                                    {/*        setOpenDialogSendMessage(true);*/}
+                                                    {/*    }}*/}
+                                                    {/*>*/}
+                                                    {/*    <PhoneIcon className="w-4 h-4"/>*/}
+                                                    {/*    Enviar Mensagem*/}
+                                                    {/*</Button>*/}
                                                 </TableCell>
                                             </TableRow>
                                         ))

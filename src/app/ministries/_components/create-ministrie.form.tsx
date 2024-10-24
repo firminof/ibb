@@ -16,9 +16,11 @@ import {IUserResponseApi} from "@/lib/models/user-response-api";
 import {UserApi} from "@/lib/api/user-api";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {ToastSuccess} from "@/components/toast/toast-success";
-import {getContextAuth} from "@/lib/helpers/helpers";
+import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
 
 export default function CreateMinistrieForm() {
+    const useStoreIbbZus: IStore = useStoreIbb((state: IStore) => state);
+
     const [members, setMembers] = useState<IUserResponseApi[]>([]);
     const [membrosMultiSelect, setMembrosMultiSelect] = useState<IMinisteriosSelect[]>([] as IMinisteriosSelect[]);
     const [openBackLoading, setOpenBackLoading] = useState(false);
@@ -38,12 +40,97 @@ export default function CreateMinistrieForm() {
 
     const router = useRouter();
 
-    const contextAuth = getContextAuth();
-    if (contextAuth.role === UserRoles.MEMBRO) {
+    const getAllMembers = async (): Promise<void> => {
+        setOpenBackLoadingMembros(true);
+        setShowBackLoadingMessage('Carregando responsáveis...');
+
+        try {
+            UserApi.fetchMembers()
+                .then((response) => {
+                    if (response.data.length > 0) {
+                        let mapMembersToSelect: IMinisteriosSelect[] = response.data.map((member: IUserResponseApi): IMinisteriosSelect => ({
+                            id: member._id,
+                            label: member.nome
+                        }));
+
+                        setTimeout(() => {
+                            setMembers(response.data);
+                            setMembrosMultiSelect(mapMembersToSelect);
+
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                        }, 250);
+                        return;
+                    }
+
+                    setMembers([]);
+                    setOpenBackLoadingMembros(false);
+                    setShowBackLoadingMessage('');
+                })
+                .catch((error) => {
+                    console.log(error);
+                    setMembers([]);
+                    setOpenBackLoadingMembros(false);
+                    setShowBackLoadingMessage('');
+
+                    switch (error.code) {
+                        case 'ERR_BAD_REQUEST':
+                            setShowErrorMessageApi('Falha na requisição, tente novamente!');
+                            setShowErrorApi(true);
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                            setMembers([]);
+                            break;
+                        case 'ERR_NETWORK':
+                            setShowErrorMessageApi('Erro na conexão, tente novamente!');
+                            setShowErrorApi(true);
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                            setMembers([]);
+                            break;
+
+                        default:
+                            setShowErrorMessageApi('Erro genérico do servidor, tente novamente!');
+                            setShowErrorApi(true);
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                            setMembers([]);
+                            break;
+                    }
+                });
+        } catch (e) {
+            setShowErrorMessageApi('Erro desconhecido, tente novamente!');
+            setShowErrorApi(true);
+
+            setOpenBackLoadingMembros(false);
+            setShowBackLoadingMessage('');
+            setMembers([]);
+        }
+    }
+
+    useEffect(() => {
+        getAllMembers();
+    }, []);
+
+    if (!useStoreIbbZus.hasHydrated) {
+        return (
+            <Backdrop
+                sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
+                open={!useStoreIbbZus.hasHydrated}
+            >
+                <div className="flex flex-col items-center">
+                    <CircularProgress color="inherit"/>
+                    Carregando informações
+                </div>
+            </Backdrop>
+        )
+    }
+
+    if (useStoreIbbZus.role === UserRoles.MEMBRO) {
         router.push('/user');
     }
 
-    if (contextAuth.user == null) {
+    if (useStoreIbbZus.user == null) {
         router.push('/login');
     }
 
@@ -141,83 +228,10 @@ export default function CreateMinistrieForm() {
     }
 
     const dataSelected = (membersSelected: any) => {
-        console.log(membersSelected);
         setMinistrieForm((previous: ICreateMinisterio) => {
             return {...previous, responsavel: membersSelected}
         });
     }
-
-    const getAllMembers = async (): Promise<void> => {
-        setOpenBackLoadingMembros(true);
-        setShowBackLoadingMessage('Carregando responsáveis...');
-
-        try {
-            UserApi.fetchMembers()
-                .then((response) => {
-                    if (response.data.length > 0) {
-                        let mapMembersToSelect: IMinisteriosSelect[] = response.data.map((member: IUserResponseApi): IMinisteriosSelect => ({
-                            id: member._id,
-                            label: member.nome
-                        }));
-
-                        setTimeout(() => {
-                            setMembers(response.data);
-                            setMembrosMultiSelect(mapMembersToSelect);
-
-                            setOpenBackLoadingMembros(false);
-                            setShowBackLoadingMessage('');
-                        }, 250);
-                        return;
-                    }
-
-                    setMembers([]);
-                    setOpenBackLoadingMembros(false);
-                    setShowBackLoadingMessage('');
-                })
-                .catch((error) => {
-                    console.log(error);
-                    setMembers([]);
-                    setOpenBackLoadingMembros(false);
-                    setShowBackLoadingMessage('');
-
-                    switch (error.code) {
-                        case 'ERR_BAD_REQUEST':
-                            setShowErrorMessageApi('Falha na requisição, tente novamente!');
-                            setShowErrorApi(true);
-                            setOpenBackLoadingMembros(false);
-                            setShowBackLoadingMessage('');
-                            setMembers([]);
-                            break;
-                        case 'ERR_NETWORK':
-                            setShowErrorMessageApi('Erro na conexão, tente novamente!');
-                            setShowErrorApi(true);
-                            setOpenBackLoadingMembros(false);
-                            setShowBackLoadingMessage('');
-                            setMembers([]);
-                            break;
-
-                        default:
-                            setShowErrorMessageApi('Erro genérico do servidor, tente novamente!');
-                            setShowErrorApi(true);
-                            setOpenBackLoadingMembros(false);
-                            setShowBackLoadingMessage('');
-                            setMembers([]);
-                            break;
-                    }
-                });
-        } catch (e) {
-            setShowErrorMessageApi('Erro desconhecido, tente novamente!');
-            setShowErrorApi(true);
-
-            setOpenBackLoadingMembros(false);
-            setShowBackLoadingMessage('');
-            setMembers([]);
-        }
-    }
-
-    useEffect(() => {
-        getAllMembers();
-    }, []);
 
     return (
         <div className="container mx-auto mt-4">

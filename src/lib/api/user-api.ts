@@ -3,6 +3,7 @@ import {IInviteByEmail, ITempInvite} from "@/lib/models/invite";
 import {ITempUserCreate, ITempUserUpdate} from "@/lib/models/user";
 import {ICreateMinisterio} from "@/lib/models/misterios";
 import {IMinistries} from "@/lib/models/user-response-api";
+import {WhatsappMessageWithTwilioInput} from "@/lib/models/twilio-whatsapp";
 
 export class UserApi {
     static async fetchMembers(): Promise<any | undefined> {
@@ -76,6 +77,12 @@ export class UserApi {
 
     static async getUserByEmailResetPassword(email: string): Promise<any> {
         const user = await api.get(`/auth/reset-password/${email}`);
+
+        return user.data;
+    }
+
+    static async sendWhatsAppMessage(body: WhatsappMessageWithTwilioInput): Promise<any | undefined> {
+        const user = await api.post(`/user/whatsapp/send-message`, body);
 
         return user.data;
     }

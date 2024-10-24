@@ -18,7 +18,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import {ArrowRightIcon} from "@radix-ui/react-icons";
-import {EmailInput} from "@/components/form-inputs/form-inputs";
+import {EmailInput, PhoneInput} from "@/components/form-inputs/form-inputs";
 import {Birthdays} from "@/app/dashboard/_components/birthdays";
 import {Cards} from "@/app/dashboard/_components/cards";
 import {ToastSuccess} from "@/components/toast/toast-success";
@@ -28,6 +28,7 @@ import {IInviteByEmail} from "@/lib/models/invite";
 import {emailRegex} from "@/lib/helpers/helpers";
 import {UserRoles} from "@/lib/models/user";
 import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
+import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group";
 
 
 export function DashboardInfo() {
@@ -37,6 +38,7 @@ export function DashboardInfo() {
     const [openDialogInvite, setOpenDialogInvite] = useState(false);
     const [isSuccessSendInvite, setIsSuccessSendInvite] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isModeInviteEmail, setIsModeInviteEmail] = useState(true);
 
     const [showWarningToast, setShowWarningToast] = useState(false);
     const [showWarningMessage, setShowWarningMessage] = useState('');
@@ -44,6 +46,7 @@ export function DashboardInfo() {
     const [messageLoading, setMessageLoading] = useState('');
 
     const [email, setEmail] = useState('');
+    const [whatsapp, setWhatsapp] = useState('');
 
     const router = useRouter();
 
@@ -97,28 +100,29 @@ export function DashboardInfo() {
         setOpenBackLoading(true);
 
         try {
-            console.log('email: ', email);
+            if (isModeInviteEmail) {
+                const validateEmail = emailRegex.test(email);
 
-            const validateEmail = emailRegex.test(email);
+                if (!validateEmail) {
+                    setShowWarningToast(true);
+                    setShowWarningMessage('Email inválido, insira um corretamente!');
 
-            if (!validateEmail) {
-                setShowWarningToast(true);
-                setShowWarningMessage('Email inválido, insira um corretamente!');
+                    setIsLoading(false);
+                    setOpenBackLoading(false);
+                    setMessageLoading('');
+                    setOpenDialogInvite(false);
+                    setIsSuccessSendInvite(true);
 
-                setIsLoading(false);
-                setOpenBackLoading(false);
-                setMessageLoading('');
-                setOpenDialogInvite(false);
-                setIsSuccessSendInvite(true);
-
-                return;
+                    return;
+                }
             }
 
             const body: IInviteByEmail = {
                 to: email,
                 subject: 'Convite para membresia',
                 text: 'Você está sendo convidado para fazer parte da Igreja Batista do Brooklink',
-                requestName: ''
+                requestName: '',
+                phone: whatsapp
             };
 
             const sendingEmail = await UserApi.sendInvite(body)
@@ -133,6 +137,8 @@ export function DashboardInfo() {
                 setOpenDialogInvite(false);
                 setIsSuccessSendInvite(true);
                 setEmail('');
+                setIsModeInviteEmail(true);
+                setWhatsapp('');
             }
         } catch (error) {
             console.log('[TRY-CATCH] error: ', error);
@@ -142,6 +148,8 @@ export function DashboardInfo() {
             setOpenDialogInvite(false);
             setIsSuccessSendInvite(false);
             setEmail('');
+            setIsModeInviteEmail(true);
+            setWhatsapp('');
         }
     }
 
@@ -169,11 +177,11 @@ export function DashboardInfo() {
             <main className="flex-1 p-4 sm:p-6">
                 <div
                     className="gap-3 grid sm:grid-rows-2 md:grid-cols-4 sm:flex sm:justify-end md:flex md:justify-end mb-3">
-                    <Button variant="outline" size="sm" className="border-2 font-bold sm:inline-flex md:inline-flex"
-                            onClick={(e) => handleExportToExcel(e)}>
-                        <DownloadIcon className="w-4 h-4 mr-1"/>
-                        Exportar para Excel
-                    </Button>
+                    {/*<Button variant="outline" size="sm" className="border-2 font-bold sm:inline-flex md:inline-flex"*/}
+                    {/*        onClick={(e) => handleExportToExcel(e)}>*/}
+                    {/*    <DownloadIcon className="w-4 h-4 mr-1"/>*/}
+                    {/*    Exportar para Excel*/}
+                    {/*</Button>*/}
 
                     <Dialog open={openDialogInvite} onOpenChange={setOpenDialogInvite}>
                         <DialogTrigger asChild>
@@ -188,21 +196,57 @@ export function DashboardInfo() {
                             <DialogHeader>
                                 <DialogTitle>Convidar Membro</DialogTitle>
                                 <DialogDescription>
-                                    Será enviado um email para o membro solicitando que aceite e atualize as informações
-                                    de membresia.
+                                    <div className="flex flex-col justify-items-start space-x-2 gap-3">
+                                        <Label htmlFor="opcao_convite">Escolha como enviar o convite ao membro</Label>
+                                        <RadioGroup id='opcao_convite'
+                                                    onValueChange={(value: string) => setIsModeInviteEmail(value.includes('email'))}
+                                                    defaultValue={'email'}
+                                                    className="text-black"
+                                        >
+                                            <div className="flex items-center space-x-2">
+                                                <RadioGroupItem value="email" id="email"/>
+                                                <Label htmlFor="email">Email</Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <RadioGroupItem value="whatsapp" id="whatsapp"/>
+                                                <Label htmlFor="whatsapp">WhatsApp</Label>
+                                            </div>
+                                        </RadioGroup>
+                                    </div>
+
+                                    {
+                                        isModeInviteEmail ? (
+                                            <p className="flex mt-4">
+                                                Será enviado um email para o membro solicitando que aceite e atualize as
+                                                informações de membresia.
+                                            </p>
+                                        ) : (
+                                            <p className="flex mt-4">
+                                                Será enviado um link para o WhatsApp do membro solicitando que aceite e
+                                                atualize as informações de membresia.
+                                            </p>
+                                        )
+                                    }
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="flex items-center space-x-2">
                                 <div className="grid flex-1 gap-2">
-                                    <Label htmlFor="link" className="sr-only">
-                                        Link
-                                    </Label>
-                                    <EmailInput
-                                        id="convite_email"
-                                        onChange={(e: any) => setEmail(e.target.value)}/>
+                                    {
+                                        isModeInviteEmail ? (
+                                            <EmailInput
+                                                id="convite_email"
+                                                onChange={(e: any) => setEmail(e.target.value)}/>
+                                        ) : (
+                                            <PhoneInput
+                                                id="convite_whatsapp"
+                                                required
+                                                onChange={(e: any) => setWhatsapp(e.target.value)}/>
+                                        )
+                                    }
+
                                 </div>
                                 <Button type="submit" size="sm" className="px-3"
-                                        disabled={email.length === 0 || !emailRegex.test(email)}
+                                        disabled={isModeInviteEmail ? email.length === 0 || !emailRegex.test(email) : whatsapp.length == 0}
                                         onClick={(e) => handleConvidarMembro(e)}>
                                     Convidar
                                     <ArrowRightIcon className="w-4 h-4 ml-1"/>
@@ -223,7 +267,6 @@ export function DashboardInfo() {
                     </Button>
                 </div>
 
-                <Cards/>
 
                 <Birthdays/>
             </main>

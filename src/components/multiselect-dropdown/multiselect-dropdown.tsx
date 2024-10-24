@@ -70,9 +70,9 @@ const MultiSelectDropdown = (props: any) => {
             {isOpen && (
                 <div className="absolute mt-2 w-full border border-gray-300 bg-white rounded-md shadow-lg z-30">
                     <ul className="max-h-60 overflow-y-auto">
-                        {props.data.map((option: any) => (
+                        {props.data.map((option: any, index: number) => (
                             <li
-                                key={option.id}
+                                key={`${option.id}${index}`}
                                 className="flex items-center p-2 hover:bg-gray-100 cursor-pointer"
                                 onClick={(e) => {
                                     e.stopPropagation();

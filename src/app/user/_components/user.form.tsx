@@ -18,8 +18,12 @@ import {UserApi} from "@/lib/api/user-api";
 import {Backdrop, CircularProgress} from "@mui/material";
 import {ToastError} from "@/components/toast/toast-error";
 import {getContextAuth, getUser} from "@/lib/helpers/helpers";
+import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
+import {WhatsappMessageWithTwilioInput} from "@/lib/models/twilio-whatsapp";
 
 export function UserForm({memberParam}: any) {
+    const useStoreIbbZus: IStore = useStoreIbb((state: IStore) => state);
+
     const [openDialogSendMessage, setOpenDialogSendMessage] = useState(false);
     const [messageWhatsApp, setMessageWhatsApp] = useState<string>('');
     const [member, setMember] = useState<any | null>(null);
@@ -31,8 +35,6 @@ export function UserForm({memberParam}: any) {
     const [showErrorMessageApi, setShowErrorMessageApi] = useState<string>('');
 
     const [ministries, setMinistries] = useState<IMinistries[]>([]);
-
-    const contextAuth = getContextAuth();
 
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
@@ -104,15 +106,36 @@ export function UserForm({memberParam}: any) {
         </div>
     )
 
-    const handleSendMessageWhatsapp = (e: any) => {
+    const handleSendMessageWhatsapp = (e: any, membro: any = null) => {
         e.preventDefault();
 
-        console.log('Enviar mensagem pro whatsapp');
+        if (membro) {
+            try {
+                setOpenBackLoadingMembros(true);
+                setShowBackLoadingMessage('Enviando mensagem por WhatsApp');
+
+                const body: WhatsappMessageWithTwilioInput = {
+                    conteudoMensagem: messageWhatsApp,
+                    linkAplicacao: '',
+                    numeroWhatsapp: membro.telefone,
+                    nomeCompanhia: 'Igreja Batista do Brooklin',
+                    nomeMembro: membro.nome
+                }
+
+                UserApi.sendWhatsAppMessage(body)
+                    .finally(() => {
+                        setOpenBackLoadingMembros(false);
+                        setShowBackLoadingMessage('');
+                    })
+            } catch (e) {
+
+            }
+        }
     }
 
     const getMember = () => {
-        if (contextAuth.mongoId !== '') {
-            fetchMember(contextAuth.mongoId);
+        if (useStoreIbbZus.mongoId !== '') {
+            fetchMember(useStoreIbbZus.mongoId);
         } else {
             handleReloadUser();
         }
@@ -125,7 +148,7 @@ export function UserForm({memberParam}: any) {
     }, []);
 
     useEffect(() => {
-        if (!memberParam && contextAuth && ministries.length > 0) {
+        if (!memberParam && useStoreIbbZus && ministries.length > 0) {
             getMember();
         }
 
@@ -133,6 +156,20 @@ export function UserForm({memberParam}: any) {
         setMember(memberParam);
 
     }, [memberParam, ministries]);
+
+    if (!useStoreIbbZus.hasHydrated) {
+        return (
+            <Backdrop
+                sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
+                open={!useStoreIbbZus.hasHydrated}
+            >
+                <div className="flex flex-col items-center">
+                    <CircularProgress color="inherit"/>
+                    Carregando informações
+                </div>
+            </Backdrop>
+        )
+    }
 
     const handleReloadUser = () => {
         const storage = getUser();
@@ -326,7 +363,7 @@ export function UserForm({memberParam}: any) {
                                         <div className="mt-3">
                                             <Button
                                                 className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                                onClick={() => console.log('abrir o whatsapp')}
+                                                onClick={(e) => handleSendMessageWhatsapp(e, member)}
                                             >
                                                 <MessageSquareText className="w-4 h-4"/>
                                                 Pedir oração

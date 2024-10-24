@@ -50,4 +50,5 @@ export interface IInviteByEmail {
     to: string;
     subject: string;
     text: string;
+    phone: string;
 }
