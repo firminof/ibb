@@ -17,7 +17,6 @@ import {SendIcon} from "@/components/send-icon/send-icon";
 import {UserApi} from "@/lib/api/user-api";
 import {Backdrop, CircularProgress} from "@mui/material";
 import {ToastError} from "@/components/toast/toast-error";
-import {getContextAuth, getUser} from "@/lib/helpers/helpers";
 import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
 import {WhatsappMessageWithTwilioInput} from "@/lib/models/twilio-whatsapp";
 
@@ -172,7 +171,7 @@ export function UserForm({memberParam}: any) {
     }
 
     const handleReloadUser = () => {
-        const storage = getUser();
+        const storage = useStoreIbbZus.user;
 
         if (storage && storage.length > 0) {
             const userStorage = JSON.parse(storage);

@@ -17,3 +17,18 @@ export interface ICreateMinisterio {
     categoria: string;
     responsavel: any[] | IUser[];
 }
+
+export interface IEditMinisterio {
+    nome?: string;
+    categoria?: string;
+    responsavel?: any[] | IUser[];
+}
+
+export interface IMinisteriosResponseApi {
+    _id?: string;
+    nome: string;
+    categoria: string;
+    responsavel: IUser[];
+    createdAt: string;
+    updatedAt: string;
+}

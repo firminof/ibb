@@ -1,7 +1,7 @@
 import api from "@/lib/api/api";
 import {IInviteByEmail, ITempInvite} from "@/lib/models/invite";
 import {ITempUserCreate, ITempUserUpdate} from "@/lib/models/user";
-import {ICreateMinisterio} from "@/lib/models/misterios";
+import {ICreateMinisterio, IEditMinisterio, IMinisteriosResponseApi} from "@/lib/models/misterios";
 import {IMinistries} from "@/lib/models/user-response-api";
 import {WhatsappMessageWithTwilioInput} from "@/lib/models/twilio-whatsapp";
 
@@ -44,6 +44,12 @@ export class UserApi {
         return user.data;
     }
 
+    static async deleteMinisterio(id: string): Promise<any | undefined> {
+        const user = await api.delete(`/ministrie/${id}`);
+
+        return user.data;
+    }
+
     static async updateInfo(body: string[]): Promise<any | undefined> {
         const user = await api.post(`/user/update-info`, body);
 
@@ -62,8 +68,20 @@ export class UserApi {
         return user.data;
     }
 
+    static async fetchMinistriesV2 (): Promise<IMinisteriosResponseApi[]> {
+        const user = await api.get(`/ministrie/all`);
+
+        return user.data;
+    }
+
     static async createMinistrie(body: ICreateMinisterio): Promise<any | undefined> {
         const user = await api.post(`/ministrie`, body);
+
+        return user.data;
+    }
+
+    static async editMinistrie(id: string, body: IEditMinisterio): Promise<any | undefined> {
+        const user = await api.put(`/ministrie/${id}`, body);
 
         return user.data;
     }

@@ -6,8 +6,6 @@ import {Label} from "@/components/ui/label"
 import {Input} from "@/components/ui/input"
 import {Button} from "@/components/ui/button"
 import {Backdrop, CircularProgress} from "@mui/material";
-import {UserCredential} from "@firebase/auth";
-import {undefined} from "zod";
 import api from "@/lib/api/api";
 import {useSignInWithEmailAndPassword} from "react-firebase-hooks/auth";
 import {auth} from "@/app/firebase/config";
@@ -15,7 +13,7 @@ import Image from "next/image";
 import {ToastSuccess} from "@/components/toast/toast-success";
 import {UserApi} from "@/lib/api/user-api";
 import {useRouter} from "next/navigation";
-import {emailRegex, getContextAuth, setUser} from "@/lib/helpers/helpers";
+import {emailRegex} from "@/lib/helpers/helpers";
 import {
     Dialog,
     DialogContent,

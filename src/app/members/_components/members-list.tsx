@@ -11,7 +11,6 @@ import {Input} from "@/components/ui/input";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {PhoneIcon} from "@/components/phone-icon/phone-icon";
 import {ChevronDownIcon, ChevronLeftIcon, ChevronUpIcon, Pencil1Icon, ReloadIcon} from "@radix-ui/react-icons";
 import {Button} from "@/components/ui/button";
 import {useRouter} from "next/navigation";
@@ -31,9 +30,11 @@ import {UserForm} from "@/app/user/_components/user.form";
 import {Checkbox} from "@/components/ui/checkbox";
 import {Textarea} from "@/components/ui/textarea";
 import {SendIcon} from "@/components/send-icon/send-icon";
-import {getContextAuth} from "@/lib/helpers/helpers";
+import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
 
 export function MembersList() {
+    const useStoreIbbZus: IStore = useStoreIbb((state: IStore) => state);
+
     const [showErrorApi, setShowErrorApi] = useState(false);
     const [showErrorMessageApi, setShowErrorMessageApi] = useState<string>('');
 
@@ -77,9 +78,12 @@ export function MembersList() {
     const [updatedAt, setUpdatedAt] = useState<string>('');
     const [filterPreviousModified, setFilterPreviousModified] = useState(false);
 
-    const contextAuth = getContextAuth();
-    if (contextAuth.role === UserRoles.MEMBRO) {
+    if (useStoreIbbZus.role === UserRoles.MEMBRO) {
         router.push('/user');
+    }
+
+    if (useStoreIbbZus.user == null) {
+        router.push('/login');
     }
 
     const ministeriosCadastrados: IMinisteriosSelect[] = ministerios.map((ministerio: IMisterios): IMinisteriosSelect => ({
@@ -241,6 +245,8 @@ export function MembersList() {
         if (ministries.length === 0) {
             getAllMinistries();
         }
+        setMemberSelectedCheckbox([]);
+        setMemberSelected({} as IUserResponseApi);
     }, []);
 
     useEffect(() => {
@@ -248,6 +254,20 @@ export function MembersList() {
             getAllMembers();
         }
     }, [ministries]);
+
+    if (!useStoreIbbZus.hasHydrated) {
+        return (
+            <Backdrop
+                sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
+                open={!useStoreIbbZus.hasHydrated}
+            >
+                <div className="flex flex-col items-center">
+                    <CircularProgress color="inherit"/>
+                    Carregando informações
+                </div>
+            </Backdrop>
+        )
+    }
 
     const filtros = (chave: string, valor: any, event: any) => {
         if (event) {

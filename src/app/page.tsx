@@ -1,13 +1,14 @@
 "use client"
 import Dashboard from "@/app/dashboard/page";
 import {useRouter} from "next/navigation";
-import {getContextAuth} from "@/lib/helpers/helpers";
+import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
 
 export default function App() {
     const router = useRouter();
-    const contextAuth = getContextAuth();
 
-    if (contextAuth.user == null) {
+    const useStoreIbbZus: IStore = useStoreIbb((state: IStore) => state);
+
+    if (useStoreIbbZus.user == null) {
         router.push('/login');
     }
 
