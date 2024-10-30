@@ -11,9 +11,8 @@ import {useRouter, useSearchParams} from "next/navigation"
 import {Backdrop, CircularProgress} from "@mui/material"
 import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown"
 import {IMinisteriosSelect} from "@/lib/models/misterios"
-import {ITempUserUpdate, IUser, UserRoles} from "@/lib/models/user"
+import {ITempUserUpdate, UserRoles} from "@/lib/models/user"
 import {formatDateUS} from "@/lib/helpers/helpers"
-import {diaconos} from "@/lib/constants/diaconos"
 import {IDiaconoSelect} from "@/lib/models/diaconos"
 import {CPFInput, DateInput, EmailInput, PhoneInput, RGInput} from "@/components/form-inputs/form-inputs"
 import {ChevronLeftIcon} from "@radix-ui/react-icons"
@@ -21,7 +20,7 @@ import {ToastError} from "@/components/toast/toast-error"
 import {ToastWarning} from "@/components/toast/toast-warning"
 import {UserApi} from "@/lib/api/user-api"
 import {ToastSuccess} from "@/components/toast/toast-success"
-import {IMinistries} from "@/lib/models/user-response-api"
+import {IMinistries, IUserResponseApi} from "@/lib/models/user-response-api"
 import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
 
 export default function EditUserForm() {
@@ -29,6 +28,7 @@ export default function EditUserForm() {
 
     const [isSuccess, setIsSuccess] = useState<boolean>(false)
     const [openBackLoading, setOpenBackLoading] = useState<boolean>(false)
+    const [backLoadingMessage, setBackLoadingMessage] = useState<string>('')
 
     const [userEditForm, setUserEditForm] = useState<any>({} as ITempUserUpdate);
     const [userEditFormTmp, setUserEditFormTmp] = useState<any>();
@@ -36,7 +36,9 @@ export default function EditUserForm() {
     const [showWarningMessage, setShowWarningMessage] = useState('')
     const [showErrorApi, setShowErrorApi] = useState(false)
     const [showErrorMessageApi, setShowErrorMessageApi] = useState<string>('')
+
     const [ministries, setMinistries] = useState<IMinistries[]>([])
+    const [members, setMembers] = useState<IUserResponseApi[]>([]);
 
     const router = useRouter()
 
@@ -46,19 +48,31 @@ export default function EditUserForm() {
 
     const getAllMinistries = async () => {
         try {
-            const response: IMinistries[] = await UserApi.fetchMinistries()
-            setMinistries(response && response.length > 0 ? response : [])
+            setOpenBackLoading(true);
+            setBackLoadingMessage('Buscando ministérios...');
+
+            const response: IMinistries[] = await UserApi.fetchMinistries();
+            setMinistries(response && response.length > 0 ? response : []);
+
+            setOpenBackLoading(false);
+            setBackLoadingMessage('');;
         } catch (error: any) {
-            console.log(error)
-            setMinistries([])
-            setShowErrorMessageApi('Erro ao buscar ministérios. Por favor, tente novamente.')
-            setShowErrorApi(true)
+            console.log(error);
+            setMinistries([]);
+            setShowErrorMessageApi('Erro ao buscar ministérios. Por favor, tente novamente.');
+            setShowErrorApi(true);
+
+            setOpenBackLoading(false);
+            setBackLoadingMessage('');
         }
     }
 
     const getMemberById = async () => {
         try {
             if (idMembro && idMembro.length > 0) {
+                setOpenBackLoading(true);
+                setBackLoadingMessage('Buscando informações do membro...');
+
                 const response = await UserApi.fetchMemberById(idMembro);
                 const mapResponse: any = {
                     conjugue: response.conjugue,
@@ -91,12 +105,76 @@ export default function EditUserForm() {
                 }
 
                 setUserEditForm(mapResponse);
+
+                setOpenBackLoading(false);
+                setBackLoadingMessage('');
             }
         } catch (error: any) {
-            console.log(error)
-            setMinistries([])
-            setShowErrorMessageApi('Erro ao pelo membro. Por favor, tente novamente.')
-            setShowErrorApi(true)
+            console.log(error);
+            setOpenBackLoading(false);
+            setBackLoadingMessage('');
+
+            setMinistries([]);
+            setShowErrorMessageApi('Erro ao pelo membro. Por favor, tente novamente.');
+            setShowErrorApi(true);
+        }
+    }
+
+    const getAllMembers = async (): Promise<void> => {
+        setOpenBackLoading(true);
+        setBackLoadingMessage('Carregando membros...');
+
+        try {
+            UserApi.fetchMembers()
+                .then((response) => {
+                    if (response.data.length > 0) {
+                        // Mapeando ministérios para todos os membros
+                        const mappedMembers: IUserResponseApi[] = response.data.map((member: any) => {
+                            return {
+                                ...member,
+                                ministerio: member.ministerio.map((ministerioId: string) => {
+                                    return ministries.find((ministerio: IMinistries) => ministerio._id === ministerioId.toString()) || null;
+                                })
+                            };
+                        });
+                        setMembers(mappedMembers);
+                        return;
+                    }
+
+                    setMembers([]);
+                })
+                .catch((error) => {
+                    console.log(error);
+                    switch (error.code) {
+                        case 'ERR_BAD_REQUEST':
+                            setShowErrorMessageApi('Falha na requisição, tente novamente!');
+                            setShowErrorApi(true);
+                            setMembers([]);
+                            break;
+                        case 'ERR_NETWORK':
+                            setShowErrorMessageApi('Erro na conexão, tente novamente!');
+                            setShowErrorApi(true);
+                            setMembers([]);
+                            break;
+
+                        default:
+                            setShowErrorMessageApi('Erro genérico do servidor, tente novamente!');
+                            setShowErrorApi(true);
+                            setMembers([]);
+                            break;
+                    }
+                })
+                .finally(() => {
+                    setOpenBackLoading(false);
+                    setBackLoadingMessage('');
+                });;
+        } catch (e) {
+            setShowErrorMessageApi('Erro desconhecido, tente novamente!');
+            setShowErrorApi(true);
+            setMembers([]);
+
+            setOpenBackLoading(false);
+            setBackLoadingMessage('');
         }
     }
 
@@ -106,15 +184,23 @@ export default function EditUserForm() {
             return;
         }
         if (useStoreIbbZus.hasHydrated && useStoreIbbZus.user == null) {
+            useStoreIbbZus.addUser(null);
+            useStoreIbbZus.addRole('');
+            useStoreIbbZus.addMongoId('');
+            useStoreIbbZus.setHasHydrated(true);
             router.push('/login');
             return;
         }
         getAllMinistries();
+        getAllMembers();
     }, [useStoreIbbZus.hasHydrated])
 
     useEffect(() => {
-        if (useStoreIbbZus.hasHydrated && idMembro && idMembro.length > 0)
+        if (useStoreIbbZus.hasHydrated && idMembro && idMembro.length > 0){
             getMemberById();
+            getAllMembers();
+        }
+
     }, [ministries])
 
     if (!useStoreIbbZus.hasHydrated) {
@@ -136,46 +222,74 @@ export default function EditUserForm() {
         label: ministerio.nome
     }))
 
-    const diaconosCadastrados: IDiaconoSelect[] = diaconos.map((diacono: IUser): IDiaconoSelect => ({
-        id: diacono.id,
-        label: diacono.nome,
-        value: diacono.id
-    }))
+    let diaconosCadastrados: IDiaconoSelect[] = members.map((membro: IUserResponseApi): IDiaconoSelect => {
+        if (membro && membro.is_diacono) {
+            return {
+                id: membro && membro._id ? membro._id : '',
+                label: membro && membro.nome ? membro.nome : '',
+                value: membro && membro._id ? membro._id : ''
+            }
+        }
+
+        return {
+            id: '-1',
+            label: '',
+            value: ''
+        }
+    });
+
+    diaconosCadastrados = diaconosCadastrados.filter((diacono: IDiaconoSelect) => diacono.id !== '-1' ?? diacono);
 
     const handleSubmitUser = async () => {
         setOpenBackLoading(true);
+        setBackLoadingMessage('Atualizando membro...');
 
         try {
             userEditFormTmp.possui_filhos = userEditFormTmp.possui_filhos === 'sim';
 
-            const diacono: IDiaconoSelect | undefined = diaconosCadastrados.find((d: IDiaconoSelect) => d.id === Number(userEditFormTmp.diacono))
-            userEditFormTmp.diacono = diacono ? {id: diacono.id, nome: diacono.label} : {id: -1, nome: ''}
+            const diacono: IDiaconoSelect | undefined = diaconosCadastrados.find((d: IDiaconoSelect) => d.id === userEditFormTmp.diacono)
+            userEditFormTmp.diacono = diacono ? {id: diacono.id, nome: diacono.label, is_membro: true} : {id: -1, nome: ''}
 
-
-            if (userEditFormTmp.data_nascimento && userEditFormTmp.data_nascimento.length > 0)
+            if (userEditFormTmp.data_nascimento && userEditFormTmp.data_nascimento.getTime() > 0)
                 userEditFormTmp.data_nascimento = formatDateUS(userEditFormTmp.data_nascimento);
 
-            if (userEditFormTmp.data_casamento && userEditFormTmp.data_casamento.length > 0)
+            if (userEditFormTmp.data_ingresso && userEditFormTmp.data_ingresso.getTime() > 0)
+                userEditFormTmp.data_ingresso = formatDateUS(userEditFormTmp.data_ingresso);
+
+            if (userEditFormTmp.transferencia && userEditFormTmp.transferencia.getTime() > 0)
+                userEditFormTmp.transferencia = formatDateUS(userEditFormTmp.transferencia);
+
+            if (userEditFormTmp.falecimento && userEditFormTmp.falecimento.getTime() > 0)
+                userEditFormTmp.falecimento = formatDateUS(userEditFormTmp.falecimento);
+
+            if (userEditFormTmp.excluido && userEditFormTmp.excluido.getTime() > 0)
+                userEditFormTmp.excluido = formatDateUS(userEditFormTmp.excluido);
+
+            if (userEditFormTmp.data_casamento && userEditFormTmp.data_casamento.getTime() > 0)
                 userEditFormTmp.data_casamento = formatDateUS(userEditFormTmp.data_casamento);
 
             if (idMembro && idMembro.length > 0) {
                 await UserApi.updateMember(idMembro, userEditFormTmp);
             }
 
-            setOpenBackLoading(false)
-            setIsSuccess(true)
-            setShowWarningMessage('')
-            setShowWarningToast(false)
+            setOpenBackLoading(false);
+            setBackLoadingMessage('');
+
+            setIsSuccess(true);
+            setShowWarningMessage('');
+            setShowWarningToast(false);
 
             setTimeout(() => router.push('/members'), 1500)
         } catch (error: any) {
             console.log('[TRY-CATCH] error: ', error)
-            setOpenBackLoading(false)
-            setIsSuccess(false)
-            setShowWarningMessage('')
-            setShowWarningToast(false)
-            setShowErrorApi(true)
-            setShowErrorMessageApi(error.response?.data?.message || 'Erro inesperado, tente novamente!')
+            setOpenBackLoading(false);
+            setBackLoadingMessage('');
+
+            setIsSuccess(false);
+            setShowWarningMessage('');
+            setShowWarningToast(false);
+            setShowErrorApi(true);
+            setShowErrorMessageApi(error.response?.data?.message || 'Erro inesperado, tente novamente!');
         }
     }
 
@@ -184,7 +298,7 @@ export default function EditUserForm() {
     }
 
     const handleUserForm = (key: string, event: any) => {
-        const fieldValue = ['status', 'ministerio', 'estado_civil', 'possui_filhos', 'diacono', 'forma_ingresso', 'role'].includes(key)
+        const fieldValue = ['status', 'ministerio', 'estado_civil', 'possui_filhos', 'diacono', 'forma_ingresso', 'role', 'is_diacono'].includes(key)
             ? event
             : event.target.value
 
@@ -212,7 +326,8 @@ export default function EditUserForm() {
                 case 'conjugue':
                     return userEditForm[name]?.nome
                 case 'diacono':
-                    return userEditForm[name]?.id?.toString()
+                case 'is_diacono':
+                    return userEditForm[name]?.id?.toString();
                 case 'possui_filhos':
                     return userEditForm[name] ? 'sim' : 'nao'
                 default:
@@ -230,7 +345,7 @@ export default function EditUserForm() {
             >
                 <div className="flex flex-col items-center">
                     <CircularProgress color="inherit"/>
-                    <p>Atualizando membro...</p>
+                    <p>{backLoadingMessage}</p>
                 </div>
             </Backdrop>
 
@@ -354,83 +469,6 @@ export default function EditUserForm() {
                                     )
                                 }
                             </div>
-
-                            {/*<div className="grid grid-cols-1 gap-4 space-y-2">*/}
-                            {/*    <Label htmlFor="foto">Foto</Label>*/}
-                            {/*    {*/}
-                            {/*        userEditForm && userEditForm.foto && userEditForm.foto !== '' ? (*/}
-                            {/*            <>*/}
-                            {/*                <Avatar className="w-20 h-20">*/}
-                            {/*                    <AvatarImage*/}
-                            {/*                        src={userEditForm && userEditForm.foto ? userEditForm.foto : 'https://github.com/shadcn.png'}/>*/}
-                            {/*                    <AvatarFallback>{obterIniciaisPrimeiroUltimo(userEditForm.nome as string)}</AvatarFallback>*/}
-                            {/*                </Avatar>*/}
-
-                            {/*                <div*/}
-                            {/*                    className="flex items-center justify-center w-full">*/}
-                            {/*                    <label htmlFor="foto"*/}
-                            {/*                           className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600">*/}
-                            {/*                        <div*/}
-                            {/*                            className="flex flex-col items-center justify-center pt-5 pb-6">*/}
-                            {/*                            <svg*/}
-                            {/*                                className="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400"*/}
-                            {/*                                aria-hidden="true"*/}
-                            {/*                                xmlns="http://www.w3.org/2000/svg"*/}
-                            {/*                                fill="none"*/}
-                            {/*                                viewBox="0 0 20 16">*/}
-                            {/*                                <path stroke="currentColor"*/}
-                            {/*                                      strokeLinecap="round"*/}
-                            {/*                                      strokeLinejoin="round"*/}
-                            {/*                                      strokeWidth="2"*/}
-                            {/*                                      d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>*/}
-                            {/*                            </svg>*/}
-
-                            {/*                            <p className="mb-2 text-sm text-gray-500 dark:text-gray-400"><span*/}
-                            {/*                                className="font-semibold">Clique aqui</span> ou*/}
-                            {/*                                arraste e*/}
-                            {/*                                solte</p>*/}
-                            {/*                            <p className="text-xs text-gray-500 dark:text-gray-400">Extensões*/}
-                            {/*                                de*/}
-                            {/*                                imagens aceitas: PNG, JPG, JPEG</p>*/}
-                            {/*                        </div>*/}
-                            {/*                        <input*/}
-                            {/*                            id="foto"*/}
-                            {/*                            onChange={(e: any) => handleUserForm('foto', e)}*/}
-                            {/*                            type="file" className="hidden"/>*/}
-                            {/*                    </label>*/}
-                            {/*                </div>*/}
-                            {/*            </>*/}
-                            {/*        ) : (*/}
-                            {/*            <div className="flex items-center justify-center w-full">*/}
-                            {/*                <label htmlFor="foto"*/}
-                            {/*                       className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600">*/}
-                            {/*                    <div*/}
-                            {/*                        className="flex flex-col items-center justify-center pt-5 pb-6">*/}
-                            {/*                        <svg className="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400"*/}
-                            {/*                             aria-hidden="true" xmlns="http://www.w3.org/2000/svg"*/}
-                            {/*                             fill="none"*/}
-                            {/*                             viewBox="0 0 20 16">*/}
-                            {/*                            <path stroke="currentColor" strokeLinecap="round"*/}
-                            {/*                                  strokeLinejoin="round" strokeWidth="2"*/}
-                            {/*                                  d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>*/}
-                            {/*                        </svg>*/}
-
-                            {/*                        <p className="mb-2 text-sm text-gray-500 dark:text-gray-400"><span*/}
-                            {/*                            className="font-semibold">Clique aqui</span> ou arraste e*/}
-                            {/*                            solte</p>*/}
-                            {/*                        <p className="text-xs text-gray-500 dark:text-gray-400">Extensões*/}
-                            {/*                            de*/}
-                            {/*                            imagens aceitas: PNG, JPG, JPEG</p>*/}
-                            {/*                    </div>*/}
-                            {/*                    <input*/}
-                            {/*                        id="foto"*/}
-                            {/*                        onChange={(e: any) => handleUserForm('foto', e)}*/}
-                            {/*                        type="file" className="hidden"/>*/}
-                            {/*                </label>*/}
-                            {/*            </div>*/}
-                            {/*        )*/}
-                            {/*    }*/}
-                            {/*</div>*/}
 
                             <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
                                 {
@@ -614,7 +652,23 @@ export default function EditUserForm() {
 
                             {
                                 useStoreIbbZus.role === UserRoles.ADMIN && (
-                                    <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-1">
+                                    <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label>É um diácono/diaconisa</Label>
+                                            <Select
+                                                required={false}
+                                                value={setFieldValue('is_diacono')}
+                                                onValueChange={(value) => handleUserForm('is_diacono', value)}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Selecione se é um diácono/diaconisa"/>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="sim">Sim</SelectItem>
+                                                    <SelectItem value="nao">Não</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
                                         <div className="space-y-2">
                                             <Label>Diácono</Label>
                                             <Select
@@ -629,7 +683,7 @@ export default function EditUserForm() {
                                                         diaconosCadastrados && diaconosCadastrados.length > 0 && (
                                                             diaconosCadastrados.map((diacono: IDiaconoSelect) => (
                                                                 <SelectItem key={diacono.id}
-                                                                            value={diacono.id.toString()}>
+                                                                            value={diacono.value.toString()}>
                                                                     {diacono.label}
                                                                 </SelectItem>
                                                             ))

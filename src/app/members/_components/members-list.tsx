@@ -83,6 +83,10 @@ export function MembersList() {
     }
 
     if (useStoreIbbZus.user == null) {
+        useStoreIbbZus.addUser(null);
+        useStoreIbbZus.addRole('');
+        useStoreIbbZus.addMongoId('');
+        useStoreIbbZus.setHasHydrated(true);
         router.push('/login');
     }
 

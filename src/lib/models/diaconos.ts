@@ -1,5 +1,5 @@
 export interface IDiaconoSelect {
-    id: number;
+    id: string;
     value: string;
     label: string;
 }

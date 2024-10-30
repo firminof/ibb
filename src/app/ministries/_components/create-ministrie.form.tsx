@@ -223,6 +223,10 @@ export default function CreateMinistrieForm() {
     }
 
     if (useStoreIbbZus.user == null) {
+        useStoreIbbZus.addUser(null);
+        useStoreIbbZus.addRole('');
+        useStoreIbbZus.addMongoId('');
+        useStoreIbbZus.setHasHydrated(true);
         router.push('/login');
     }
 
@@ -608,7 +612,7 @@ export default function CreateMinistrieForm() {
                             <div className="space-y-2">
                                 <Label htmlFor="categoria">Categoria</Label>
                                 <Select
-                                    value={ministrieEditForm.categoria}
+                                    value={ministrieEditForm && ministrieEditForm.categoria ? ministrieEditForm.categoria : ''}
                                     required={false}
                                     onValueChange={(value: string) => handleEditMinistrieForm('categoria', value)}>
                                     <SelectTrigger id="categoria" aria-label="categoria"

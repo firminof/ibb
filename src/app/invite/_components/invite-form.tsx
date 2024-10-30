@@ -13,7 +13,7 @@ import {Label} from "@/components/ui/label";
 import {Input} from "@/components/ui/input";
 import {CPFInput, EmailInput, PhoneInput, RGInput} from "@/components/form-inputs/form-inputs";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
-import {obterIniciaisPrimeiroUltimo} from "@/lib/helpers/helpers";
+import {formatDateUS, obterIniciaisPrimeiroUltimo} from "@/lib/helpers/helpers";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
 import {ToastSuccess} from "@/components/toast/toast-success";
@@ -51,6 +51,7 @@ export function InviteForm(props: any) {
         try {
             userForm.role = UserRoles.MEMBRO;
             userForm.possui_filhos = Boolean(userForm.possui_filhos);
+            userForm.data_nascimento = formatDateUS(userForm.data_nascimento);
 
             userForm.login = {
                 password: '12345678'

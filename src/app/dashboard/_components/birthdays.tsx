@@ -22,7 +22,7 @@ import {ToastError} from "@/components/toast/toast-error";
 import {Backdrop, CircularProgress} from "@mui/material";
 import {useRouter} from "next/navigation";
 import {UserApi} from "@/lib/api/user-api";
-import {obterMesAtual} from "@/lib/helpers/helpers";
+import {IMesesAno, MesesAno, obterMesAtual, obterMesesAno} from "@/lib/helpers/helpers";
 import {IMesAtual} from "@/lib/models/mes-atual";
 import * as React from "react";
 
@@ -37,10 +37,14 @@ export function Birthdays(props: any) {
 
     const [isOpenFilter, setIsOpenFilter] = useState(false);
     const [members, setMembers] = useState<IUserResponseApi[]>([]);
+    const [membersDiacono, setMembersDiacono] = useState<IUserResponseApi[]>([]);
     const [membersToFilter, setMembersToFilter] = useState<IUserResponseApi[]>([]);
     const [ministries, setMinistries] = useState<IMinistries[]>([]);
 
+    const [mesAtualCodigo, setMesAtualCodigo] = useState<number>(0);
     const [mesAtual, setMesAtual] = useState<string>('');
+
+    const mesesAno: IMesesAno[] = obterMesesAno();
 
     const [nome, setNome] = useState<string>('');
     const [status, setStatus] = useState<string>('');
@@ -49,19 +53,14 @@ export function Birthdays(props: any) {
     const [idade, setIdade] = useState<string>('');
     const [updatedAt, setUpdatedAt] = useState<string>('');
 
-    const ministeriosCadastrados: IMinisteriosSelect[] = ministerios.map((ministerio: IMisterios): IMinisteriosSelect => ({
-        id: ministerio.id,
-        label: ministerio.nome
-    }));
+    const {codigo, descricao}: IMesAtual = obterMesAtual();
 
-    const diaconosCadastrados: IDiaconoSelect[] = diaconos.map((diacono: IUser): IDiaconoSelect => ({
-        id: diacono.id,
-        label: diacono.nome,
-        value: diacono.nome
-    }));
+    if (mesAtualCodigo === 0) {
+        setMesAtual(descricao);
+        setMesAtualCodigo(codigo);
+    }
 
     const ministeriosSelected = (ministerios: any) => {
-        console.log(ministerios);
         setMinisterio((previous: number[]) => {
             return {...ministerios}
         });
@@ -124,15 +123,12 @@ export function Birthdays(props: any) {
         }
     }
 
-    const getAllMembers = async (): Promise<void> => {
+    const getAllMembersBirthday = async (codigoMes?: number): Promise<void> => {
         setOpenBackLoadingMembros(true);
-        setShowBackLoadingMessage('Carregando membros...');
-
-        const {codigo, descricao}: IMesAtual = obterMesAtual();
-        setMesAtual(descricao);
+        setShowBackLoadingMessage('Carregando aniversariantes...');
 
         try {
-            UserApi.fetchBirthdaysMembers(codigo)
+            UserApi.fetchBirthdaysMembers(codigoMes ? codigoMes : mesAtualCodigo)
                 .then((response) => {
                     if (response.data.length > 0) {
                         // Mapeando ministérios para todos os membros
@@ -194,6 +190,70 @@ export function Birthdays(props: any) {
         }
     }
 
+    const getAllMembers = async (): Promise<void> => {
+        setOpenBackLoadingMembros(true);
+        setShowBackLoadingMessage('Carregando membros...');
+
+        try {
+            UserApi.fetchMembers()
+                .then((response) => {
+                    if (response.data.length > 0) {
+                        // Mapeando ministérios para todos os membros
+                        const mappedMembers: IUserResponseApi[] = response.data.map((member: any) => {
+                            return {
+                                ...member,
+                                ministerio: member.ministerio.map((ministerioId: string) => {
+                                    return ministries.find((ministerio: IMinistries) => ministerio._id === ministerioId.toString()) || null;
+                                })
+                            };
+                        });
+                        setMembersDiacono(mappedMembers);
+                        setOpenBackLoadingMembros(false);
+                        setShowBackLoadingMessage('');
+                        return;
+                    }
+
+                    setMembersDiacono([]);
+                    setOpenBackLoadingMembros(false);
+                    setShowBackLoadingMessage('');
+                })
+                .catch((error) => {
+                    console.log(error);
+                    switch (error.code) {
+                        case 'ERR_BAD_REQUEST':
+                            setShowErrorMessageApi('Falha na requisição, tente novamente!');
+                            setShowErrorApi(true);
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                            setMembersDiacono([]);
+                            break;
+                        case 'ERR_NETWORK':
+                            setShowErrorMessageApi('Erro na conexão, tente novamente!');
+                            setShowErrorApi(true);
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                            setMembersDiacono([]);
+                            break;
+
+                        default:
+                            setShowErrorMessageApi('Erro genérico do servidor, tente novamente!');
+                            setShowErrorApi(true);
+                            setOpenBackLoadingMembros(false);
+                            setShowBackLoadingMessage('');
+                            setMembersDiacono([]);
+                            break;
+                    }
+                });
+        } catch (e) {
+            setShowErrorMessageApi('Erro desconhecido, tente novamente!');
+            setShowErrorApi(true);
+
+            setOpenBackLoadingMembros(false);
+            setShowBackLoadingMessage('');
+            setMembersDiacono([]);
+        }
+    }
+
     const filtros = (chave: string, valor: any, event: any) => {
         if (event) {
             event.preventDefault();
@@ -231,7 +291,7 @@ export function Birthdays(props: any) {
                 break;
             case 'diacono':
                 const resultDiacono: IUserResponseApi[] = membersToFilter.filter((member: IUserResponseApi) => (
-                    member.diacono.nome.toLowerCase().includes(valor.toLowerCase())
+                    member.diacono.id.toString().includes(valor.toString())
                 ))
                 setDiacono(valor);
                 setMembers(resultDiacono);
@@ -298,6 +358,7 @@ export function Birthdays(props: any) {
         getAllMinistries();
 
         if (ministries && ministries.length > 0 && members.length === 0) {
+            getAllMembersBirthday();
             getAllMembers();
         }
     }
@@ -310,9 +371,25 @@ export function Birthdays(props: any) {
 
     useEffect(() => {
         if (ministries && ministries.length > 0 && members.length === 0) {
+            getAllMembersBirthday();
             getAllMembers();
         }
     }, [ministries]);
+
+    const ministeriosCadastrados: IMinisteriosSelect[] = ministries.map((ministerio: IMinistries): IMinisteriosSelect => ({
+        id: ministerio && ministerio._id ? ministerio._id : '',
+        label: ministerio && ministerio.nome ? ministerio.nome : ''
+    }));
+
+    const diaconosCadastrados: IDiaconoSelect[] = membersDiacono.map((membro: IUserResponseApi): IDiaconoSelect => {
+        if (membro) {
+            return {
+                id: membro && membro._id ? membro._id : '',
+                label: membro && membro.nome ? membro.nome : '',
+                value: membro && membro._id ? membro._id : ''
+            }
+        }
+    });
 
     return (
         <div className="mt-5">
@@ -333,10 +410,34 @@ export function Birthdays(props: any) {
                 )
             }
 
-            <Label className="text-black text-xl font-bold">Aniversariantes do mês: {mesAtual.toUpperCase()}</Label>
+            <div className="flex gap-3">
+                <Label className="text-black text-xl font-bold">Aniversariantes do mês: </Label>
+                <div className="space-y-2">
+                    <Select
+                        required
+                        value={mesAtualCodigo.toString()}
+                        onValueChange={(value) => {
+                            setMesAtualCodigo(Number(value));
+                            const getMesCodigoIndex: number = mesesAno.findIndex(mes => mes.codigo === Number(value));
+                            setMesAtual(mesesAno[getMesCodigoIndex].descricao);
+                            getAllMembersBirthday(Number(value));
+                        }}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Selecione o mês"/>
+                        </SelectTrigger>
+                        <SelectContent>
+                            {
+                                mesesAno.map((mes: IMesesAno, index: number) => (
+                                    <SelectItem key={index} value={mes.codigo.toString()}>{mes.descricao}</SelectItem>
+                                ))
+                            }
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
 
             {
-                members && members.length > 0 ? (
+                membersToFilter && membersToFilter.length > 0 ? (
                     <Card className='mt-5'>
                         <CardHeader>
                             <div className="flex justify-end items-center -mt-6 -mr-6">

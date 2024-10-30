@@ -9,7 +9,7 @@ import {Separator} from "@/components/ui/separator"
 import {IMinistries, IUserResponseApi} from "@/lib/models/user-response-api";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
-import {ReloadIcon} from "@radix-ui/react-icons";
+import {Pencil1Icon, ReloadIcon} from "@radix-ui/react-icons";
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {Label} from "@/components/ui/label";
 import {Textarea} from "@/components/ui/textarea";
@@ -19,6 +19,7 @@ import {Backdrop, CircularProgress} from "@mui/material";
 import {ToastError} from "@/components/toast/toast-error";
 import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
 import {WhatsappMessageWithTwilioInput} from "@/lib/models/twilio-whatsapp";
+import {useRouter} from "next/navigation";
 
 export function UserForm({memberParam}: any) {
     const useStoreIbbZus: IStore = useStoreIbb((state: IStore) => state);
@@ -34,6 +35,8 @@ export function UserForm({memberParam}: any) {
     const [showErrorMessageApi, setShowErrorMessageApi] = useState<string>('');
 
     const [ministries, setMinistries] = useState<IMinistries[]>([]);
+
+    const router = useRouter();
 
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
@@ -187,6 +190,13 @@ export function UserForm({memberParam}: any) {
                         console.log('Erro ao recuperar os dados do membro!');
                     })
             }
+        } else if (useStoreIbbZus.user == null) {
+            useStoreIbbZus.addUser(null);
+            useStoreIbbZus.addRole('');
+            useStoreIbbZus.addMongoId('');
+            useStoreIbbZus.setHasHydrated(true);
+            router.push('/login');
+            return;
         }
     }
 
@@ -334,40 +344,53 @@ export function UserForm({memberParam}: any) {
                         <div
                             className="flex-grow overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400 transition-colors duration-200">
                             <div className="space-y-6">
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center justify-between gap-4">
 
-                                    <Avatar className="w-24 h-24">
-                                        <AvatarImage src={member.foto || "/placeholder.svg?height=96&width=96"}
-                                                     alt={member.nome}/>
-                                        <AvatarFallback>{member.nome.split(' ').map((n: any[]) => n[0]).join('').substring(0, 2)}</AvatarFallback>
-                                    </Avatar>
+                                    <div className="flex items-center gap-4">
+                                        <Avatar className="w-24 h-24">
+                                            <AvatarImage src={member.foto || "/placeholder.svg?height=96&width=96"}
+                                                         alt={member.nome}/>
+                                            <AvatarFallback>{member.nome.split(' ').map((n: any[]) => n[0]).join('').substring(0, 2)}</AvatarFallback>
+                                        </Avatar>
 
-                                    <div>
-                                        <h2 className="text-2xl font-bold">{member.nome}</h2>
                                         <div>
-                                            <div className="mt-2">
-                                                <InfoItem icon={<CalendarIcon className="w-4 h-4"/>} label="MEMBRO DESDE"
-                                                          value={member.data_ingresso || 'Não informado'}/>
+                                            <h2 className="text-2xl font-bold">{member.nome}</h2>
+                                            <div>
+                                                <div className="mt-2">
+                                                    <InfoItem icon={<CalendarIcon className="w-4 h-4"/>}
+                                                              label="MEMBRO DESDE"
+                                                              value={member.data_ingresso || 'Não informado'}/>
+                                                </div>
+
+                                                <div className="flex items-center mt-3 space-x-2">
+                                                    <Badge variant="outline"
+                                                           className={`${getStatusColor(member.status)} text-white`}>
+                                                        {member.status.toUpperCase()}
+                                                    </Badge>
+                                                    <Badge variant="secondary">{member.role}</Badge>
+                                                </div>
                                             </div>
 
-                                            <div className="flex items-center mt-3 space-x-2">
-                                                <Badge variant="outline"
-                                                       className={`${getStatusColor(member.status)} text-white`}>
-                                                    {member.status.toUpperCase()}
-                                                </Badge>
-                                                <Badge variant="secondary">{member.role}</Badge>
+                                            <div className="mt-3">
+                                                <Button
+                                                    className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                                                    onClick={(e) => handleSendMessageWhatsapp(e, member)}
+                                                >
+                                                    <MessageSquareText className="w-4 h-4"/>
+                                                    Pedir oração
+                                                </Button>
                                             </div>
                                         </div>
+                                    </div>
 
-                                        <div className="mt-3">
-                                            <Button
-                                                className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                                onClick={(e) => handleSendMessageWhatsapp(e, member)}
-                                            >
-                                                <MessageSquareText className="w-4 h-4"/>
-                                                Pedir oração
-                                            </Button>
-                                        </div>
+                                    <div className="mt-3">
+                                        <Button
+                                            className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                                            onClick={(e) => router.push(`/edit-user?id=${member._id}`)}
+                                        >
+                                            <Pencil1Icon className="w-4 h-4"/>
+                                            Editar informações
+                                        </Button>
                                     </div>
                                 </div>
 

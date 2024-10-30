@@ -1,6 +1,7 @@
 export interface IUser {
     id: any;
     nome: string;
+    is_membro: boolean;
 }
 
 export enum UserRoles {
@@ -71,6 +72,8 @@ export interface ITempUserCreate {
     motivo_exclusao?: string;
 
     motivo_visita?: string;
+
+    is_diacono: boolean;
 }
 
 export interface ITempUserUpdate {
@@ -107,4 +110,6 @@ export interface ITempUserUpdate {
     motivo_exclusao?: string;
 
     motivo_visita?: string;
+
+    is_diacono?: boolean;
 }

@@ -57,6 +57,28 @@ export const obterMesAtual = (): IMesAtual => {
     }
 }
 
+export interface IMesesAno {
+    codigo: number;
+    descricao: string;
+}
+
+export const obterMesesAno = (): IMesesAno[] => {
+    return [
+        {codigo: 1, descricao: 'Janeiro'},
+        {codigo: 2, descricao: 'Fevereiro'},
+        {codigo: 3, descricao: 'Março'},
+        {codigo: 4, descricao: 'Abril'},
+        {codigo: 5, descricao: 'Maio'},
+        {codigo: 6, descricao: 'Junho'},
+        {codigo: 7, descricao: 'Julho'},
+        {codigo: 8, descricao: 'Agosto'},
+        {codigo: 9, descricao: 'Setembro'},
+        {codigo: 10, descricao: 'Outubro'},
+        {codigo: 11, descricao: 'Novembro'},
+        {codigo: 12, descricao: 'Dezembro'},
+    ]
+}
+
 export const getEmailStorage = (): string => {
     return emailStorage;
 }

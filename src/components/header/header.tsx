@@ -29,7 +29,7 @@ export function Header() {
                     useStoreIbbZus.addUser(null);
                     useStoreIbbZus.addRole('');
                     useStoreIbbZus.addMongoId('');
-                    useStoreIbbZus.setHasHydrated(false);
+                    useStoreIbbZus.setHasHydrated(true);
 
                     setTimeout(() => {
                         router.push('/login');

@@ -13,7 +13,7 @@ import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-d
 import {IMinisteriosSelect} from "@/lib/models/misterios";
 import {ITempUserCreate, IUser, StatusEnum, UserRoles} from "@/lib/models/user";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
-import {formatDateUS, obterIniciaisPrimeiroUltimo} from "@/lib/helpers/helpers";
+import {formatDateUS, obterIniciaisPrimeiroUltimo, obterMesAtual} from "@/lib/helpers/helpers";
 import {diaconos} from "@/lib/constants/diaconos";
 import {IDiaconoSelect} from "@/lib/models/diaconos";
 import {CPFInput, DateInput, EmailInput, PhoneInput, RGInput} from "@/components/form-inputs/form-inputs";
@@ -22,8 +22,9 @@ import {ToastError} from "@/components/toast/toast-error";
 import {ToastWarning} from "@/components/toast/toast-warning";
 import {UserApi} from "@/lib/api/user-api";
 import {ToastSuccess} from "@/components/toast/toast-success";
-import {IMinistries} from "@/lib/models/user-response-api";
+import {IMinistries, IUserResponseApi} from "@/lib/models/user-response-api";
 import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
+import {IMesAtual} from "@/lib/models/mes-atual";
 
 export default function CreateUserForm() {
     const useStoreIbbZus: IStore = useStoreIbb((state: IStore) => state);
@@ -36,15 +37,20 @@ export default function CreateUserForm() {
 
     const [showWarningToast, setShowWarningToast] = useState<boolean>(false);
     const [showWarningMessage, setShowWarningMessage] = useState('');
+    const [openBackLoadingMessage, setOpenBackLoadingMessage] = useState('');
 
     const [showErrorApi, setShowErrorApi] = useState(false);
     const [showErrorMessageApi, setShowErrorMessageApi] = useState<string>('');
 
     const [ministries, setMinistries] = useState<IMinistries[]>([]);
+    const [members, setMembers] = useState<IUserResponseApi[]>([]);
 
     const router = useRouter();
 
     const getAllMinistries = () => {
+        setOpenBackLoading(true);
+        setOpenBackLoadingMessage('Carregando ministérios...');
+
         try {
             UserApi.fetchMinistries()
                 .then((response: IMinistries[]) => {
@@ -77,6 +83,10 @@ export default function CreateUserForm() {
                             setMinistries([]);
                             break;
                     }
+                })
+                .finally(() => {
+                    setOpenBackLoading(false);
+                    setOpenBackLoadingMessage('');
                 });
         } catch (e) {
             setShowErrorMessageApi('Erro desconhecido, tente novamente!');
@@ -86,12 +96,72 @@ export default function CreateUserForm() {
         }
     }
 
+    const getAllMembers = async (): Promise<void> => {
+        setOpenBackLoading(true);
+        setOpenBackLoadingMessage('Carregando membros...');
+
+        try {
+            UserApi.fetchMembers()
+                .then((response) => {
+                    if (response.data.length > 0) {
+                        // Mapeando ministérios para todos os membros
+                        const mappedMembers: IUserResponseApi[] = response.data.map((member: any) => {
+                            return {
+                                ...member,
+                                ministerio: member.ministerio.map((ministerioId: string) => {
+                                    return ministries.find((ministerio: IMinistries) => ministerio._id === ministerioId.toString()) || null;
+                                })
+                            };
+                        });
+                        setMembers(mappedMembers);
+                        return;
+                    }
+
+                    setMembers([]);
+                })
+                .catch((error) => {
+                    console.log(error);
+                    switch (error.code) {
+                        case 'ERR_BAD_REQUEST':
+                            setShowErrorMessageApi('Falha na requisição, tente novamente!');
+                            setShowErrorApi(true);
+                            setMembers([]);
+                            break;
+                        case 'ERR_NETWORK':
+                            setShowErrorMessageApi('Erro na conexão, tente novamente!');
+                            setShowErrorApi(true);
+                            setMembers([]);
+                            break;
+
+                        default:
+                            setShowErrorMessageApi('Erro genérico do servidor, tente novamente!');
+                            setShowErrorApi(true);
+                            setMembers([]);
+                            break;
+                    }
+                })
+                .finally(() => {
+                    setOpenBackLoading(false);
+                    setOpenBackLoadingMessage('');
+                });
+            ;
+        } catch (e) {
+            setShowErrorMessageApi('Erro desconhecido, tente novamente!');
+            setShowErrorApi(true);
+            setMembers([]);
+        }
+    }
+
     useEffect(() => {
         if (useStoreIbbZus.hasHydrated && useStoreIbbZus.role === UserRoles.MEMBRO) {
             router.push('/user');
             return;
         }
         if (useStoreIbbZus.hasHydrated && useStoreIbbZus.user == null) {
+            useStoreIbbZus.addUser(null);
+            useStoreIbbZus.addRole('');
+            useStoreIbbZus.addMongoId('');
+            useStoreIbbZus.setHasHydrated(true);
             router.push('/login');
             return;
         }
@@ -100,6 +170,7 @@ export default function CreateUserForm() {
 
     useEffect(() => {
         getAllMinistries();
+        getAllMembers();
     }, []);
 
 
@@ -127,34 +198,32 @@ export default function CreateUserForm() {
         return [];
     });
 
-    const diaconosCadastrados: IDiaconoSelect[] = diaconos.map((diacono: IUser): IDiaconoSelect => ({
-        id: diacono.id,
-        label: diacono.nome,
-        value: diacono.nome
-    }));
+    let diaconosCadastrados: IDiaconoSelect[] = members.map((membro: IUserResponseApi): IDiaconoSelect => {
+        if (membro && membro.is_diacono) {
+            return {
+                id: membro && membro._id ? membro._id : '',
+                label: membro && membro.nome ? membro.nome : '',
+                value: membro && membro._id ? membro._id : ''
+            }
+        }
+
+        return {
+            id: '-1',
+            label: '',
+            value: ''
+        }
+    });
+
+    diaconosCadastrados = diaconosCadastrados.filter((diacono: IDiaconoSelect) => diacono.id !== '-1' ?? diacono);
 
     const handleCreateUser = async () => {
         setOpenBackLoading(true);
+        setOpenBackLoadingMessage('Criando membro...')
 
         validateForm();
 
         try {
-            userForm.possui_filhos = userForm.possui_filhos === 'sim';
-            userForm.data_nascimento = formatDateUS(userForm.data_nascimento);
-
-            const diacono: number = diaconosCadastrados.findIndex((diacono: IDiaconoSelect): boolean => diacono.id === Number(userForm.diacono));
-
-            if (diacono !== -1) {
-                userForm.diacono = {
-                    id: diaconosCadastrados[diacono].id,
-                    nome: diaconosCadastrados[diacono].label
-                }
-            } else {
-                userForm.diacono = {
-                    id: -1,
-                    nome: ''
-                }
-            }
+            buildPayload();
 
             // return console.log('create form: ', userForm)
             const saveMember = await UserApi.createMember(userForm);
@@ -181,6 +250,10 @@ export default function CreateUserForm() {
 
             switch (error.code) {
                 case 'ERR_BAD_REQUEST':
+                    if (error.response.data.message.includes('The user with the provided phone number already exists.')) {
+                        setShowErrorMessageApi('Número de telefone já existente na plataforma, tente outro.');
+                        return;
+                    }
                     setShowErrorMessageApi('Falha na requisição, tente novamente!');
                     break;
                 case 'ERR_NETWORK':
@@ -193,6 +266,57 @@ export default function CreateUserForm() {
             }
         }
     };
+
+    const buildPayload = () => {
+        userForm.possui_filhos = userForm.possui_filhos === 'sim';
+        userForm.is_diacono = userForm.is_diacono === 'sim';
+
+        userForm.data_nascimento = formatDateUS(userForm.data_nascimento);
+
+        if (!userForm.data_ingresso)
+            userForm.data_ingresso = formatDateUS(new Date());
+
+        if (!userForm.transferencia)
+            userForm.transferencia = formatDateUS(userForm.transferencia);
+        else
+            userForm.transferencia = formatDateUS(new Date());
+
+        if (!userForm.falecimento)
+            userForm.falecimento = formatDateUS(userForm.falecimento);
+        else
+            userForm.falecimento = formatDateUS(new Date());
+
+        if (userForm.excluido)
+            userForm.excluido = formatDateUS(userForm.excluido);
+        else
+            userForm.excluido = formatDateUS(new Date());
+
+        if (userForm.data_casamento)
+            userForm.data_casamento = formatDateUS(userForm.data_casamento);
+        else
+            userForm.data_casamento = formatDateUS(new Date());
+
+        userForm.motivo_transferencia = userForm.motivo_transferencia ? userForm.motivo_transferencia : '';
+        userForm.motivo_falecimento = userForm.motivo_falecimento ? userForm.motivo_falecimento : '';
+        userForm.motivo_exclusao = userForm.motivo_exclusao ? userForm.motivo_exclusao : '';
+        userForm.motivo_visita = userForm.motivo_visita ? userForm.motivo_visita : '';
+
+        const diacono: number = diaconosCadastrados.findIndex((diacono: IDiaconoSelect): boolean => diacono.id === userForm.diacono.id);
+
+        if (diacono !== -1) {
+            userForm.diacono = {
+                id: diaconosCadastrados[diacono].id,
+                nome: diaconosCadastrados[diacono].label,
+                is_membro: true
+            }
+        } else {
+            userForm.diacono = {
+                id: -1,
+                nome: '',
+                is_membro: true
+            }
+        }
+    }
 
     const validateForm = () => {
         if (Object.keys(userForm).length === 0) {
@@ -309,6 +433,7 @@ export default function CreateUserForm() {
             key == 'estado_civil' ||
             key == 'possui_filhos' ||
             key == 'diacono' ||
+            key == 'is_diacono' ||
             key == 'forma_ingresso' ||
             key == 'role'
         )
@@ -330,14 +455,14 @@ export default function CreateUserForm() {
             >
                 <div className="flex flex-col items-center">
                     <CircularProgress color="inherit"/>
-                    <p>Criando usuário...</p>
+                    <p>{openBackLoadingMessage}</p>
                 </div>
             </Backdrop>
 
             {
                 showWarningToast && (
                     <ToastWarning data={{message: showWarningMessage}} visible={true}
-                                setShowParentComponent={setShowWarningToast}/>
+                                  setShowParentComponent={setShowWarningToast}/>
                 )
             }
 
@@ -377,6 +502,10 @@ export default function CreateUserForm() {
                                         onChange={(e: any) => handleCreateUserForm('nome', e)}
                                         placeholder="Digite o nome"
                                         className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"/>
+                                    <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
+                                       id="nome">
+                                        Campo obrigatório
+                                    </p>
                                 </div>
                             </div>
 
@@ -387,6 +516,10 @@ export default function CreateUserForm() {
                                         id="cpf"
                                         required
                                         onChange={(e: any) => handleCreateUserForm('cpf', e)}/>
+                                    <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
+                                       id="cpf">
+                                        Campo obrigatório
+                                    </p>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="rg">RG</Label>
@@ -394,6 +527,10 @@ export default function CreateUserForm() {
                                         id="rg"
                                         required
                                         onChange={(e: any) => handleCreateUserForm('rg', e)}/>
+                                    <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
+                                       id="rg">
+                                        Campo obrigatório
+                                    </p>
                                 </div>
                             </div>
 
@@ -404,6 +541,10 @@ export default function CreateUserForm() {
                                         id="telefone"
                                         required
                                         onChange={(e: any) => handleCreateUserForm('telefone', e)}/>
+                                    <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
+                                       id="telefone">
+                                        Campo obrigatório
+                                    </p>
                                 </div>
 
                                 <div className="grid grid-cols-1 gap-4">
@@ -414,6 +555,10 @@ export default function CreateUserForm() {
                                             required={true}
                                             onChange={(e: any) => handleCreateUserForm('data_nascimento', e)}
                                         />
+                                        <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
+                                           id="data_nascimento">
+                                            Campo obrigatório
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -425,13 +570,17 @@ export default function CreateUserForm() {
                                         id="email"
                                         required
                                         onChange={(e: any) => handleCreateUserForm('email', e)}/>
+                                    <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
+                                       id="email">
+                                        Campo obrigatório
+                                    </p>
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label htmlFor="role_select">Nível de acesso</Label>
                                     <Select
-                                            required
-                                            onValueChange={(value: string) => handleCreateUserForm('role', value)}>
+                                        required
+                                        onValueChange={(value: string) => handleCreateUserForm('role', value)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Selecione o nível de acesso"/>
                                         </SelectTrigger>
@@ -440,6 +589,10 @@ export default function CreateUserForm() {
                                             <SelectItem value={UserRoles.MEMBRO}>Membro</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                    <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
+                                       id="role_select">
+                                        Campo obrigatório
+                                    </p>
                                 </div>
                             </div>
 
@@ -488,8 +641,8 @@ export default function CreateUserForm() {
                                 <div className="space-y-2">
                                     <Label>Status</Label>
                                     <Select
-                                            required
-                                            onValueChange={(value) => handleCreateUserForm('status', value)}>
+                                        required
+                                        onValueChange={(value) => handleCreateUserForm('status', value)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Selecione o status"/>
                                         </SelectTrigger>
@@ -503,6 +656,10 @@ export default function CreateUserForm() {
                                             <SelectItem value="excluido">Excluído</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                    <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
+                                       id="status">
+                                        Campo obrigatório
+                                    </p>
                                 </div>
 
                                 <div className="space-y-2">
@@ -512,6 +669,10 @@ export default function CreateUserForm() {
                                         required
                                         dataSelected={ministeriosSelected}
                                         data={ministeriosCadastrados}/>
+                                    <p className="mt-1 ml-1 text-sm text-gray-500 dark:text-gray-300"
+                                       id="ministerio">
+                                        Campo obrigatório
+                                    </p>
                                 </div>
                             </div>
 
@@ -534,8 +695,8 @@ export default function CreateUserForm() {
                                         <div className="space-y-2">
                                             <Label>Forma de ingresso</Label>
                                             <Select
-                                                    required
-                                                    onValueChange={(value: string) => handleCreateUserForm('forma_ingresso', value)}>
+                                                required
+                                                onValueChange={(value: string) => handleCreateUserForm('forma_ingresso', value)}>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Selecione a forma de ingresso"/>
                                                 </SelectTrigger>
@@ -649,24 +810,44 @@ export default function CreateUserForm() {
                                 )
                             }
 
-                            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-1">
+                            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label>É um diácono/diaconisa</Label>
+                                    <Select
+                                        required
+                                        onValueChange={(value) => handleCreateUserForm('is_diacono', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione se é um diácono/diaconisa"/>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="sim">Sim</SelectItem>
+                                            <SelectItem value="nao">Não</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
                                 <div className="space-y-2">
                                     <Label>Diácono</Label>
                                     <Select
-                                            required
-                                            onValueChange={(value: string) => handleCreateUserForm('diacono', value)}>
+                                        required
+                                        onValueChange={(value: string) => handleCreateUserForm('diacono', value)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Selecione uma opção"/>
                                         </SelectTrigger>
                                         <SelectContent>
                                             {
-                                                diaconosCadastrados && diaconosCadastrados.length > 0 && (
+                                                diaconosCadastrados && diaconosCadastrados.length > 0 ? (
                                                     diaconosCadastrados.map((diacono: IDiaconoSelect) => (
                                                         <SelectItem key={diacono.id}
-                                                                    value={diacono.id.toString()}>
+                                                                    value={diacono.value.toString()}>
                                                             {diacono.label}
                                                         </SelectItem>
                                                     ))
+                                                ) : (
+                                                    <SelectItem key={'0'}
+                                                                value={'0'}>
+                                                        Nenhum diácono cadastrado ainda
+                                                    </SelectItem>
                                                 )
                                             }
                                         </SelectContent>
@@ -678,8 +859,8 @@ export default function CreateUserForm() {
                                 <div className="space-y-2">
                                     <Label>Estado civil</Label>
                                     <Select
-                                            required
-                                            onValueChange={(value: string) => handleCreateUserForm('estado_civil', value)}>
+                                        required
+                                        onValueChange={(value: string) => handleCreateUserForm('estado_civil', value)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Selecione uma opção"/>
                                         </SelectTrigger>
@@ -696,8 +877,8 @@ export default function CreateUserForm() {
                                 <div className="space-y-2">
                                     <Label>Tem filhos?</Label>
                                     <Select
-                                            required
-                                            onValueChange={(value: string) => handleCreateUserForm('possui_filhos', value)}>
+                                        required
+                                        onValueChange={(value: string) => handleCreateUserForm('possui_filhos', value)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Selecione uma opção"/>
                                         </SelectTrigger>
