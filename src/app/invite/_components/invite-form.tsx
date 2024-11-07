@@ -225,8 +225,8 @@ export function InviteForm(props: any) {
     }
 
     useEffect(() => {
-        const emailParam = searchParams.get('email') ?? '';
-        const telefoneParam = searchParams.get('telefone') ?? '';
+        const emailParam = searchParams.get('email') ? '' : '';
+        const telefoneParam = searchParams.get('telefone') ? '' : '';
 
         if (emailParam.length > 0) {
             setUserForm((prevState: ITempInvite) => ({

@@ -8,11 +8,9 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/c
 import Link from "next/link";
 import {PhoneIcon} from "@/components/phone-icon/phone-icon";
 import {IDiaconoSelect} from "@/lib/models/diaconos";
-import {diaconos} from "@/lib/constants/diaconos";
-import {IUser} from "@/lib/models/user";
 import MultiSelectDropdown from "@/components/multiselect-dropdown/multiselect-dropdown";
-import {IMinisteriosSelect, IMisterios} from "@/lib/models/misterios";
-import {ministerios} from "@/lib/constants/misterios";
+import {IMinisteriosSelect} from "@/lib/models/misterios";
+import * as React from "react";
 import {useEffect, useState} from "react";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import {Button} from "@/components/ui/button";
@@ -22,9 +20,8 @@ import {ToastError} from "@/components/toast/toast-error";
 import {Backdrop, CircularProgress} from "@mui/material";
 import {useRouter} from "next/navigation";
 import {UserApi} from "@/lib/api/user-api";
-import {IMesesAno, MesesAno, obterMesAtual, obterMesesAno} from "@/lib/helpers/helpers";
+import {IMesesAno, obterMesAtual, obterMesesAno} from "@/lib/helpers/helpers";
 import {IMesAtual} from "@/lib/models/mes-atual";
-import * as React from "react";
 
 export function Birthdays(props: any) {
     const [showErrorApi, setShowErrorApi] = useState(false);
@@ -388,6 +385,12 @@ export function Birthdays(props: any) {
                 label: membro && membro.nome ? membro.nome : '',
                 value: membro && membro._id ? membro._id : ''
             }
+        }
+
+        return {
+            id: '-1',
+            label: '',
+            value: ''
         }
     });
 

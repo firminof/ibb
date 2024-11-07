@@ -403,13 +403,13 @@ export default function CreateMinistrieForm() {
     }
 
     const dataSelected = (membersSelected: any) => {
-        setMinistrieForm((previous: ICreateMinisterio) => {
+        setMinistrieForm((previous: any) => {
             return {...previous, responsavel: membersSelected}
         });
     }
 
     const dataSelectedEdit = (membersSelected: any) => {
-        setMinistrieEditForm((previous: ICreateMinisterio) => {
+        setMinistrieEditForm((previous: any) => {
             return {...previous, responsavel: membersSelected}
         });
     }
@@ -779,7 +779,7 @@ export default function CreateMinistrieForm() {
                                                         setMinisterioSelectedCheckbox((previous: any) => {
                                                             if (previous.includes(ministerio._id as string)) {
                                                                 // Se o item já estiver selecionado, removemos ele do array
-                                                                return previous.filter((id) => id !== ministerio._id);
+                                                                return previous.filter((id: string) => id !== ministerio._id);
                                                             } else {
                                                                 // Se o item não estiver selecionado, adicionamos ele ao array
                                                                 return [...previous, ministerio._id];

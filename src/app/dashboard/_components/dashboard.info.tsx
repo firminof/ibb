@@ -7,7 +7,6 @@ import {Backdrop, CircularProgress} from "@mui/material";
 import * as React from "react";
 import {useState} from "react";
 import {PlusIcon} from "@/components/plus-icon/plus-icon";
-import {DownloadIcon} from "@/components/download-icon/download-icon";
 import {SendIcon} from "@/components/send-icon/send-icon";
 import {
     Dialog,
@@ -20,7 +19,6 @@ import {
 import {ArrowRightIcon} from "@radix-ui/react-icons";
 import {EmailInput, PhoneInput} from "@/components/form-inputs/form-inputs";
 import {Birthdays} from "@/app/dashboard/_components/birthdays";
-import {Cards} from "@/app/dashboard/_components/cards";
 import {ToastSuccess} from "@/components/toast/toast-success";
 import {ToastWarning} from "@/components/toast/toast-warning";
 import {UserApi} from "@/lib/api/user-api";

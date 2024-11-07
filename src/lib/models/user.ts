@@ -73,7 +73,7 @@ export interface ITempUserCreate {
 
     motivo_visita?: string;
 
-    is_diacono: boolean;
+    is_diacono: boolean | string;
 }
 
 export interface ITempUserUpdate {

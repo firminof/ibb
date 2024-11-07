@@ -214,7 +214,7 @@ export default function CreateUserForm() {
         }
     });
 
-    diaconosCadastrados = diaconosCadastrados.filter((diacono: IDiaconoSelect) => diacono.id !== '-1' ?? diacono);
+    diaconosCadastrados = diaconosCadastrados.filter((diacono: IDiaconoSelect) => diacono.id !== '-1' ? diacono : null);
 
     const handleCreateUser = async () => {
         setOpenBackLoading(true);

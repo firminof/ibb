@@ -7,7 +7,8 @@ export const ministerios: IMisterios[] = [
         categoria: 'eclesiastico',
         responsavel: {
             id: 1,
-            nome: 'Diac. Arnaldo Esperança'
+            nome: 'Diac. Arnaldo Esperança',
+            is_membro: true
         }
     },
     {
@@ -16,7 +17,8 @@ export const ministerios: IMisterios[] = [
         categoria: 'eclesiastico',
         responsavel: {
             id: 2,
-            nome: 'Pr. Raphael Brasilio'
+            nome: 'Pr. Raphael Brasilio',
+            is_membro: true
         }
     },
     {
@@ -25,7 +27,8 @@ export const ministerios: IMisterios[] = [
         categoria: 'eclesiastico',
         responsavel: {
             id: 3,
-            nome: 'Josélia Gomes'
+            nome: 'Josélia Gomes',
+            is_membro: true
         }
     },
     {
@@ -34,7 +37,8 @@ export const ministerios: IMisterios[] = [
         categoria: 'eclesiastico',
         responsavel: {
             id: 4,
-            nome: 'Claudia Lima'
+            nome: 'Claudia Lima',
+            is_membro: true
         }
     },
     {
@@ -43,7 +47,8 @@ export const ministerios: IMisterios[] = [
         categoria: 'eclesiastico',
         responsavel: {
             id: 5,
-            nome: 'Pr. Jean-Luc Fobé'
+            nome: 'Pr. Jean-Luc Fobé',
+            is_membro: true
         }
     },
     {
@@ -52,7 +57,8 @@ export const ministerios: IMisterios[] = [
         categoria: 'eclesiastico',
         responsavel: {
             id: 6,
-            nome: 'Pr. Milton Monte'
+            nome: 'Pr. Milton Monte',
+            is_membro: true
         }
     },
     {
@@ -61,7 +67,8 @@ export const ministerios: IMisterios[] = [
         categoria: 'eclesiastico',
         responsavel: {
             id: 7,
-            nome: 'Diac. Idê Rosa'
+            nome: 'Diac. Idê Rosa',
+            is_membro: true
         }
     },
     {
@@ -70,7 +77,8 @@ export const ministerios: IMisterios[] = [
         categoria: 'eclesiastico',
         responsavel: {
             id: 8,
-            nome: 'Juvenal Rodrigues'
+            nome: 'Juvenal Rodrigues',
+            is_membro: true
         }
     },
     {
@@ -79,7 +87,8 @@ export const ministerios: IMisterios[] = [
         categoria: 'eclesiastico',
         responsavel: {
             id: 9,
-            nome: 'Pr. Rodrigo Goulart'
+            nome: 'Pr. Rodrigo Goulart',
+            is_membro: true
         }
     },
     {
@@ -88,7 +97,8 @@ export const ministerios: IMisterios[] = [
         categoria: 'pessoas',
         responsavel: {
             id: 10,
-            nome: 'Nathalia Goulart'
+            nome: 'Nathalia Goulart',
+            is_membro: true
         }
     },
     {
@@ -97,7 +107,8 @@ export const ministerios: IMisterios[] = [
         categoria: 'pessoas',
         responsavel: {
             id: 11,
-            nome: 'Djanilson Gonçalves'
+            nome: 'Djanilson Gonçalves',
+            is_membro: true
         }
     },
     {
@@ -106,7 +117,8 @@ export const ministerios: IMisterios[] = [
         categoria: 'pessoas',
         responsavel: {
             id: 12,
-            nome: 'Darlan e Jymenez'
+            nome: 'Darlan e Jymenez',
+            is_membro: true
         }
     },
     {
@@ -115,7 +127,8 @@ export const ministerios: IMisterios[] = [
         categoria: 'pessoas',
         responsavel: {
             id: 13,
-            nome: 'Pr. Rodrigo Goulart'
+            nome: 'Pr. Rodrigo Goulart',
+            is_membro: true
         }
     },
     {
@@ -124,7 +137,8 @@ export const ministerios: IMisterios[] = [
         categoria: 'pessoas',
         responsavel: {
             id: 14,
-            nome: 'Bárbara Carvalhaes'
+            nome: 'Bárbara Carvalhaes',
+            is_membro: true
         }
     },
     {
@@ -133,7 +147,8 @@ export const ministerios: IMisterios[] = [
         categoria: 'pessoas',
         responsavel: {
             id: 15,
-            nome: 'Roberto Vasconcelos'
+            nome: 'Roberto Vasconcelos',
+            is_membro: true
         }
     },
     {
@@ -142,7 +157,8 @@ export const ministerios: IMisterios[] = [
         categoria: 'pessoas',
         responsavel: {
             id: 16,
-            nome: 'Franklin e Liliane'
+            nome: 'Franklin e Liliane',
+            is_membro: true
         }
     },
     {
@@ -151,7 +167,8 @@ export const ministerios: IMisterios[] = [
         categoria: 'coordenacao',
         responsavel: {
             id: 17,
-            nome: 'Pr. Carlos Jones'
+            nome: 'Pr. Carlos Jones',
+            is_membro: true
         }
     },
     {
@@ -160,7 +177,8 @@ export const ministerios: IMisterios[] = [
         categoria: 'coordenacao',
         responsavel: {
             id: 18,
-            nome: 'Pr. Raphael Brasilio'
+            nome: 'Pr. Raphael Brasilio',
+            is_membro: true
         }
     },
 ]
