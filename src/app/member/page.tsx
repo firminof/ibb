@@ -1,12 +1,12 @@
 import {Header} from "@/components/header/header";
 import {Suspense} from "react";
-import MemberForm from "@/app/create-user/_components/member.form";
+import MemberCreateUpdateForm from "@/app/member/_components/member-create-update.form";
 
-export default function CreateUser() {
+export default function Member() {
     return (
         <Suspense>
             <Header/>
-            <MemberForm/>
+            <MemberCreateUpdateForm/>
         </Suspense>
     )
 }

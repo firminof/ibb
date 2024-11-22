@@ -1,8 +1,4 @@
 import {IMesAtual} from "@/lib/models/mes-atual";
-import {useAuthState} from "react-firebase-hooks/auth";
-import {auth} from "@/app/firebase/config";
-import {UserApi} from "@/lib/api/user-api";
-import {format} from "date-fns";
 
 let emailStorage = '';
 
@@ -90,13 +86,16 @@ export enum UserRoles {
     'MEMBRO' = 'MEMBRO',
 }
 
-export const formatDateUS = (date: any): Date => {
-    const dateFormat: string[] = date.toString().split('/');
+export const formatDateUS = (date: any, key?: string): Date | string => {
+    if (date) {
+        const dateFormat: string[] = date.toString().split('/');
 
-    if (dateFormat) {
-        return new Date(`${dateFormat[2]}-${dateFormat[1]}-${dateFormat[0]}T04:00:00.000Z`);
+        if (dateFormat) {
+            return new Date(`${dateFormat[2]}-${dateFormat[1]}-${dateFormat[0]}T04:00:00.000Z`);
+        }
     }
-    return new Date();
+
+    return '';
 }
 
 export const formatNome = (nome: string) => {

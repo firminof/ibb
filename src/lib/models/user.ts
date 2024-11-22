@@ -47,28 +47,29 @@ export interface ITempUserCreate {
     email: string;
     telefone: string;
     foto?: string;
-    data_nascimento: Date;
+    data_nascimento: any;
     estado_civil: EstadoCivilEnum;
     conjugue?: IUser;
-    data_casamento?: Date;
+    data_casamento?: any;
     possui_filhos: string | boolean;
     filhos: IUser[];
     status: StatusEnum;
-    transferencia: Date | null;
+    transferencia: any | null;
     diacono: IUser;
     ministerio: number[];
     endereco?: UserAddress;
 
-    data_ingresso?: Date | null;
+    data_ingresso?: any | null;
     forma_ingresso?: string;
     local_ingresso?: string;
 
     motivo_transferencia?: string;
+    local_transferencia?: string;
 
-    falecimento?: Date | null;
+    falecimento?: any | null;
     motivo_falecimento?: string;
 
-    excluido?: Date | null;
+    excluido?: any | null;
     motivo_exclusao?: string;
 
     motivo_visita?: string;
@@ -85,28 +86,29 @@ export interface ITempUserUpdate {
     email?: string;
     telefone?: string;
     foto?: string;
-    data_nascimento?: Date;
+    data_nascimento?: any;
     estado_civil?: EstadoCivilEnum;
     conjugue?: IUser;
-    data_casamento?: Date;
+    data_casamento?: any;
     possui_filhos?: string | boolean;
     filhos?: IUser[];
     status?: StatusEnum;
-    transferencia?: Date | null;
+    transferencia?: any | null;
     diacono?: IUser;
     ministerio?: number[];
     endereco?: UserAddress;
 
-    data_ingresso?: Date | null;
+    data_ingresso?: any | null;
     forma_ingresso?: string;
     local_ingresso?: string;
 
     motivo_transferencia?: string;
+    local_transferencia?: string;
 
-    falecimento?: Date | null;
+    falecimento?: any | null;
     motivo_falecimento?: string;
 
-    excluido?: Date | null;
+    excluido?: any | null;
     motivo_exclusao?: string;
 
     motivo_visita?: string;

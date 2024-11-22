@@ -511,7 +511,7 @@ export function MembersList() {
                 <div className="flex justify-between items-center">
                     <h2 className="text-black text-3xl font-semibold mb-4 mt-4">Membros</h2>
                     <Button size="sm" className="font-bold sm:inline-flex md:inline-flex"
-                            onClick={() => router.push('/create-user')}>
+                            onClick={() => router.push('/member')}>
                         <PlusIcon className="w-4 h-4 mr-1"/>
                         Adicionar Membro
                     </Button>
@@ -823,7 +823,7 @@ export function MembersList() {
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
                                                                 <Button variant="outline" onClick={() => {
-                                                                    router.push(`/edit-user?id=${membro._id}`)
+                                                                    router.push(`/member?email=${membro.email}`);
                                                                 }}>
                                                                     <Pencil1Icon/>
                                                                 </Button>

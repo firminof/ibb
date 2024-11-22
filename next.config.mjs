@@ -8,9 +8,9 @@ const nextConfig = {
     NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '1089908176172',
     NEXT_PUBLIC_FIREBASE_APP_ID: '1:1089908176172:web:22f6fe61c47c3de1cee889',
     ENV: 'local',
-    URL_BACKEND_LOCAL: 'http://localhost:3001/v1',
-    URL_BACKEND_DEV: 'https://api.ibbrooklin.org.br/v1',
-    URL_BACKEND_PROD: 'https://api.ibbrooklin.org.br/v1',
+    URL_BACKEND_LOCAL: 'http://localhost:3001',
+    URL_BACKEND_DEV: 'https://api.ibbrooklin.org.br',
+    URL_BACKEND_PROD: 'https://api.ibbrooklin.org.br',
   }
 };
 

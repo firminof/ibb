@@ -386,7 +386,9 @@ export function UserForm({memberParam}: any) {
                                     <div className="mt-3">
                                         <Button
                                             className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                            onClick={(e) => router.push(`/edit-user?id=${member._id}`)}
+                                            onClick={(e) => {
+                                                router.push(`/member?id=${member._id}`);
+                                            }}
                                         >
                                             <Pencil1Icon className="w-4 h-4"/>
                                             Editar informações
@@ -458,6 +460,8 @@ export function UserForm({memberParam}: any) {
                                                       value={member.transferencia || 'Não informado'}/>
                                             <InfoItem icon={<UserIcon className="w-4 h-4"/>} label="Motivo"
                                                       value={member.motivo_transferencia || 'Não informado'}/>
+                                            <InfoItem icon={<UserIcon className="w-4 h-4"/>} label="Local anterior"
+                                                      value={member.local_transferencia || 'Não informado'}/>
                                         </div>
 
                                         <div className="bg-red-50 p-4 rounded-lg">

@@ -10,6 +10,8 @@ export type IStore = {
     addMongoId: (mongoId: string) => void;
     hasHydrated: boolean; // Novo estado para saber se o Zustand foi hidratado
     setHasHydrated: (state: boolean) => void;
+    addDiaconos: (diaconos: any) => void;
+    diaconos: any[];
 }
 
 export const useStoreIbb = create<IStore>()(
@@ -23,6 +25,8 @@ export const useStoreIbb = create<IStore>()(
             addRole: (role: string) => set(() => ({ role })),
             addMongoId: (mongoId: string) => set(() => ({ mongoId })),
             setHasHydrated: (state: boolean) => set(() => ({ hasHydrated: state })), // Atualiza o estado de hidratação
+            addDiaconos: (diaconos: any) => set(() => (diaconos)),
+            diaconos: []
         })),
         {
             name: 'user-store',

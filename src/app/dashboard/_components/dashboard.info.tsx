@@ -263,7 +263,7 @@ export function DashboardInfo() {
                         )
                     }
                     <Button size="sm" className="font-bold sm:inline-flex md:inline-flex"
-                            onClick={() => router.push('/create-user')}>
+                            onClick={() => router.push('/member')}>
                         <PlusIcon className="w-4 h-4 mr-1"/>
                         Adicionar Membro
                     </Button>
