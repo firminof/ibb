@@ -91,7 +91,7 @@ export function Header() {
                                     menuOpen ? "block" : "hidden"
                                 } sm:flex items-center gap-4`}
                             >
-                                <Link href="/members" className="font-medium text-primary text-black hover:text-gray-400"
+                                <Link href="/member-list" className="font-medium text-primary text-black hover:text-gray-400"
                                       prefetch={false}>
                                     Membros
                                 </Link>

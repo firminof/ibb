@@ -5,7 +5,7 @@ import {useEffect, useState} from 'react'
 import {useFieldArray, useForm} from 'react-hook-form'
 import {zodResolver} from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import {format} from 'date-fns'
+import {format, formatDate, parseISO} from 'date-fns'
 import {CalendarIcon, CameraIcon, ListIcon, PlusCircleIcon, XCircleIcon} from 'lucide-react'
 import {cn} from '@/lib/utils'
 import {Button} from '@/components/ui/button'
@@ -233,43 +233,110 @@ const formSchema = z
         }
 
         // Validação para estado civil `casado`
-        if (data.informacoesPessoais.estadoCivil === CivilStateEnumV2.CASADO) {
-            const casamento = data.informacoesPessoais.casamento;
-
-            if (!casamento?.dataCasamento) {
-                ctx.addIssue({
-                    path: ["informacoesPessoais", "casamento", "dataCasamento"],
-                    message: "A data de casamento é obrigatória.",
-                });
-            }
-
-            if (!casamento?.conjugue) {
-                ctx.addIssue({
-                    path: ["informacoesPessoais", "casamento", "conjugue"],
-                    message:
-                        "As informações do cônjuge são obrigatórias para estado civil 'casado'.",
-                });
-            } else {
-                const { conjugue } = casamento;
-
-                if (!conjugue?.nome) {
-                    ctx.addIssue({
-                        path: ["informacoesPessoais", "casamento", "conjugue", "nome"],
-                        message: "O nome do cônjuge é obrigatório.",
-                    });
-                }
-
-                if (typeof conjugue?.isMember !== "boolean") {
-                    ctx.addIssue({
-                        path: ["informacoesPessoais", "casamento", "conjugue", "isMember"],
-                        message: "Deve ser especificado se o cônjuge é membro.",
-                    });
-                }
-            }
-        }
+        // if (data.informacoesPessoais.estadoCivil === CivilStateEnumV2.CASADO) {
+        //     const casamento = data.informacoesPessoais.casamento;
+        //
+        //     if (!casamento?.dataCasamento) {
+        //         ctx.addIssue({
+        //             path: ["informacoesPessoais", "casamento", "dataCasamento"],
+        //             message: "A data de casamento é obrigatória.",
+        //         });
+        //     }
+        //
+        //     if (!casamento?.conjugue) {
+        //         ctx.addIssue({
+        //             path: ["informacoesPessoais", "casamento", "conjugue"],
+        //             message:
+        //                 "As informações do cônjuge são obrigatórias para estado civil 'casado'.",
+        //         });
+        //     } else {
+        //         const { conjugue } = casamento;
+        //
+        //         if (!conjugue?.nome) {
+        //             ctx.addIssue({
+        //                 path: ["informacoesPessoais", "casamento", "conjugue", "nome"],
+        //                 message: "O nome do cônjuge é obrigatório.",
+        //             });
+        //         }
+        //
+        //         if (typeof conjugue?.isMember !== "boolean") {
+        //             ctx.addIssue({
+        //                 path: ["informacoesPessoais", "casamento", "conjugue", "isMember"],
+        //                 message: "Deve ser especificado se o cônjuge é membro.",
+        //             });
+        //         }
+        //     }
+        // }
     });
 
-
+// In a real application, you would fetch this data from an API
+const dataForm: z.infer<typeof formSchema> = {
+    "_id": "",
+    "isDiacono": false,
+    "nome": "",
+    "rg": "",
+    "role": UserRolesV2.MEMBRO,
+    "telefone": "",
+    "cpf": "",
+    "email": "",
+    "dataNascimento": "",
+    "idade": 0,
+    "foto": "",
+    "diacono": {
+        "nome": "",
+        "isDiacono": false,
+        "isMember": false,
+        "id": '-1'
+    },
+    "endereco": {
+        "cep": "",
+        "rua": "",
+        "numero": "",
+        "complemento": "",
+        "bairro": "",
+        "cidade": "",
+        "estado": "",
+        "pais": ""
+    },
+    "status": "visitante",
+    "exclusao": {
+        "data": null,
+        "motivo": null,
+    },
+    "falecimento": {
+        "data": null,
+        "local": null,
+        "motivo": null,
+    },
+    "informacoesPessoais": {
+        "casamento": {
+            "conjugue": {
+                "nome": "",
+                "isDiacono": false,
+                "isMember": true,
+                "id": '-1'
+            },
+            "dataCasamento": null,
+        },
+        "estadoCivil": "solteiro",
+        "temFilhos": false,
+        "filhos": []
+    },
+    "ingresso": {
+        "data": null,
+        "forma": null,
+        "local": null,
+    },
+    "ministerio": [],
+    "transferencia": {
+        "data": null,
+        "local": null,
+        "motivo": null,
+    },
+    "visitas": {
+        "motivo": null,
+    }
+}
 
 export type FormValuesMember = z.infer<typeof formSchema>;
 export type FormValuesUniqueMember = z.infer<typeof memberSchema>;
@@ -282,7 +349,7 @@ export default function MemberForm() {
 
     const searchParams = useSearchParams()
 
-    const idMembro: string | null = searchParams.get('email')
+    const idMembro: string | null = searchParams.get('id')
 
     const isEditing: boolean = idMembro && idMembro.length > 0;
 
@@ -299,84 +366,6 @@ export default function MemberForm() {
         name: "informacoesPessoais.filhos"
     });
 
-    useEffect(() => {
-        const fetchInitialData = async () => {
-            // In a real application, you would fetch this data from an API
-            const data: z.infer<typeof formSchema> = {
-                "_id": "",
-                "isDiacono": false,
-                "nome": "",
-                "rg": "",
-                "role": UserRolesV2.MEMBRO,
-                "telefone": "",
-                "cpf": "",
-                "email": "",
-                "dataNascimento": "",
-                "idade": 0,
-                "foto": "",
-                "diacono": {
-                    "nome": "",
-                    "isDiacono": false,
-                    "isMember": false,
-                    "id": '-1'
-                },
-                "endereco": {
-                    "cep": "",
-                    "rua": "",
-                    "numero": "",
-                    "complemento": "",
-                    "bairro": "",
-                    "cidade": "",
-                    "estado": "",
-                    "pais": ""
-                },
-                "status": "visitante",
-                "exclusao": {
-                    "data": null,
-                    "motivo": null,
-                },
-                "falecimento": {
-                    "data": null,
-                    "local": null,
-                    "motivo": null,
-                },
-                "informacoesPessoais": {
-                    "casamento": {
-                        "conjugue": {
-                            "nome": "",
-                            "isDiacono": false,
-                            "isMember": true,
-                            "id": '-1'
-                        },
-                        "dataCasamento": null,
-                    },
-                    "estadoCivil": "solteiro",
-                    "temFilhos": false,
-                    "filhos": []
-                },
-                "ingresso": {
-                    "data": null,
-                    "forma": null,
-                    "local": null,
-                },
-                "ministerio": [],
-                "transferencia": {
-                    "data": null,
-                    "local": null,
-                    "motivo": null,
-                },
-                "visitas": {
-                    "motivo": null,
-                }
-            }
-            setInitialData(data)
-            setPhoto(data.foto || null)
-            form.reset(data)
-        }
-
-        fetchInitialData()
-    }, [form])
-
     const onSubmit = async (data: FormValuesMember) => {
         const result = formSchema.safeParse(data);
 
@@ -392,9 +381,16 @@ export default function MemberForm() {
         console.log('Form submitted with data:', {...data, foto: photo})
 
         try {
-            UserApi.createMember({...data, foto: photo})
-        } catch (e) {
+            if (idMembro && idMembro.length > 0) {
+                await UserApi.updateMember(idMembro, {...data, foto: photo})
+                alert('Membro editado com sucesso!');
+                return;
+            }
 
+            await UserApi.createMember({...data, foto: photo})
+            alert('Membro salvo com sucesso!')
+        } catch (e) {
+            alert(`Erro: ${e}!`)
         }
 
         // Simulating an API call
@@ -428,9 +424,22 @@ export default function MemberForm() {
             return
         }
 
+        const fetchInitialData = async () => {
+            if (idMembro && idMembro.length > 0) {
+                getUniqueMember();
+                return;
+            }
+
+            setInitialData(dataForm)
+            setPhoto(dataForm.foto || null)
+            form.reset(dataForm)
+        }
+
         getAllMinistries();
-        getAllMembers();
+
         getAllMembersDiaconos();
+        getAllMembers();
+        fetchInitialData();
     }, [useStoreIbbZus.hasHydrated])
 
     const getAllMinistries = () => {
@@ -471,15 +480,6 @@ export default function MemberForm() {
             UserApi.fetchMembers()
                 .then((response: FormValuesMember[]) => {
                     if (response.length > 0) {
-                        // // Mapeando ministérios para todos os membros
-                        // const mappedMembers: FormValuesMember[] = response.map((member: FormValuesMember) => {
-                        //     return {
-                        //         ...member,
-                        //         ministerio: member.ministerio.map((ministerioId: string) => {
-                        //             return ministerios.find((ministerio: IMinistries) => ministerio._id === ministerioId.toString()) || null;
-                        //         })
-                        //     };
-                        // });
                         setMembros(response);
                         return;
                     }
@@ -545,6 +545,74 @@ export default function MemberForm() {
         }
     }
 
+    const formatDateShort = (date: string) => {
+        return new Date(formatDate(new Date(date).setDate(new Date(date).getDate() + 1), 'yyyy-MM-dd', {locale: ptBR}))
+    }
+    const getUniqueMember = async (): Promise<void> => {
+        try {
+            if (idMembro && idMembro.length > 0) {
+                UserApi.fetchMemberById(idMembro)
+                    .then((response: FormValuesMember) => {
+                        if (response) {
+                            response.dataNascimento = formatDateShort(response.dataNascimento);
+                            response.exclusao = response.exclusao.data ? formatDateShort(response.exclusao) : null;
+                            response.transferencia = response.transferencia.data ? formatDateShort(response.transferencia) : null;
+                            response.falecimento = response.falecimento.data ? formatDateShort(response.falecimento) : null;
+                            response.informacoesPessoais.casamento.dataCasamento = response.informacoesPessoais.casamento.dataCasamento ? formatDateShort(response.informacoesPessoais.casamento.dataCasamento) : null;
+                            response.exclusao = response.exclusao ? response.exclusao : {data: null, motivo: ''}
+                            response.falecimento = response.falecimento ? response.falecimento : {
+                                data: null,
+                                motivo: '',
+                                local: ''
+                            }
+                            response.ingresso = response.ingresso ? response.ingresso : {
+                                data: null,
+                                local: '',
+                                forma: ''
+                            }
+                            response.transferencia = response.transferencia ? response.transferencia : {
+                                data: null,
+                                motivo: '',
+                                local: ''
+                            }
+                            response.visitas = response.visitas ? response.visitas : {motivo: ''}
+
+                            console.log('membro: ', response);
+                            setInitialData(response);
+                            setPhoto(response.foto || null)
+                            form.reset(response)
+                            return;
+                        }
+
+                        setMembros([]);
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                        switch (error.code) {
+                            case 'ERR_BAD_REQUEST':
+                                setInitialData(dataForm)
+                                setPhoto(dataForm.foto || null)
+                                form.reset(dataForm)
+                                break;
+                            case 'ERR_NETWORK':
+                                setInitialData(dataForm)
+                                setPhoto(dataForm.foto || null)
+                                form.reset(dataForm)
+                                break;
+
+                            default:
+                                setInitialData(dataForm)
+                                setPhoto(dataForm.foto || null)
+                                form.reset(dataForm)
+                                break;
+                        }
+                    })
+            }
+        } catch (e) {
+            setMembros([]);
+        }
+    }
+
     if (!initialData) {
         return <Backdrop
             sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
@@ -569,7 +637,7 @@ export default function MemberForm() {
                 <div className="flex justify-between items-center">
                     <h2 className="text-black text-3xl font-semibold mb-4 mt-4">{isEditing ? 'Editar Membro' : 'Cadastrar Membro'}</h2>
                     <Button size="sm" className="font-bold sm:inline-flex md:inline-flex"
-                            onClick={() => router.push('/members')}>
+                            onClick={() => router.push('/member-list')}>
                         <ListIcon className="w-4 h-4 mr-1"/>
                         Lista de Membros
                     </Button>
@@ -1268,8 +1336,8 @@ export default function MemberForm() {
                                                                     </SelectTrigger>
                                                                 </FormControl>
                                                                 <SelectContent>
-                                                                    {membros.map((member: FormValuesMember) => (
-                                                                        <SelectItem key={member._id + '_casamento'}
+                                                                    {membros.map((member: FormValuesMember, index: number) => (
+                                                                        <SelectItem key={`${member._id}_casamento_${index}`}
                                                                                     value={member._id.toString()}>
                                                                             {member.nome}
                                                                         </SelectItem>
@@ -1289,8 +1357,6 @@ export default function MemberForm() {
                                                             <FormLabel>Cônjuge</FormLabel>
                                                             <FormControl>
                                                                 <Input {...field}
-                                                                       defaultValue={''}
-                                                                       value={''}
                                                                        placeholder="Digite o nome do(a) cônjuge"/>
                                                             </FormControl>
                                                             <FormMessage/>
@@ -1356,22 +1422,35 @@ export default function MemberForm() {
                                 control={form.control}
                                 name="informacoesPessoais.temFilhos"
                                 render={({field}) => (
-                                    <FormItem
-                                        className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                    <FormItem className="space-y-3">
+                                        <FormLabel>Tem filhos?</FormLabel>
                                         <FormControl>
-                                            <Checkbox
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                            />
+                                            <RadioGroup
+                                                onValueChange={field.onChange}
+                                                defaultValue={field.value}
+                                                className="flex flex-col space-y-1"
+                                            >
+                                                <FormItem
+                                                    className="flex items-center space-x-3 space-y-0">
+                                                    <FormControl>
+                                                        <RadioGroupItem value={true}/>
+                                                    </FormControl>
+                                                    <FormLabel className="font-normal">
+                                                        Sim
+                                                    </FormLabel>
+                                                </FormItem>
+                                                <FormItem
+                                                    className="flex items-center space-x-3 space-y-0">
+                                                    <FormControl>
+                                                        <RadioGroupItem value={false}/>
+                                                    </FormControl>
+                                                    <FormLabel className="font-normal">
+                                                        Não
+                                                    </FormLabel>
+                                                </FormItem>
+                                            </RadioGroup>
                                         </FormControl>
-                                        <div className="space-y-1 leading-none">
-                                            <FormLabel>
-                                                Tem filhos?
-                                            </FormLabel>
-                                            <FormDescription>
-                                                Marque esta opção se deseja incluir informações sobre filhos.
-                                            </FormDescription>
-                                        </div>
+                                        <FormMessage/>
                                     </FormItem>
                                 )}
                             />
@@ -1419,7 +1498,7 @@ export default function MemberForm() {
                                                     {form.watch(`informacoesPessoais.filhos.${index}.isMember`) ? (
                                                         <FormField
                                                             control={form.control}
-                                                            name={`informacoesPessoais.filhos.${index}.memberId`}
+                                                            name={`informacoesPessoais.filhos.${index}.id`}
                                                             render={({field}) => (
                                                                 <FormItem>
                                                                     <FormLabel>Selecione o Filho</FormLabel>
@@ -1432,8 +1511,8 @@ export default function MemberForm() {
                                                                             </SelectTrigger>
                                                                         </FormControl>
                                                                         <SelectContent>
-                                                                            {membros.map((member: FormValuesMember) => (
-                                                                                <SelectItem key={member._id}
+                                                                            {membros.map((member: FormValuesMember, index: number) => (
+                                                                                <SelectItem key={`${member._id}_filho_${index}`}
                                                                                             value={member._id}>
                                                                                     {member.nome}
                                                                                 </SelectItem>
@@ -1492,7 +1571,7 @@ export default function MemberForm() {
                             {/*DIACONO*/}
                             <FormField
                                 control={form.control}
-                                name="informacoesPessoais.isDiacono"
+                                name="isDiacono"
                                 render={({field}) => (
                                     <FormItem
                                         className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
@@ -1529,8 +1608,8 @@ export default function MemberForm() {
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                {diaconos.map((member: FormValuesUniqueMember) => (
-                                                    <SelectItem key={member.id + "_diacono"}
+                                                {diaconos.map((member: FormValuesUniqueMember, index: number) => (
+                                                    <SelectItem key={`${member.id}_diacono_${index}`}
                                                                 value={member.id.toString()}>
                                                         {member.nome}
                                                     </SelectItem>

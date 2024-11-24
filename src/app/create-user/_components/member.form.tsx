@@ -147,7 +147,7 @@ export default function MemberForm() {
             const payload = buildPayload()
             await UserApi.createMember(payload)
             setShowSuccessToast(true)
-            setTimeout(() => router.push('/members'), 1500)
+            setTimeout(() => router.push('/member-list'), 1500)
         } catch (error: any) {
             console.error('[CREATE USER ERROR]:', error)
             setShowErrorToast(true)

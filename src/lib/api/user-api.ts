@@ -1,6 +1,6 @@
 import api from "@/lib/api/api";
 import {IInviteByEmail, ITempInvite} from "@/lib/models/invite";
-import {ITempUserCreate, ITempUserUpdate} from "@/lib/models/user";
+import {ITempUserCreate, ITempUserUpdate, UserV2} from "@/lib/models/user";
 import {ICreateMinisterio, IEditMinisterio, IMinisteriosResponseApi} from "@/lib/models/misterios";
 import {IMinistries} from "@/lib/models/user-response-api";
 import {WhatsappMessageWithTwilioInput} from "@/lib/models/twilio-whatsapp";
@@ -28,13 +28,13 @@ export class UserApi {
         return await api.get(`/v2/user/birthdays-month/${month}`);
     }
 
-    static async createMember(body: ITempUserUpdate): Promise<any | undefined> {
+    static async createMember(body: UserV2): Promise<UserV2> {
         const user = await api.post(`/v2/user`, body);
 
         return user.data;
     }
 
-    static async updateMember(id: string, body: ITempUserUpdate): Promise<any | undefined> {
+    static async updateMember(id: string, body: any): Promise<UserV2> {
         const user = await api.put(`/v2/user/${id}`, body);
 
         return user.data;
@@ -46,7 +46,7 @@ export class UserApi {
         return user.data;
     }
 
-    static async deleteMember(id: string): Promise<any | undefined> {
+    static async deleteMember(id: string): Promise<boolean> {
         const user = await api.delete(`/v2/user/${id}`);
 
         return user.data;
@@ -65,7 +65,7 @@ export class UserApi {
     }
 
     static async sendInvite(body: IInviteByEmail): Promise<any | undefined> {
-        const user = await api.post(`/v2/user/email/send-invite`, body);
+        const user = await api.post(`/v2/user/send-invite`, body);
 
         return user.data;
     }

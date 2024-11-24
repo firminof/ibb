@@ -337,7 +337,7 @@ export default function EditUserForm() {
             setShowWarningMessage('')
             setShowWarningToast(false)
 
-            setTimeout(() => router.push('/members'), 1500)
+            setTimeout(() => router.push('/member-list'), 1500)
         } catch (error: any) {
             console.log('[TRY-CATCH] error: ', error)
             setOpenBackLoading(false)

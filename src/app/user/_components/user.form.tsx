@@ -1,516 +1,251 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import {useEffect, useState} from "react"
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar"
-import {Badge} from "@/components/ui/badge"
-import {BookOpenIcon, CalendarIcon, HeartIcon, MailIcon, MessageSquareText, PhoneIcon, UserIcon} from "lucide-react"
-import {Separator} from "@/components/ui/separator"
-import {IMinistries, IUserResponseApi} from "@/lib/models/user-response-api";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Button} from "@/components/ui/button";
-import {Pencil1Icon, ReloadIcon} from "@radix-ui/react-icons";
-import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import {Label} from "@/components/ui/label";
-import {Textarea} from "@/components/ui/textarea";
-import {SendIcon} from "@/components/send-icon/send-icon";
-import {UserApi} from "@/lib/api/user-api";
-import {Backdrop, CircularProgress} from "@mui/material";
-import {ToastError} from "@/components/toast/toast-error";
-import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
-import {WhatsappMessageWithTwilioInput} from "@/lib/models/twilio-whatsapp";
-import {useRouter} from "next/navigation";
+import { useState } from 'react'
+import { format } from 'date-fns'
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Edit, Mail, Phone, MapPin, Calendar, Briefcase, Users, Heart, Home, LogIn, LogOut, Skull, Ban, Eye, Send } from 'lucide-react'
+import {CivilStateEnumV2, ProvidersV2, StatusEnumV2, UserRolesV2, UserV2} from "@/lib/models/user";
 
-export function UserForm({memberParam}: any) {
-    const useStoreIbbZus: IStore = useStoreIbb((state: IStore) => state);
+// Sample data for the member
+const sampleMember: UserV2 = {
+    _id: '1',
+    nome: 'João Silva',
+    foto: '/placeholder.svg?height=100&width=100',
+    cpf: '123.456.789-00',
+    rg: '1234567',
+    email: 'joao.silva@example.com',
+    telefone: '(11) 98765-4321',
+    dataNascimento: new Date('1988-03-10'),
+    role: UserRolesV2.MEMBRO,
+    status: StatusEnumV2.ativo,
+    informacoesPessoais: {
+        estadoCivil: CivilStateEnumV2.casado,
+        casamento: {
+            conjugue: { id: '2', nome: 'Maria Silva', isMember: true, isDiacono: false },
+            dataCasamento: new Date('2015-06-20'),
+        },
+        filhos: [
+            { id: '3', nome: 'Pedro Silva', isMember: true, isDiacono: false },
+            { id: '4', nome: 'Ana Silva', isMember: true, isDiacono: false },
+        ],
+        temFilhos: true,
+    },
+    diacono: { id: '5', nome: 'Carlos Santos', isMember: true, isDiacono: true },
+    ministerio: ['Louvor', 'Jovens'],
+    endereco: {
+        cep: '12345-678',
+        rua: 'Rua das Flores',
+        numero: '123',
+        complemento: 'Apto 45',
+        bairro: 'Centro',
+        cidade: 'São Paulo',
+        estado: 'SP',
+        pais: 'Brasil',
+    },
+    ingresso: {
+        data: new Date('2010-01-15'),
+        forma: 'Batismo',
+        local: 'Igreja Central',
+    },
+    transferencia: {
+        data: null,
+        motivo: null,
+        local: null,
+    },
+    falecimento: {
+        data: null,
+        motivo: null,
+        local: null,
+    },
+    exclusao: {
+        data: null,
+        motivo: null,
+    },
+    visitas: {
+        motivo: null,
+    },
+    autenticacao: {
+        providersInfo: [
+            { providerId: ProvidersV2.googleCom, uid: 'google123' },
+            { providerId: ProvidersV2.password, uid: 'password123' },
+        ],
+    },
+    isDiacono: false,
+}
 
-    const [openDialogSendMessage, setOpenDialogSendMessage] = useState(false);
-    const [messageWhatsApp, setMessageWhatsApp] = useState<string>('');
-    const [member, setMember] = useState<any | null>(null);
+// Sample data for sent invitations
+const sampleInvitations = [
+    { para: 'maria@example.com', createdAt: new Date('2023-07-01') },
+    { para: 'pedro@example.com', createdAt: new Date('2023-07-05') },
+    { para: 'ana@example.com', createdAt: new Date('2023-07-10') },
+]
 
-    const [openBackLoadingMembros, setOpenBackLoadingMembros] = useState(false);
-    const [showBackLoadingMessage, setShowBackLoadingMessage] = useState<string>('');
+export default function UserForm() {
+    const [member] = useState<UserV2>(sampleMember)
+    const [invitations] = useState(sampleInvitations)
 
-    const [showErrorApi, setShowErrorApi] = useState(false);
-    const [showErrorMessageApi, setShowErrorMessageApi] = useState<string>('');
-
-    const [ministries, setMinistries] = useState<IMinistries[]>([]);
-
-    const router = useRouter();
-
-    const getStatusColor = (status: string) => {
-        switch (status.toLowerCase()) {
-            case 'ativo':
-                return 'bg-green-500';
-            case 'excluido':
-            case 'inativo':
-                return 'bg-red-500';
-            case 'transferido':
-                return 'bg-blue-500';
-            case 'falecido':
-                return 'bg-gray-500';
-            case 'visitante':
-                return 'bg-yellow-500';
-            case 'congregado':
-                return 'bg-purple-500';
-            default:
-                return 'bg-gray-500';
-        }
-    }
-
-    const InfoItem = ({icon, label, value}: { icon: React.ReactNode, label: string, value: string }) => (
-        <div className="flex items-center space-x-2">
-            {icon}
-            <span className="font-semibold">{label}:</span>
-            <span>{value}</span>
-        </div>
-    )
-
-    const InfoItemMinisterios = ({icon, label, value}: {
-        icon: React.ReactNode,
-        label: string,
-        value: IMinistries[]
-    }) => (
-        <div className="flex flex-col items-start">
-            <div className="flex items-center space-x-2">
-                {icon}
-                <span className="font-semibold">{label}:</span>
-            </div>
-
-            {
-                value && value.length > 0 ? (
-                    <>
-                        {
-                            value.map((ministerio: IMinistries, index: number) => {
-                                if (ministerio) {
-                                    return (
-                                        <div key={index.toString()}>
-                                            - {ministerio.nome}
-                                        </div>
-                                    )
-                                }
-
-                                return (
-                                    <div
-                                        key={index.toString()}
-                                        className="py-1 text-yellow-700 font-semibold">-
-                                    </div>
-                                )
-                            })
-                        }
-                    </>
-                ) : (
-                    <span
-                        className="py-1 text-yellow-700 font-semibold">Nenhum ministério vinculado
-                    </span>
-                )
-            }
-        </div>
-    )
-
-    const handleSendMessageWhatsapp = (e: any, membro: any = null) => {
-        e.preventDefault();
-
-        if (membro) {
-            try {
-                setOpenBackLoadingMembros(true);
-                setShowBackLoadingMessage('Enviando mensagem por WhatsApp');
-
-                const body: WhatsappMessageWithTwilioInput = {
-                    conteudoMensagem: messageWhatsApp,
-                    linkAplicacao: '',
-                    numeroWhatsapp: membro.telefone,
-                    nomeCompanhia: 'Igreja Batista do Brooklin',
-                    nomeMembro: membro.nome
-                }
-
-                UserApi.sendWhatsAppMessage(body)
-                    .finally(() => {
-                        setOpenBackLoadingMembros(false);
-                        setShowBackLoadingMessage('');
-                    })
-            } catch (e) {
-
-            }
-        }
-    }
-
-    const getMember = () => {
-        if (useStoreIbbZus.mongoId !== '') {
-            fetchMember(useStoreIbbZus.mongoId);
-        } else {
-            handleReloadUser();
-        }
-    }
-
-    useEffect(() => {
-        if (ministries.length === 0) {
-            getAllMinistries();
-        }
-    }, []);
-
-    useEffect(() => {
-        if (!memberParam && useStoreIbbZus && ministries.length > 0) {
-            getMember();
-        }
-
-        setMember(null);
-        setMember(memberParam);
-
-    }, [memberParam, ministries]);
-
-    if (!useStoreIbbZus.hasHydrated) {
-        return (
-            <Backdrop
-                sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
-                open={!useStoreIbbZus.hasHydrated}
-            >
-                <div className="flex flex-col items-center">
-                    <CircularProgress color="inherit"/>
-                    Carregando informações
-                </div>
-            </Backdrop>
-        )
-    }
-
-    const handleReloadUser = () => {
-        const storage = useStoreIbbZus.user;
-
-        if (storage && storage.length > 0) {
-            const userStorage = JSON.parse(storage);
-
-            if (userStorage && userStorage['user']) {
-                UserApi.getUserByEmail(userStorage['user']['email'])
-                    .then((result: any) => {
-                        if (result) {
-                            fetchMember(result.customClaims.mongoId);
-                        }
-                    })
-                    .catch((error) => {
-                        console.log('Erro ao recuperar os dados do membro!');
-                    })
-            }
-        } else if (useStoreIbbZus.user == null) {
-            useStoreIbbZus.addUser(null);
-            useStoreIbbZus.addRole('');
-            useStoreIbbZus.addMongoId('');
-            useStoreIbbZus.setHasHydrated(true);
-            router.push('/login');
-            return;
-        }
-    }
-
-    const fetchMember = (mongoId: string) => {
-        UserApi.fetchMemberById(mongoId)
-            .then((response: IUserResponseApi) => {
-                const ministerioMapeado = response.ministerio.map((ministerioResponse: IMinistries | string) => {
-                    const findMinistrie: IMinistries | undefined = ministries.find((ministrie: IMinistries) => {
-                        return ministrie._id === ministerioResponse
-                    });
-
-                    if (findMinistrie) {
-                        return findMinistrie
-                    }
-                    return null;
-                })
-
-                // Mapeamento da propriedade ministerio
-                const membroComMinisterios = {
-                    ...response,
-                    ministerio: ministerioMapeado
-                };
-
-                setMember(membroComMinisterios);
-            })
-            .catch(() => {
-                console.log('Erro ao buscar por membro!')
-            })
-            .finally(() => {
-                setOpenBackLoadingMembros(false);
-                setShowBackLoadingMessage('');
-            })
-    }
-
-    const getAllMinistries = () => {
-        setOpenBackLoadingMembros(true);
-        setShowBackLoadingMessage('Buscando pelos ministérios...');
-
-        try {
-            UserApi.fetchMinistries()
-                .then((response: IMinistries[]) => {
-                    if (response && response.length > 0) {
-                        setMinistries(response);
-
-                        setOpenBackLoadingMembros(false);
-                        setShowBackLoadingMessage('');
-                    } else {
-                        setMinistries([]);
-                        setOpenBackLoadingMembros(false);
-                        setShowBackLoadingMessage('');
-                    }
-                })
-                .catch((error) => {
-                    console.log(error);
-                    setMinistries([]);
-                    setOpenBackLoadingMembros(false);
-                    setShowBackLoadingMessage('');
-
-                    switch (error.code) {
-                        case 'ERR_BAD_REQUEST':
-                            setShowErrorMessageApi('Falha na requisição, tente novamente!');
-                            setShowErrorApi(true);
-                            setOpenBackLoadingMembros(false);
-                            setShowBackLoadingMessage('');
-                            setMinistries([]);
-                            break;
-                        case 'ERR_NETWORK':
-                            setShowErrorMessageApi('Erro na conexão, tente novamente!');
-                            setShowErrorApi(true);
-                            setOpenBackLoadingMembros(false);
-                            setShowBackLoadingMessage('');
-                            setMinistries([]);
-                            break;
-
-                        default:
-                            setShowErrorMessageApi('Erro genérico do servidor, tente novamente!');
-                            setShowErrorApi(true);
-                            setOpenBackLoadingMembros(false);
-                            setShowBackLoadingMessage('');
-                            setMinistries([]);
-                            break;
-                    }
-                });
-        } catch (e) {
-            setShowErrorMessageApi('Erro desconhecido, tente novamente!');
-            setShowErrorApi(true);
-
-            setOpenBackLoadingMembros(false);
-            setShowBackLoadingMessage('');
-            setMinistries([]);
-        }
+    const handleEdit = () => {
+        console.log('Navigate to edit screen')
     }
 
     return (
-        <div className="mt-6 container mx-auto">
-            <Backdrop
-                sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
-                open={openBackLoadingMembros}
-            >
-                <div className="flex flex-col items-center">
-                    <CircularProgress color="inherit"/>
-                    <p>{showBackLoadingMessage}</p>
-                </div>
-            </Backdrop>
-
-            {
-                showErrorApi && (
-                    <ToastError data={{message: showErrorMessageApi}} visible={true}
-                                setShowParentComponent={setShowErrorApi}/>
-                )
-            }
-
-            <Dialog open={openDialogSendMessage} onOpenChange={setOpenDialogSendMessage}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Enviar mensagem via WhatsApp</DialogTitle>
-                    </DialogHeader>
-
-                    <div className="grid gap-4">
-                        <div className="grid w-full gap-1.5">
-                            <Label htmlFor="mensagem-whatsapp">Sua mensagem</Label>
-                            <Textarea placeholder="Escreva sua mensagem aqui."
-                                      id="mensagem-whatsapp"
-                                      value={messageWhatsApp}
-                                      onChange={(e) => setMessageWhatsApp(e.target.value)}/>
-                            <p className="text-sm text-muted-foreground">
-                                Preencha a mensagem com pelo menos 20 caracteres: {messageWhatsApp.length}
-                            </p>
+        <div className="container mx-auto py-10">
+            <Card className="w-full max-w-4xl mx-auto">
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                        <Avatar className="w-20 h-20">
+                            <AvatarImage src={member.foto} alt={member.nome} />
+                            <AvatarFallback>{member.nome.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <CardTitle className="text-2xl">{member.nome}</CardTitle>
+                            <CardDescription>{member.email}</CardDescription>
                         </div>
-
-                        <div className="flex justify-end items-center space-y-2">
-                            <Button type="submit" size="sm" className="px-3" disabled={messageWhatsApp.length < 20}
-                                    onClick={(e) => handleSendMessageWhatsapp(e)}>
-                                <SendIcon className="w-4 h-4 mr-2"/>
-                                Enviar
-                            </Button>
-                        </div>
-
                     </div>
-                </DialogContent>
-            </Dialog>
+                    <Button onClick={handleEdit}>
+                        <Edit className="mr-2 h-4 w-4" /> Editar
+                    </Button>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="flex items-center space-x-2">
+                        <Badge variant={member.status === StatusEnumV2.ativo ? "default" : "secondary"}>
+                            {member.status}
+                        </Badge>
+                        <Badge variant="outline">{member.role}</Badge>
+                    </div>
 
-            {
-                member ? (
-                        <div
-                            className="flex-grow overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400 transition-colors duration-200">
-                            <div className="space-y-6">
-                                <div className="flex items-center justify-between gap-4">
+                    <Separator />
 
-                                    <div className="flex items-center gap-4">
-                                        <Avatar className="w-24 h-24">
-                                            <AvatarImage src={member.foto || "/placeholder.svg?height=96&width=96"}
-                                                         alt={member.nome}/>
-                                            <AvatarFallback>{member.nome.split(' ').map((n: any[]) => n[0]).join('').substring(0, 2)}</AvatarFallback>
-                                        </Avatar>
-
-                                        <div>
-                                            <h2 className="text-2xl font-bold">{member.nome}</h2>
-                                            <div>
-                                                <div className="mt-2">
-                                                    <InfoItem icon={<CalendarIcon className="w-4 h-4"/>}
-                                                              label="MEMBRO DESDE"
-                                                              value={member.data_ingresso || 'Não informado'}/>
-                                                </div>
-
-                                                <div className="flex items-center mt-3 space-x-2">
-                                                    <Badge variant="outline"
-                                                           className={`${getStatusColor(member.status)} text-white`}>
-                                                        {member.status.toUpperCase()}
-                                                    </Badge>
-                                                    <Badge variant="secondary">{member.role}</Badge>
-                                                </div>
-                                            </div>
-
-                                            <div className="mt-3">
-                                                <Button
-                                                    className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                                    onClick={(e) => handleSendMessageWhatsapp(e, member)}
-                                                >
-                                                    <MessageSquareText className="w-4 h-4"/>
-                                                    Pedir oração
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-3">
-                                        <Button
-                                            className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                            onClick={(e) => {
-                                                router.push(`/member?id=${member._id}`);
-                                            }}
-                                        >
-                                            <Pencil1Icon className="w-4 h-4"/>
-                                            Editar informações
-                                        </Button>
-                                    </div>
-                                </div>
-
-                                <Separator/>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-semibold">Informações Pessoais</h3>
-                                        <InfoItem icon={<UserIcon className="w-4 h-4"/>} label="CPF" value={member.cpf}/>
-                                        <InfoItem icon={<UserIcon className="w-4 h-4"/>} label="RG" value={member.rg}/>
-                                        <InfoItem icon={<CalendarIcon className="w-4 h-4"/>} label="Data de Nascimento"
-                                                  value={member.data_nascimento}/>
-                                        <InfoItem icon={<HeartIcon className="w-4 h-4"/>} label="Estado Civil"
-                                                  value={member.estado_civil}/>
-                                        <InfoItem icon={<UserIcon className="w-4 h-4"/>} label="Possui Filhos"
-                                                  value={member.possui_filhos ? 'Sim' : 'Não'}/>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-semibold">Contato</h3>
-                                        <InfoItem icon={<PhoneIcon className="w-4 h-4"/>} label="Telefone"
-                                                  value={member.telefone}/>
-                                        <InfoItem icon={<MailIcon className="w-4 h-4"/>} label="Email"
-                                                  value={member.email}/>
-                                    </div>
-                                </div>
-                                <Separator/>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-semibold">Informações da Igreja</h3>
-                                        <InfoItem icon={<UserIcon className="w-4 h-4"/>} label="Forma de Ingresso"
-                                                  value={member.forma_ingresso || 'Não informado'}/>
-                                        <InfoItem icon={<UserIcon className="w-4 h-4"/>} label="Local de Ingresso"
-                                                  value={member.local_ingresso || 'Não informado'}/>
-
-                                        <InfoItemMinisterios
-                                            icon={<BookOpenIcon className="w-4 h-4"/>}
-                                            label="Ministérios"
-                                            value={member.ministerio}
-                                        />
-
-                                        <Separator/>
-                                        <div className="space-y-4">
-                                            <h3 className="text-lg font-semibold">Diácono/Diaconisa</h3>
-                                            <div className="flex flex-col justify-items-start gap-4">
-                                                <InfoItem icon={<UserIcon className="w-4 h-4"/>} label="Nome"
-                                                          value={member.diacono.nome}/>
-                                                <Button
-                                                    className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                                    onClick={() => {
-                                                        setOpenDialogSendMessage(true);
-                                                    }}
-                                                >
-                                                    <PhoneIcon className="w-4 h-4"/>
-                                                    Enviar Mensagem
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <div className="bg-yellow-50 p-4 rounded-lg">
-                                            <h3 className="text-lg font-semibold text-yellow-500">Informações de
-                                                Transferência</h3>
-                                            <InfoItem icon={<CalendarIcon className="w-4 h-4"/>}
-                                                      label="Data de Transferência"
-                                                      value={member.transferencia || 'Não informado'}/>
-                                            <InfoItem icon={<UserIcon className="w-4 h-4"/>} label="Motivo"
-                                                      value={member.motivo_transferencia || 'Não informado'}/>
-                                            <InfoItem icon={<UserIcon className="w-4 h-4"/>} label="Local anterior"
-                                                      value={member.local_transferencia || 'Não informado'}/>
-                                        </div>
-
-                                        <div className="bg-red-50 p-4 rounded-lg">
-                                            <h3 className="text-lg font-semibold text-red-500">Informações de Exclusão</h3>
-                                            <InfoItem icon={<CalendarIcon className="w-4 h-4"/>} label="Data de Exclusão"
-                                                      value={member.excluido || 'Não informado'}/>
-                                            <InfoItem icon={<UserIcon className="w-4 h-4"/>} label="Motivo"
-                                                      value={member.motivo_exclusao || 'Não informado'}/>
-                                        </div>
-
-                                        <div className="bg-gray-50 p-4 rounded-lg">
-                                            <h3 className="text-lg font-semibold text-gray-500">Informações de
-                                                Falecimento</h3>
-                                            <InfoItem icon={<CalendarIcon className="w-4 h-4"/>} label="Data de Falecimento"
-                                                      value={member.falecimento || 'Não informado'}/>
-                                            <InfoItem icon={<UserIcon className="w-4 h-4"/>} label="Motivo"
-                                                      value={member.motivo_falecimento || 'Não informado'}/>
-                                        </div>
-                                    </div>
-
-                                </div>
-                                <div className="text-sm text-muted-foreground pb-4">
-                                    <CalendarIcon className="inline w-4 h-4 mr-1"/>
-                                    Última atualização: {member.updatedAt}
-                                </div>
-                            </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <p className="text-sm font-medium text-muted-foreground">Informações Básicas</p>
+                            <div className="flex items-center"><Mail className="mr-2 h-4 w-4" /> {member.email}</div>
+                            <div className="flex items-center"><Phone className="mr-2 h-4 w-4" /> {member.telefone}</div>
+                            <div className="flex items-center"><Calendar className="mr-2 h-4 w-4" /> Nascimento: {format(member.dataNascimento, 'dd/MM/yyyy')}</div>
                         </div>
-                    ) :
-                    (
-                        <Card>
-                            <CardHeader>
-                                <div className="flex justify-end items-center -mt-6 -mr-6">
-                                    <Button size="sm" className="font-bold sm:inline-flex md:inline-flex bg-zinc-500"
-                                            onClick={() => handleReloadUser()}>
-                                        <ReloadIcon className="w-4 h-4 mr-1"/>
-                                        Recarregar
-                                    </Button>
-                                </div>
-                            </CardHeader>
+                        <div className="space-y-2">
+                            <p className="text-sm font-medium text-muted-foreground">Documentos</p>
+                            <div>CPF: {member.cpf}</div>
+                            <div>RG: {member.rg}</div>
+                        </div>
+                    </div>
 
-                            <div className="flex justify-center">
-                                <CardContent>
-                                    <CardTitle>Usuário indisponível, clique no botão Recarregar ao lado para tentar
-                                        novamente</CardTitle>
-                                </CardContent>
+                    <Separator />
+
+                    <div className="space-y-2">
+                        <p className="text-sm font-medium text-muted-foreground">Informações Pessoais</p>
+                        <div>Estado Civil: {member.informacoesPessoais.estadoCivil}</div>
+                        {member.informacoesPessoais.casamento.conjugue && (
+                            <div className="flex items-center">
+                                <Heart className="mr-2 h-4 w-4" /> Cônjuge: {member.informacoesPessoais.casamento.conjugue.nome}
+                                {member.informacoesPessoais.casamento.dataCasamento && (
+                                    <span className="ml-2">
+                    (Casamento: {format(member.informacoesPessoais.casamento.dataCasamento, 'dd/MM/yyyy')})
+                  </span>
+                                )}
                             </div>
-                        </Card>
-                    )
-            }
+                        )}
+                        {member.informacoesPessoais.temFilhos && (
+                            <div className="flex items-center">
+                                <Users className="mr-2 h-4 w-4" /> Filhos: {member.informacoesPessoais.filhos.map(filho => filho.nome).join(', ')}
+                            </div>
+                        )}
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-2">
+                        <p className="text-sm font-medium text-muted-foreground">Cargo e Ministério</p>
+                        <div className="flex items-center">
+                            <Briefcase className="mr-2 h-4 w-4" /> Diácono: {member.diacono.nome}
+                        </div>
+                        <div className="flex items-center">
+                            <Users className="mr-2 h-4 w-4" /> Ministérios: {member.ministerio.join(', ')}
+                        </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-2">
+                        <p className="text-sm font-medium text-muted-foreground">Endereço</p>
+                        {member.endereco && (
+                            <div className="flex items-start">
+                                <MapPin className="mr-2 h-4 w-4 mt-1" />
+                                <div>
+                                    {member.endereco.rua}, {member.endereco.numero}
+                                    {member.endereco.complemento && `, ${member.endereco.complemento}`}<br />
+                                    {member.endereco.bairro}, {member.endereco.cidade} - {member.endereco.estado}<br />
+                                    {member.endereco.cep}, {member.endereco.pais}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-2">
+                        <p className="text-sm font-medium text-muted-foreground">Histórico</p>
+                        {member.ingresso.data && (
+                            <div className="flex items-center">
+                                <LogIn className="mr-2 h-4 w-4" /> Ingresso: {format(member.ingresso.data, 'dd/MM/yyyy')} - {member.ingresso.forma} ({member.ingresso.local})
+                            </div>
+                        )}
+                        {member.transferencia.data && (
+                            <div className="flex items-center">
+                                <LogOut className="mr-2 h-4 w-4" /> Transferência: {format(member.transferencia.data, 'dd/MM/yyyy')} - {member.transferencia.motivo} ({member.transferencia.local})
+                            </div>
+                        )}
+                        {member.falecimento.data && (
+                            <div className="flex items-center">
+                                <Skull className="mr-2 h-4 w-4" /> Falecimento: {format(member.falecimento.data, 'dd/MM/yyyy')} - {member.falecimento.motivo} ({member.falecimento.local})
+                            </div>
+                        )}
+                        {member.exclusao.data && (
+                            <div className="flex items-center">
+                                <Ban className="mr-2 h-4 w-4" /> Exclusão: {format(member.exclusao.data, 'dd/MM/yyyy')} - {member.exclusao.motivo}
+                            </div>
+                        )}
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-2">
+                        <p className="text-sm font-medium text-muted-foreground">Autenticação</p>
+                        {member.autenticacao.providersInfo.map((provider, index) => (
+                            <div key={index}>
+                                Provedor: {provider.providerId}, UID: {provider.uid}
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+                <CardFooter>
+                    <div className="w-full space-y-4">
+                        <h3 className="text-lg font-semibold">Convites Enviados</h3>
+                        {invitations.length > 0 ? (
+                            <ul className="space-y-2">
+                                {invitations.map((invitation, index) => (
+                                    <li key={index} className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            <Send className="mr-2 h-4 w-4" />
+                                            <span>{invitation.para}</span>
+                                        </div>
+                                        <span className="text-sm text-muted-foreground">
+                      {format(invitation.createdAt, 'dd/MM/yyyy')}
+                    </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p>Nenhum convite enviado.</p>
+                        )}
+                    </div>
+                </CardFooter>
+            </Card>
         </div>
     )
 }
+
