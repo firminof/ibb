@@ -630,7 +630,7 @@ export default function MemberForm() {
     return (
         <div className="mt-4 mb-4 container mx-auto">
             <section>
-                <Button variant="outline" className="text-black" onClick={() => console.log('voltar')}>
+                <Button variant="outline" className="text-black" onClick={() => router.back()}>
                     <ChevronLeftIcon className="h-4 w-4"/> voltar
                 </Button>
 

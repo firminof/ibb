@@ -143,6 +143,18 @@ export enum StatusEnumV2 {
     excluido = 'excluido',
 }
 
+// Mapear cores para cada status
+export const statusColors: Record<StatusEnumV2, string> = {
+    [StatusEnumV2.visitante]: 'bg-gray-200 text-gray-800',
+    [StatusEnumV2.congregado]: 'bg-blue-200 text-blue-800',
+    [StatusEnumV2.ativo]: 'bg-green-200 text-green-800',
+    [StatusEnumV2.inativo]: 'bg-yellow-200 text-yellow-800',
+    [StatusEnumV2.transferido]: 'bg-purple-200 text-purple-800',
+    [StatusEnumV2.falecido]: 'bg-red-200 text-red-800',
+    [StatusEnumV2.excluido]: 'bg-black text-white',
+};
+
+
 export enum CivilStateEnumV2 {
     solteiro = 'solteiro',
     casado = 'casado',
