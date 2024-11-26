@@ -5,7 +5,7 @@ import {useEffect, useState} from 'react'
 import {useFieldArray, useForm} from 'react-hook-form'
 import {zodResolver} from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import {format, formatDate, parseISO} from 'date-fns'
+import {format, formatDate} from 'date-fns'
 import {CalendarIcon, CameraIcon, ListIcon, PlusCircleIcon, XCircleIcon} from 'lucide-react'
 import {cn} from '@/lib/utils'
 import {Button} from '@/components/ui/button'
@@ -96,7 +96,7 @@ const MinistrieEntitySchema = z.object({
 });
 
 // Uso do schema
-type MinistriesEntity = z.infer<typeof MinistrieEntitySchema>;
+export type MinistriesEntity = z.infer<typeof MinistrieEntitySchema>;
 
 const formSchema = z
     .object({
@@ -179,6 +179,9 @@ const formSchema = z
         visitas: z.object({
             motivo: z.string().nullable(),
         }),
+        idade: z.number().nullable(),
+        updatedAt: z.string().nullable(),
+        createdAt: z.string().nullable(),
     })
     .superRefine((data, ctx) => {
         // Validação condicional para `status`
@@ -335,7 +338,9 @@ const dataForm: z.infer<typeof formSchema> = {
     },
     "visitas": {
         "motivo": null,
-    }
+    },
+    "updatedAt": null,
+    "createdAt": null
 }
 
 export type FormValuesMember = z.infer<typeof formSchema>;
@@ -634,14 +639,24 @@ export default function MemberForm() {
                     <ChevronLeftIcon className="h-4 w-4"/> voltar
                 </Button>
 
-                <div className="flex justify-between items-center">
-                    <h2 className="text-black text-3xl font-semibold mb-4 mt-4">{isEditing ? 'Editar Membro' : 'Cadastrar Membro'}</h2>
-                    <Button size="sm" className="font-bold sm:inline-flex md:inline-flex"
-                            onClick={() => router.push('/member-list')}>
-                        <ListIcon className="w-4 h-4 mr-1"/>
-                        Lista de Membros
-                    </Button>
-                </div>
+                {
+                    useStoreIbbZus.role === UserRolesV2.ADMIN && (
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-black text-3xl font-semibold mb-4 mt-4">{isEditing ? 'Editar Membro' : 'Cadastrar Membro'}</h2>
+                            <Button size="sm" className="font-bold sm:inline-flex md:inline-flex"
+                                    onClick={() => router.push('/member-list')}>
+                                <ListIcon className="w-4 h-4 mr-1"/>
+                                Lista de Membros
+                            </Button>
+                        </div>
+                    )
+                }
+
+                {
+                    useStoreIbbZus.role === UserRolesV2.MEMBRO && (
+                        <h2 className="text-black text-3xl font-semibold mb-4 mt-4">Editar Membro</h2>
+                    )
+                }
             </section>
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">

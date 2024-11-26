@@ -1,5 +1,5 @@
 import api from "@/lib/api/api";
-import {IInviteByEmail, ITempInvite} from "@/lib/models/invite";
+import {IInviteByEmail, IInviteEntity, ITempInvite} from "@/lib/models/invite";
 import {ITempUserCreate, ITempUserUpdate, UserV2} from "@/lib/models/user";
 import {ICreateMinisterio, IEditMinisterio, IMinisteriosResponseApi} from "@/lib/models/misterios";
 import {IMinistries} from "@/lib/models/user-response-api";
@@ -20,6 +20,12 @@ export class UserApi {
 
     static async fetchMemberById(id: string): Promise<any | undefined> {
         const user = await api.get(`/v2/user/get-by-id/${id}`);
+
+        return user.data;
+    }
+
+    static async fetchAllInvitesByMemberId(id: string): Promise<IInviteEntity[]> {
+        const user = await api.get(`/v2/user/invites/${id}`);
 
         return user.data;
     }

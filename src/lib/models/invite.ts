@@ -52,3 +52,14 @@ export interface IInviteByEmail {
     text: string;
     phone: string;
 }
+
+export interface IInviteEntity {
+    _id: string;
+    memberIdRequested: string;
+    requestName: string;
+    to: string | null;
+    phone: string | null;
+    isAccepted: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
