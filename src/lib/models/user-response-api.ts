@@ -1,4 +1,4 @@
-import {IUser, StatusEnum} from "@/lib/models/user";
+import {IMember, IUser, StatusEnum} from "@/lib/models/user";
 
 export interface IUserResponseApi {
     nome: string;
@@ -43,7 +43,7 @@ export interface IMinistries {
     _id?: string;
     nome: string;
     categoria: string;
-    responsavel: IUser[];
+    responsavel: IMember[];
     createdAt: Date;
     updatedAt: Date;
 }

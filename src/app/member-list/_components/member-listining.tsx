@@ -37,6 +37,7 @@ import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Backdrop, CircularProgress} from "@mui/material";
 import {SafeParseError, SafeParseSuccess, ZodIssue} from "zod";
 import ptBR from "date-fns/locale/pt-BR";
+import {Card, CardContent} from "@/components/ui/card";
 
 // Status validation schema
 const statusUpdateSchema = z.object({
@@ -446,7 +447,7 @@ export default function MemberListing() {
         // Filtra os ministérios cujos _id estão no array ids e retorna os nomes correspondentes.
         return ministerios
             .filter((ministerio: MinistriesEntity) => member.ministerio.includes(ministerio._id))
-            .map((ministerio: MinistriesEntity): string => ministerio.nome ? ministerio.nome : '-');
+            .map((ministerio: MinistriesEntity): string => ministerio.nome ? ministerio.nome : '-').join(', ');
     }
 
     if (openLoading) {
@@ -560,382 +561,387 @@ export default function MemberListing() {
                     <p className="text-xl text-gray-500">Nenhum membro encontrado.</p>
                 </div>
             ) : (
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[50px]"></TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
-                            <TableHead>Nome</TableHead>
-                            <TableHead>Data de Nascimento</TableHead>
-                            <TableHead>Idade</TableHead>
-                            <TableHead>Telefone</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Função</TableHead>
-                            <TableHead>É Diácono</TableHead>
-                            <TableHead>Ministério</TableHead>
-                            <TableHead>Diácono</TableHead>
-                            <TableHead>Última Atualização</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filteredMembers.map((member: FormValuesMember) => (
-                            <TableRow key={member._id} className="group">
-                                <TableCell>
-                                    <Checkbox
-                                        checked={selectedMembers.includes(member._id)}
-                                        onCheckedChange={() => handleSelectMember(member._id)}
-                                    />
-                                </TableCell>
-                                <TableCell className="relative group">
-                                    {/* Imagem do membro */}
-                                    <span className="block">
+                <Card className="w-full">
+                    <CardContent className="p-2">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[50px]"></TableHead>
+                                    <TableHead className="w-[50px]"></TableHead>
+                                    <TableHead>Nome</TableHead>
+                                    <TableHead>Data de Nascimento</TableHead>
+                                    <TableHead>Idade</TableHead>
+                                    <TableHead>Telefone</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Função</TableHead>
+                                    <TableHead>É Diácono</TableHead>
+                                    <TableHead>Ministério</TableHead>
+                                    <TableHead>Diácono</TableHead>
+                                    <TableHead>Última Atualização</TableHead>
+                                    <TableHead>Ações</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredMembers.map((member: FormValuesMember) => (
+                                    <TableRow key={member._id} className="group">
+                                        <TableCell>
+                                            <Checkbox
+                                                checked={selectedMembers.includes(member._id)}
+                                                onCheckedChange={() => handleSelectMember(member._id)}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="relative group">
+                                            {/* Imagem do membro */}
+                                            <span className="block">
                                         <Avatar className="w-16 h-16">
                                             <AvatarImage src={member.foto} alt={member.nome}/>
                                             <AvatarFallback>{member.nome.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                     </span>
 
-                                    {/* Ícone sobreposto no hover */}
-                                    <div
-                                        className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <Dialog>
-                                            <DialogTrigger asChild>
-                                                <ViewIcon className="w-6 h-6 text-white cursor-pointer"/>
-                                            </DialogTrigger>
-                                            <DialogContent>
-                                                <DialogHeader>
-                                                    <DialogTitle>Foto de: {member?.nome}</DialogTitle>
-                                                </DialogHeader>
-                                                <Avatar className="w-96 h-96">
-                                                    <AvatarImage src={member.foto} alt={member.nome}/>
-                                                    <AvatarFallback>{member.nome.charAt(0)}</AvatarFallback>
-                                                </Avatar>
-                                            </DialogContent>
-                                        </Dialog>
-                                    </div>
-                                </TableCell>
-                                <TableCell>{member.nome}</TableCell>
-                                <TableCell>{format(member.dataNascimento, 'dd/MM/yyyy')}</TableCell>
-                                <TableCell>{member.idade}</TableCell>
-                                <TableCell>{member.telefone}</TableCell>
-                                <TableCell className="relative group">
-                                    {/* Badge de status */}
-                                    <span>{renderStatusBadge(member.status)}</span>
+                                            {/* Ícone sobreposto no hover */}
+                                            <div
+                                                className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                        <ViewIcon className="w-6 h-6 text-white cursor-pointer"/>
+                                                    </DialogTrigger>
+                                                    <DialogContent>
+                                                        <DialogHeader>
+                                                            <DialogTitle>Foto de: {member?.nome}</DialogTitle>
+                                                        </DialogHeader>
+                                                        <Avatar className="w-96 h-96">
+                                                            <AvatarImage src={member.foto} alt={member.nome}/>
+                                                            <AvatarFallback>{member.nome.charAt(0)}</AvatarFallback>
+                                                        </Avatar>
+                                                    </DialogContent>
+                                                </Dialog>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>{member.nome}</TableCell>
+                                        <TableCell>{format(member.dataNascimento, 'dd/MM/yyyy')}</TableCell>
+                                        <TableCell>{member.idade}</TableCell>
+                                        <TableCell>{member.telefone}</TableCell>
+                                        <TableCell className="relative group">
+                                            {/* Badge de status */}
+                                            <span>{renderStatusBadge(member.status)}</span>
 
-                                    {/* Botão sobreposto */}
-                                    <div
-                                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-md"
-                                    >
-                                        <Dialog>
-                                            <DialogTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handleStatusChange(member)}
-                                                    className="z-10" // Garante que o botão esteja sempre no topo
-                                                >
-                                                    Alterar Status
+                                            {/* Botão sobreposto */}
+                                            <div
+                                                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-md"
+                                            >
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleStatusChange(member)}
+                                                            className="z-10" // Garante que o botão esteja sempre no topo
+                                                        >
+                                                            Alterar Status
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent>
+                                                        <DialogHeader>
+                                                            <DialogTitle>Alterar Status de {selectedMember?.nome}</DialogTitle>
+                                                        </DialogHeader>
+
+                                                        <Form {...form}>
+                                                            <form
+                                                                onSubmit={form.handleSubmit(handleStatusUpdateSubmit)}
+                                                                className="space-y-4"
+                                                            >
+                                                                <FormField
+                                                                    control={form.control}
+                                                                    name="status"
+                                                                    render={({field}) => (
+                                                                        <FormItem>
+                                                                            <FormLabel>Novo Status</FormLabel>
+                                                                            <Select onValueChange={field.onChange}
+                                                                                    defaultValue={field.value}>
+                                                                                <FormControl>
+                                                                                    <SelectTrigger>
+                                                                                        <SelectValue
+                                                                                            placeholder="Selecione o status"/>
+                                                                                    </SelectTrigger>
+                                                                                </FormControl>
+                                                                                <SelectContent>
+                                                                                    {Object.values(StatusEnumV2).map((status) => (
+                                                                                        <SelectItem key={status} value={status}>
+                                                                                            {status}
+                                                                                        </SelectItem>
+                                                                                    ))}
+                                                                                </SelectContent>
+                                                                            </Select>
+                                                                            <FormMessage/>
+                                                                        </FormItem>
+                                                                    )}
+                                                                />
+
+                                                                {/* STATUS ATIVO */}
+                                                                {form.watch('status') === StatusEnumV2.ATIVO && (
+                                                                    <>
+                                                                        <FormField
+                                                                            control={form.control}
+                                                                            name="ingresso.data"
+                                                                            render={({field}) => (
+                                                                                <FormItem>
+                                                                                    <FormLabel>Data</FormLabel>
+                                                                                    <FormControl>
+                                                                                        <Input
+                                                                                            type="date"
+                                                                                            {...field}
+                                                                                            value={
+                                                                                                field.value
+                                                                                                    ? new Date(field.value).toISOString().substr(0, 10)
+                                                                                                    : ''
+                                                                                            }
+                                                                                        />
+                                                                                    </FormControl>
+                                                                                    <FormMessage/>
+                                                                                </FormItem>
+                                                                            )}
+                                                                        />
+                                                                        <FormField
+                                                                            control={form.control}
+                                                                            name="ingresso.forma"
+                                                                            render={({field}) => (
+                                                                                <FormItem>
+                                                                                    <FormLabel>Forma</FormLabel>
+                                                                                    <FormControl>
+                                                                                        <Input {...field} />
+                                                                                    </FormControl>
+                                                                                    <FormMessage/>
+                                                                                </FormItem>
+                                                                            )}
+                                                                        />
+                                                                        <FormField
+                                                                            control={form.control}
+                                                                            name="ingresso.local"
+                                                                            render={({field}) => (
+                                                                                <FormItem>
+                                                                                    <FormLabel>Local</FormLabel>
+                                                                                    <FormControl>
+                                                                                        <Input {...field} />
+                                                                                    </FormControl>
+                                                                                    <FormMessage/>
+                                                                                </FormItem>
+                                                                            )}
+                                                                        />
+                                                                    </>
+                                                                )}
+
+                                                                {/* STATUS TRANSFERIDO */}
+                                                                {form.watch('status') === StatusEnumV2.TRANSFERIDO && (
+                                                                    <>
+                                                                        <FormField
+                                                                            control={form.control}
+                                                                            name="transferido.data"
+                                                                            render={({field}) => (
+                                                                                <FormItem>
+                                                                                    <FormLabel>Data</FormLabel>
+                                                                                    <FormControl>
+                                                                                        <Input
+                                                                                            type="date"
+                                                                                            {...field}
+                                                                                            value={
+                                                                                                field.value
+                                                                                                    ? new Date(field.value).toISOString().substr(0, 10)
+                                                                                                    : ''
+                                                                                            }
+                                                                                        />
+                                                                                    </FormControl>
+                                                                                    <FormMessage/>
+                                                                                </FormItem>
+                                                                            )}
+                                                                        />
+                                                                        <FormField
+                                                                            control={form.control}
+                                                                            name="transferido.motivo"
+                                                                            render={({field}) => (
+                                                                                <FormItem>
+                                                                                    <FormLabel>Motivo</FormLabel>
+                                                                                    <FormControl>
+                                                                                        <Input {...field} />
+                                                                                    </FormControl>
+                                                                                    <FormMessage/>
+                                                                                </FormItem>
+                                                                            )}
+                                                                        />
+                                                                        <FormField
+                                                                            control={form.control}
+                                                                            name="transferido.local"
+                                                                            render={({field}) => (
+                                                                                <FormItem>
+                                                                                    <FormLabel>Local</FormLabel>
+                                                                                    <FormControl>
+                                                                                        <Input {...field} />
+                                                                                    </FormControl>
+                                                                                    <FormMessage/>
+                                                                                </FormItem>
+                                                                            )}
+                                                                        />
+                                                                    </>
+                                                                )}
+
+                                                                {/* STATUS FALECIDO */}
+                                                                {form.watch('status') === StatusEnumV2.FALECIDO && (
+                                                                    <>
+                                                                        <FormField
+                                                                            control={form.control}
+                                                                            name="falecido.data"
+                                                                            render={({field}) => (
+                                                                                <FormItem>
+                                                                                    <FormLabel>Data</FormLabel>
+                                                                                    <FormControl>
+                                                                                        <Input
+                                                                                            type="date"
+                                                                                            {...field}
+                                                                                            value={
+                                                                                                field.value
+                                                                                                    ? new Date(field.value).toISOString().substr(0, 10)
+                                                                                                    : ''
+                                                                                            }
+                                                                                        />
+                                                                                    </FormControl>
+                                                                                    <FormMessage/>
+                                                                                </FormItem>
+                                                                            )}
+                                                                        />
+                                                                        <FormField
+                                                                            control={form.control}
+                                                                            name="falecido.motivo"
+                                                                            render={({field}) => (
+                                                                                <FormItem>
+                                                                                    <FormLabel>Motivo</FormLabel>
+                                                                                    <FormControl>
+                                                                                        <Input {...field} />
+                                                                                    </FormControl>
+                                                                                    <FormMessage/>
+                                                                                </FormItem>
+                                                                            )}
+                                                                        />
+                                                                        <FormField
+                                                                            control={form.control}
+                                                                            name="falecido.local"
+                                                                            render={({field}) => (
+                                                                                <FormItem>
+                                                                                    <FormLabel>Local</FormLabel>
+                                                                                    <FormControl>
+                                                                                        <Input {...field} />
+                                                                                    </FormControl>
+                                                                                    <FormMessage/>
+                                                                                </FormItem>
+                                                                            )}
+                                                                        />
+                                                                    </>
+                                                                )}
+
+                                                                {/* STATUS EXCLUIDO */}
+                                                                {form.watch('status') === StatusEnumV2.EXCLUIDO && (
+                                                                    <>
+                                                                        <FormField
+                                                                            control={form.control}
+                                                                            name="excluido.data"
+                                                                            render={({field}) => (
+                                                                                <FormItem>
+                                                                                    <FormLabel>Data</FormLabel>
+                                                                                    <FormControl>
+                                                                                        <Input
+                                                                                            type="date"
+                                                                                            {...field}
+                                                                                            value={
+                                                                                                field.value
+                                                                                                    ? new Date(field.value).toISOString().substr(0, 10)
+                                                                                                    : ''
+                                                                                            }
+                                                                                        />
+                                                                                    </FormControl>
+                                                                                    <FormMessage/>
+                                                                                </FormItem>
+                                                                            )}
+                                                                        />
+                                                                        <FormField
+                                                                            control={form.control}
+                                                                            name="excluido.motivo"
+                                                                            render={({field}) => (
+                                                                                <FormItem>
+                                                                                    <FormLabel>Motivo</FormLabel>
+                                                                                    <FormControl>
+                                                                                        <Input {...field} />
+                                                                                    </FormControl>
+                                                                                    <FormMessage/>
+                                                                                </FormItem>
+                                                                            )}
+                                                                        />
+                                                                    </>
+                                                                )}
+
+                                                                {/* STATUS VISITANTE */}
+                                                                {form.watch('status') === StatusEnumV2.VISITANTE && (
+                                                                    <>
+                                                                        <FormField
+                                                                            control={form.control}
+                                                                            name="visitas.motivo"
+                                                                            render={({field}) => (
+                                                                                <FormItem>
+                                                                                    <FormLabel>Motivo</FormLabel>
+                                                                                    <FormControl>
+                                                                                        <Input {...field} />
+                                                                                    </FormControl>
+                                                                                    <FormMessage/>
+                                                                                </FormItem>
+                                                                            )}
+                                                                        />
+                                                                    </>
+                                                                )}
+
+                                                                {/* Botão de envio */}
+                                                                <Button type="submit" onClick={() => {
+                                                                    const result: SafeParseSuccess<any> | SafeParseError<any> = statusUpdateSchema.safeParse(form.getValues());
+                                                                    console.log(form.getValues());
+                                                                    console.log(result);
+                                                                    const errorMessages: string[] = [];
+                                                                    if (result && result.error && result.error.issues) {
+                                                                        result.error.issues.forEach((errorItem: ZodIssue) => {
+                                                                            errorMessages.push(errorItem.message);
+                                                                        })
+                                                                        alert(errorMessages);
+                                                                    }
+                                                                }}>Salvar Alterações</Button>
+                                                            </form>
+                                                        </Form>
+                                                    </DialogContent>
+                                                </Dialog>
+                                            </div>
+                                        </TableCell>
+
+                                        <TableCell>{member.role}</TableCell>
+                                        <TableCell>{member.isDiacono ? 'Sim' : 'Não'}</TableCell>
+                                        <TableCell>{mapMinisterios(member)}</TableCell>
+                                        <TableCell>{member.diacono.nome}</TableCell>
+                                        <TableCell>{format(member.updatedAt, 'dd/MM/yyyy HH:MM:ss', {locale: ptBR})}</TableCell>
+
+
+                                        <TableCell>
+                                            <div className="flex space-x-2">
+                                                <Button variant="ghost" size="sm"
+                                                        onClick={() => router.push(`/user?id=${member._id.toString()}`)}>
+                                                    <Eye className="h-4 w-4"/>
                                                 </Button>
-                                            </DialogTrigger>
-                                            <DialogContent>
-                                                <DialogHeader>
-                                                    <DialogTitle>Alterar Status de {selectedMember?.nome}</DialogTitle>
-                                                </DialogHeader>
-
-                                                <Form {...form}>
-                                                    <form
-                                                        onSubmit={form.handleSubmit(handleStatusUpdateSubmit)}
-                                                        className="space-y-4"
-                                                    >
-                                                        <FormField
-                                                            control={form.control}
-                                                            name="status"
-                                                            render={({field}) => (
-                                                                <FormItem>
-                                                                    <FormLabel>Novo Status</FormLabel>
-                                                                    <Select onValueChange={field.onChange}
-                                                                            defaultValue={field.value}>
-                                                                        <FormControl>
-                                                                            <SelectTrigger>
-                                                                                <SelectValue
-                                                                                    placeholder="Selecione o status"/>
-                                                                            </SelectTrigger>
-                                                                        </FormControl>
-                                                                        <SelectContent>
-                                                                            {Object.values(StatusEnumV2).map((status) => (
-                                                                                <SelectItem key={status} value={status}>
-                                                                                    {status}
-                                                                                </SelectItem>
-                                                                            ))}
-                                                                        </SelectContent>
-                                                                    </Select>
-                                                                    <FormMessage/>
-                                                                </FormItem>
-                                                            )}
-                                                        />
-
-                                                        {/* STATUS ATIVO */}
-                                                        {form.watch('status') === StatusEnumV2.ATIVO && (
-                                                            <>
-                                                                <FormField
-                                                                    control={form.control}
-                                                                    name="ingresso.data"
-                                                                    render={({field}) => (
-                                                                        <FormItem>
-                                                                            <FormLabel>Data</FormLabel>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    type="date"
-                                                                                    {...field}
-                                                                                    value={
-                                                                                        field.value
-                                                                                            ? new Date(field.value).toISOString().substr(0, 10)
-                                                                                            : ''
-                                                                                    }
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormMessage/>
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-                                                                <FormField
-                                                                    control={form.control}
-                                                                    name="ingresso.forma"
-                                                                    render={({field}) => (
-                                                                        <FormItem>
-                                                                            <FormLabel>Forma</FormLabel>
-                                                                            <FormControl>
-                                                                                <Input {...field} />
-                                                                            </FormControl>
-                                                                            <FormMessage/>
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-                                                                <FormField
-                                                                    control={form.control}
-                                                                    name="ingresso.local"
-                                                                    render={({field}) => (
-                                                                        <FormItem>
-                                                                            <FormLabel>Local</FormLabel>
-                                                                            <FormControl>
-                                                                                <Input {...field} />
-                                                                            </FormControl>
-                                                                            <FormMessage/>
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-                                                            </>
-                                                        )}
-
-                                                        {/* STATUS TRANSFERIDO */}
-                                                        {form.watch('status') === StatusEnumV2.TRANSFERIDO && (
-                                                            <>
-                                                                <FormField
-                                                                    control={form.control}
-                                                                    name="transferido.data"
-                                                                    render={({field}) => (
-                                                                        <FormItem>
-                                                                            <FormLabel>Data</FormLabel>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    type="date"
-                                                                                    {...field}
-                                                                                    value={
-                                                                                        field.value
-                                                                                            ? new Date(field.value).toISOString().substr(0, 10)
-                                                                                            : ''
-                                                                                    }
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormMessage/>
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-                                                                <FormField
-                                                                    control={form.control}
-                                                                    name="transferido.motivo"
-                                                                    render={({field}) => (
-                                                                        <FormItem>
-                                                                            <FormLabel>Motivo</FormLabel>
-                                                                            <FormControl>
-                                                                                <Input {...field} />
-                                                                            </FormControl>
-                                                                            <FormMessage/>
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-                                                                <FormField
-                                                                    control={form.control}
-                                                                    name="transferido.local"
-                                                                    render={({field}) => (
-                                                                        <FormItem>
-                                                                            <FormLabel>Local</FormLabel>
-                                                                            <FormControl>
-                                                                                <Input {...field} />
-                                                                            </FormControl>
-                                                                            <FormMessage/>
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-                                                            </>
-                                                        )}
-
-                                                        {/* STATUS FALECIDO */}
-                                                        {form.watch('status') === StatusEnumV2.FALECIDO && (
-                                                            <>
-                                                                <FormField
-                                                                    control={form.control}
-                                                                    name="falecido.data"
-                                                                    render={({field}) => (
-                                                                        <FormItem>
-                                                                            <FormLabel>Data</FormLabel>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    type="date"
-                                                                                    {...field}
-                                                                                    value={
-                                                                                        field.value
-                                                                                            ? new Date(field.value).toISOString().substr(0, 10)
-                                                                                            : ''
-                                                                                    }
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormMessage/>
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-                                                                <FormField
-                                                                    control={form.control}
-                                                                    name="falecido.motivo"
-                                                                    render={({field}) => (
-                                                                        <FormItem>
-                                                                            <FormLabel>Motivo</FormLabel>
-                                                                            <FormControl>
-                                                                                <Input {...field} />
-                                                                            </FormControl>
-                                                                            <FormMessage/>
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-                                                                <FormField
-                                                                    control={form.control}
-                                                                    name="falecido.local"
-                                                                    render={({field}) => (
-                                                                        <FormItem>
-                                                                            <FormLabel>Local</FormLabel>
-                                                                            <FormControl>
-                                                                                <Input {...field} />
-                                                                            </FormControl>
-                                                                            <FormMessage/>
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-                                                            </>
-                                                        )}
-
-                                                        {/* STATUS EXCLUIDO */}
-                                                        {form.watch('status') === StatusEnumV2.EXCLUIDO && (
-                                                            <>
-                                                                <FormField
-                                                                    control={form.control}
-                                                                    name="excluido.data"
-                                                                    render={({field}) => (
-                                                                        <FormItem>
-                                                                            <FormLabel>Data</FormLabel>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    type="date"
-                                                                                    {...field}
-                                                                                    value={
-                                                                                        field.value
-                                                                                            ? new Date(field.value).toISOString().substr(0, 10)
-                                                                                            : ''
-                                                                                    }
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormMessage/>
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-                                                                <FormField
-                                                                    control={form.control}
-                                                                    name="excluido.motivo"
-                                                                    render={({field}) => (
-                                                                        <FormItem>
-                                                                            <FormLabel>Motivo</FormLabel>
-                                                                            <FormControl>
-                                                                                <Input {...field} />
-                                                                            </FormControl>
-                                                                            <FormMessage/>
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-                                                            </>
-                                                        )}
-
-                                                        {/* STATUS VISITANTE */}
-                                                        {form.watch('status') === StatusEnumV2.VISITANTE && (
-                                                            <>
-                                                                <FormField
-                                                                    control={form.control}
-                                                                    name="visitas.motivo"
-                                                                    render={({field}) => (
-                                                                        <FormItem>
-                                                                            <FormLabel>Motivo</FormLabel>
-                                                                            <FormControl>
-                                                                                <Input {...field} />
-                                                                            </FormControl>
-                                                                            <FormMessage/>
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-                                                            </>
-                                                        )}
-
-                                                        {/* Botão de envio */}
-                                                        <Button type="submit" onClick={() => {
-                                                            const result: SafeParseSuccess<any> | SafeParseError<any> = statusUpdateSchema.safeParse(form.getValues());
-                                                            console.log(form.getValues());
-                                                            console.log(result);
-                                                            const errorMessages: string[] = [];
-                                                            if (result && result.error && result.error.issues) {
-                                                                result.error.issues.forEach((errorItem: ZodIssue) => {
-                                                                    errorMessages.push(errorItem.message);
-                                                                })
-                                                                alert(errorMessages);
-                                                            }
-                                                        }}>Salvar Alterações</Button>
-                                                    </form>
-                                                </Form>
-                                            </DialogContent>
-                                        </Dialog>
-                                    </div>
-                                </TableCell>
-
-                                <TableCell>{member.role}</TableCell>
-                                <TableCell>{member.isDiacono ? 'Sim' : 'Não'}</TableCell>
-                                <TableCell>{mapMinisterios(member)}</TableCell>
-                                <TableCell>{member.diacono.nome}</TableCell>
-                                <TableCell>{format(member.updatedAt, 'dd/MM/yyyy HH:MM:ss', {locale: ptBR})}</TableCell>
-
-
-                                <TableCell>
-                                    <div className="flex space-x-2">
-                                        <Button variant="ghost" size="sm"
-                                                onClick={() => router.push(`/user?id=${member._id.toString()}`)}>
-                                            <Eye className="h-4 w-4"/>
-                                        </Button>
-                                        <Button variant="ghost" size="sm"
-                                                onClick={() => router.push(`/member?id=${member._id.toString()}`)}>
-                                            <Edit className="h-4 w-4"/>
-                                        </Button>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                                                <Button variant="ghost" size="sm"
+                                                        onClick={() => router.push(`/member?id=${member._id.toString()}`)}>
+                                                    <Edit className="h-4 w-4"/>
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
             )}
         </div>
     )

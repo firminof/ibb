@@ -95,7 +95,7 @@ export function Header() {
                                       prefetch={false}>
                                     Membros
                                 </Link>
-                                <Link href="/ministries" className="font-medium text-primary text-black hover:text-gray-400"
+                                <Link href="/ministrie-list" className="font-medium text-primary text-black hover:text-gray-400"
                                       prefetch={false}>
                                     Ministérios
                                 </Link>

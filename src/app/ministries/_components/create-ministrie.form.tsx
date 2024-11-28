@@ -10,7 +10,7 @@ import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/
 import {Card, CardHeader, CardTitle, CardContent, CardFooter} from "@/components/ui/card"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
 import {ChevronLeftIcon, ListIcon} from 'lucide-react'
-import {useRouter} from "next/navigation"
+import {useRouter, useSearchParams} from "next/navigation"
 import {
     Command,
     CommandEmpty,
@@ -25,6 +25,10 @@ import {
 } from "@/components/ui/popover"
 import {Check, ChevronsUpDown} from 'lucide-react'
 import {cn} from "@/lib/utils"
+import {UserApi} from "@/lib/api/user-api";
+import {dataForm, FormValuesMember} from "@/lib/models/user";
+import {Backdrop, CircularProgress} from "@mui/material";
+import * as React from "react";
 
 // Define the types
 interface Responsavel {
@@ -60,13 +64,6 @@ const formSchema = z.object({
     })).min(1, {message: "Selecione pelo menos um responsável"}).max(5, {message: "Não é possível selecionar mais de 5 responsáveis"})
 })
 
-// Sample options for responsáveis (in a real app, this would come from an API)
-const responsavelOptions: Responsavel[] = [
-    {id: "1", nome: "João da Silva", isMember: true, isDiacono: false},
-    {id: "2", nome: "Maria Oliveira", isMember: true, isDiacono: true},
-    {id: "3", nome: "Pedro Santos", isMember: true, isDiacono: false},
-]
-
 const categoriaOptions = Object.values(MinisterioCategoriasEnum).map(categoria => ({
     value: categoria,
     label: categoria.charAt(0).toUpperCase() + categoria.slice(1)
@@ -76,6 +73,16 @@ export default function CreateMinistrieForm() {
     const router = useRouter()
     const [initialMinistry, setInitialMinistry] = useState<Ministry | null>(null)
     const [openResponsavel, setOpenResponsavel] = useState(false)
+    const [responsavelOptions, setResponsavelOptions] = useState<Responsavel[]>([])
+
+    const [openLoading, setLoading] = useState<boolean>(false);
+    const [openLoadingMessage, setLoadingMessage] = useState<string>('');
+
+    const searchParams = useSearchParams()
+
+    const idMinisterio: string | null = searchParams.get('id')
+
+    const isEditing: boolean = idMinisterio && idMinisterio.length === 24;
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -87,26 +94,110 @@ export default function CreateMinistrieForm() {
     })
 
     useEffect(() => {
-        // Simulating an API call to get an existing ministry for editing
         const fetchInitialMinistry = async () => {
-            // In a real scenario, this would be an API call
-            await new Promise(resolve => setTimeout(resolve, 1000))
-            // Uncomment the following to test editing functionality
-            // setInitialMinistry({
-            //     nome: "Ministerio fake",
-            //     categoria: MinisterioCategoriasEnum.pessoas,
-            //     responsavel: [
-            //         {
-            //             id: "1",
-            //             nome: "João da Silva",
-            //             isMember: true,
-            //             isDiacono: false
-            //         }
-            //     ]
-            // })
+            if (isEditing && idMinisterio && idMinisterio.length === 24) {
+                try {
+                    UserApi.fetchMinistrieById(idMinisterio)
+                        .then((response) => {
+                            console.log(response)
+                            setInitialMinistry({
+                                nome: response.nome,
+                                categoria: response.categoria,
+                                responsavel: response.responsavel
+                            })
+                        })
+                        .catch((error) => {
+                            console.log(error);
+                            switch (error.code) {
+                                case 'ERR_BAD_REQUEST':
+                                    setInitialMinistry({
+                                        nome: '',
+                                        categoria: 'pessoas',
+                                        responsavel: []
+                                    })
+                                    break;
+                                case 'ERR_NETWORK':
+                                    setInitialMinistry({
+                                        nome: '',
+                                        categoria: 'pessoas',
+                                        responsavel: []
+                                    })
+                                    break;
+
+                                default:
+                                    setInitialMinistry({
+                                        nome: '',
+                                        categoria: 'pessoas',
+                                        responsavel: []
+                                    })
+                                    break;
+                            }
+                        })
+                        .finally(() => {
+                            setLoading(false);
+                            setLoadingMessage('');
+                        })
+                } catch (e) {
+                    setInitialMinistry({
+                        nome: '',
+                        categoria: 'pessoas',
+                        responsavel: []
+                    })
+                    setLoading(false);
+                    setLoadingMessage('');
+                }
+            }
         }
 
-        fetchInitialMinistry()
+        const getAllMembers = async (): Promise<void> => {
+            try {
+                UserApi.fetchMembers()
+                    .then((response: FormValuesMember[]) => {
+                        if (response.length > 0) {
+                            const membros: Responsavel[] = response.map((membro: FormValuesMember) => (
+                                {
+                                    nome: membro.nome,
+                                    isMember: true,
+                                    id: membro._id.toString(),
+                                    isDiacono: membro.isDiacono
+                                }
+                            ))
+                            setResponsavelOptions(membros);
+                            return;
+                        }
+
+                        setResponsavelOptions([]);
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                        switch (error.code) {
+                            case 'ERR_BAD_REQUEST':
+                                setResponsavelOptions([]);
+                                break;
+                            case 'ERR_NETWORK':
+                                setResponsavelOptions([]);
+                                break;
+
+                            default:
+                                setResponsavelOptions([]);
+                                break;
+                        }
+                    })
+                    .finally(() => {
+                        setLoading(false);
+                        setLoadingMessage('');
+                    })
+            } catch (e) {
+                setResponsavelOptions([]);
+                setLoading(false);
+                setLoadingMessage('');
+            }
+        }
+
+        fetchInitialMinistry();
+        getAllMembers();
+        setLoading(false);
+        setLoadingMessage('');
     }, [])
 
     useEffect(() => {
@@ -117,18 +208,48 @@ export default function CreateMinistrieForm() {
                 responsavel: initialMinistry.responsavel
             })
         }
+        setLoading(false);
+        setLoadingMessage('');
     }, [initialMinistry, form])
 
     const onSubmit = async (data: z.infer<typeof formSchema>) => {
+        setLoading(true);
+        setLoadingMessage(idMinisterio && idMinisterio.length === 24 ? 'Editando ministério' : 'Salvando ministério');
+
         try {
-            console.log('Form submitted:', JSON.stringify(data))
-            // Here you would typically send the data to your backend
-            // await api.createMinistry(data)
-            // router.push('/ministrie-list')
+            if (isEditing && idMinisterio && idMinisterio.length === 24) {
+                await UserApi.editMinistrie(idMinisterio, data);
+                alert('Ministério editado com sucesso!');
+                setLoading(false);
+                setLoadingMessage('');
+                router.push('/ministrie-list')
+                return;
+            }
+
+            await UserApi.createMinistrie(data);
+            alert('Ministério cadastrado com sucesso!');
+            setLoading(false);
+            setLoadingMessage('');
+            router.push('/ministrie-list')
         } catch (error) {
             console.error('Error submitting form:', error)
+            setLoading(false);
+            setLoadingMessage('')
+            alert(`Erro: ${error.response.data.message}!`)
             // Handle error (e.g., show error message to user)
         }
+    }
+
+    if (openLoading) {
+        return <Backdrop
+            sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
+            open={true}
+        >
+            <div className="flex flex-col items-center">
+                <CircularProgress color="inherit"/>
+                {openLoadingMessage}
+            </div>
+        </Backdrop>
     }
 
     return (
@@ -139,7 +260,7 @@ export default function CreateMinistrieForm() {
                 </Button>
 
                 <div className="flex justify-between items-center">
-                    <h2 className="text-3xl font-semibold">{initialMinistry ? 'Editar Ministério' : 'Cadastrar Novo Ministério'}</h2>
+                    <h2 className="text-3xl font-semibold">{isEditing ? 'Editar Ministério' : 'Cadastrar Novo Ministério'}</h2>
                     <Button size="sm" onClick={() => router.push('/ministrie-list')}>
                         <ListIcon className="mr-2 h-4 w-4"/>
                         Lista de Ministérios
@@ -147,9 +268,9 @@ export default function CreateMinistrieForm() {
                 </div>
             </section>
 
-            <Card className="w-full max-w-2xl mx-auto">
+            <Card>
                 <CardHeader>
-                    <CardTitle>{initialMinistry ? 'Editar Ministério' : 'Cadastrar Novo Ministério'}</CardTitle>
+                    <CardTitle>{isEditing ? 'Editar Ministério' : 'Cadastrar Novo Ministério'}</CardTitle>
                 </CardHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -254,9 +375,11 @@ export default function CreateMinistrieForm() {
                             />
                         </CardContent>
                         <CardFooter>
-                            <Button type="submit" className="w-full">
-                                {initialMinistry ? 'Atualizar Ministério' : 'Cadastrar Ministério'}
-                            </Button>
+                            <div className="flex flex-1 justify-end mt-4 mb-4">
+                                <Button type="submit" className="ml-auto">
+                                    {isEditing ? 'Atualizar Ministério' : 'Cadastrar Ministério'}
+                                </Button>
+                            </div>
                         </CardFooter>
                     </form>
                 </Form>

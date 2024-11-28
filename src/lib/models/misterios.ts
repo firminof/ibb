@@ -1,4 +1,4 @@
-import {IUser} from "@/lib/models/user";
+import {IMember, IUser} from "@/lib/models/user";
 
 export interface IMisterios {
     id: number;
@@ -15,20 +15,20 @@ export interface IMinisteriosSelect {
 export interface ICreateMinisterio {
     nome: string;
     categoria: string;
-    responsavel: any[] | IUser[];
+    responsavel: any[] | IMember[];
 }
 
 export interface IEditMinisterio {
     nome?: string;
     categoria?: string;
-    responsavel?: any[] | IUser[];
+    responsavel?: any[] | IMember[];
 }
 
 export interface IMinisteriosResponseApi {
     _id?: string;
     nome: string;
     categoria: string;
-    responsavel: IUser[];
+    responsavel: IMember[];
     createdAt: string;
     updatedAt: string;
 }

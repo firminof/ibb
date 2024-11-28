@@ -27,6 +27,7 @@ import {emailRegex} from "@/lib/helpers/helpers";
 import {UserRoles} from "@/lib/models/user";
 import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
 import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group";
+import BirthdaysV2 from "@/app/dashboard/_components/birthdays-v2";
 
 
 export function DashboardInfo() {
@@ -156,7 +157,7 @@ export function DashboardInfo() {
     }
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full container mx-auto">
             <Backdrop
                 sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
                 open={openBackLoading}
@@ -267,10 +268,15 @@ export function DashboardInfo() {
                         <PlusIcon className="w-4 h-4 mr-1"/>
                         Adicionar Membro
                     </Button>
+                    <Button size="sm" className="font-bold sm:inline-flex md:inline-flex"
+                            onClick={() => router.push('/ministries')}>
+                        <PlusIcon className="w-4 h-4 mr-1"/>
+                        Adicionar Ministério
+                    </Button>
                 </div>
 
 
-                <Birthdays/>
+                <BirthdaysV2/>
             </main>
         </div>
     )

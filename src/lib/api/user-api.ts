@@ -64,6 +64,12 @@ export class UserApi {
         return user.data;
     }
 
+    static async fetchMinistrieById(id: string): Promise<any | undefined> {
+        const user = await api.get(`/v1/ministrie/get-by-id/${id}`);
+
+        return user.data;
+    }
+
     static async deleteMinisterio(id: string): Promise<any | undefined> {
         const user = await api.delete(`/v1/ministrie/${id}`);
 
