@@ -1,4 +1,6 @@
 import {IMesAtual} from "@/lib/models/mes-atual";
+import {formatDate} from "date-fns";
+import ptBR from "date-fns/locale/pt-BR";
 
 let emailStorage = '';
 
@@ -102,4 +104,15 @@ export const formatNome = (nome: string) => {
     return nome.toLowerCase().split(' ').map(function (palavra) {
         return palavra.charAt(0).toUpperCase() + palavra.slice(1);
     }).join(' ');
+}
+
+export const formatDateShort = (date: string) => {
+    if (!date) {
+        return new Date(formatDate(new Date().setDate(new Date().getDate() + 1), 'yyyy-MM-dd', {locale: ptBR}))
+    }
+
+    if (typeof date === 'object') {
+        return date;
+    }
+    return new Date(formatDate(new Date(date).setDate(new Date(date).getDate() + 1), 'yyyy-MM-dd', {locale: ptBR}))
 }

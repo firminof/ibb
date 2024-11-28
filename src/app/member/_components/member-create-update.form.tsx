@@ -26,325 +26,22 @@ import "react-datepicker/dist/react-datepicker.css";
 import ptBR from "date-fns/locale/pt-BR";
 import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
 import {Backdrop, CircularProgress} from "@mui/material";
-import {UserRoles} from "@/lib/models/user";
+import {
+    CivilStateEnumV2,
+    dataForm, formatUserV2,
+    formSchema,
+    FormValuesMember,
+    FormValuesUniqueMember,
+    MinistriesEntity, StatusEnumV2,
+    UserRoles, UserRolesV2
+} from "@/lib/models/user";
 import {UserApi} from "@/lib/api/user-api";
 import {IMinistries} from "@/lib/models/user-response-api";
-import {RefinementCtx} from "zod";
+import {RefinementCtx, SafeParseError, SafeParseSuccess, ZodIssue} from "zod";
 
 // Registrar o local (se necessário)
 registerLocale("pt-BR", ptBR);
 
-// Interfaces and Enums
-interface IMember {
-    id: string
-    nome: string
-    isMember: boolean
-    isDiacono: boolean
-}
-
-enum UserRolesV2 {
-    ADMIN = 'ADMIN',
-    MEMBRO = 'MEMBRO',
-}
-
-enum StatusEnumV2 {
-    VISITANTE = 'visitante',
-    CONGREGADO = 'congregado',
-    ATIVO = 'ativo',
-    INATIVO = 'inativo',
-    TRANSFERIDO = 'transferido',
-    FALECIDO = 'falecido',
-    EXCLUIDO = 'excluido',
-}
-
-enum CivilStateEnumV2 {
-    SOLTEIRO = 'solteiro',
-    CASADO = 'casado',
-    SEPARADO = 'separado',
-    DIVORCIADO = 'divorciado',
-    VIUVO = 'viuvo',
-}
-
-interface UserAddressV2 {
-    rua: string
-    numero: string
-    complemento?: string
-    bairro: string
-    cidade: string
-    estado: string
-    cep: string
-}
-
-const memberSchema = z.object({
-    id: z.string().nullable(),
-    nome: z.string().nullable(),
-    isMember: z.boolean(),
-    isDiacono: z.boolean(),
-})
-
-// Enum para MinisterioCategoriasEnum
-const MinisterioCategoriasEnum = z.enum(['eclesiastico', 'pessoas', 'coordenacao']); // Substitua pelas categorias reais
-
-// Schema para MinistrieEntity
-const MinistrieEntitySchema = z.object({
-    _id: z.string().optional(),
-    nome: z.string(),
-    categoria: MinisterioCategoriasEnum,
-    responsavel: z.array(memberSchema),
-    createdAt: z.date(),
-    updatedAt: z.date(),
-});
-
-// Uso do schema
-export type MinistriesEntity = z.infer<typeof MinistrieEntitySchema>;
-
-const formSchema = z
-    .object({
-        _id: z.string(),
-        nome: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-        foto: z.string().optional(),
-        cpf: z
-            .string()
-            .regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "CPF inválido"),
-        rg: z
-            .string()
-            .regex(/^\d{3}\.\d{3}\.\d{3}$/, "RG inválido"),
-        email: z.string().email("Email inválido"),
-        telefone: z
-            .string()
-            .regex(/^\(\d{2}\) \d{5}-\d{4}$/, "Telefone inválido"),
-        dataNascimento: z.date({
-            message: "Data de Nascimento inválida",
-        }),
-        role: z.nativeEnum(UserRolesV2, {
-            errorMap: () => ({
-                message: "O campo 'Nível de Acesso' é obrigatório.",
-            }),
-        }),
-        status: z.nativeEnum(StatusEnumV2, {
-            errorMap: () => ({
-                message: "O campo Status é obrigatório.",
-            }),
-        }),
-        isDiacono: z.boolean({
-            errorMap: () => ({
-                message: "O campo se o membro é um diácono/diaconisa é obrigatório.",
-            }),
-        }),
-        informacoesPessoais: z.object({
-            estadoCivil: z.nativeEnum(CivilStateEnumV2, {
-                errorMap: () => ({
-                    message: "O campo Estado Civil é obrigatório.",
-                }),
-            }),
-            casamento: z.object({
-                conjugue: memberSchema.nullable(), // Permite nulo, mas será validado em `superRefine`
-                dataCasamento: z.date().nullable(),
-            }),
-            temFilhos: z.boolean(),
-            filhos: z.array(memberSchema),
-        }),
-        diacono: memberSchema,
-        ministerio: z.array(z.string()),
-        endereco: z
-            .object({
-                rua: z.string(),
-                numero: z.string(),
-                complemento: z.string().optional(),
-                bairro: z.string(),
-                cidade: z.string(),
-                estado: z.string(),
-                cep: z.string(),
-            })
-            .nullable(),
-        ingresso: z.object({
-            data: z.date().nullable(),
-            forma: z.string().nullable(),
-            local: z.string().nullable(),
-        }),
-        transferencia: z.object({
-            data: z.date().nullable(),
-            motivo: z.string().nullable(),
-            local: z.string().nullable(),
-        }),
-        falecimento: z.object({
-            data: z.date().nullable(),
-            motivo: z.string().nullable(),
-            local: z.string().nullable(),
-        }),
-        exclusao: z.object({
-            data: z.date().nullable(),
-            motivo: z.string().nullable(),
-        }),
-        visitas: z.object({
-            motivo: z.string().nullable(),
-        }),
-        idade: z.number().nullable(),
-        updatedAt: z.string().nullable(),
-        createdAt: z.string().nullable(),
-    })
-    .superRefine((data, ctx) => {
-        // Validação condicional para `status`
-        const statusValidations = {
-            ativo: () => {
-                if (!data.ingresso.data || !data.ingresso.forma || !data.ingresso.local) {
-                    ctx.addIssue({
-                        path: ["ingresso"],
-                        message: "Para membros ativos, os campos de ingresso são obrigatórios.",
-                    });
-                }
-            },
-            transferido: () => {
-                if (
-                    !data.transferencia.data ||
-                    !data.transferencia.motivo ||
-                    !data.transferencia.local
-                ) {
-                    ctx.addIssue({
-                        path: ["transferencia"],
-                        message:
-                            "Para membros transferidos, os campos de transferência são obrigatórios.",
-                    });
-                }
-            },
-            falecido: () => {
-                if (
-                    !data.falecimento.data ||
-                    !data.falecimento.motivo ||
-                    !data.falecimento.local
-                ) {
-                    ctx.addIssue({
-                        path: ["falecimento"],
-                        message:
-                            "Para membros falecidos, os campos de falecimento são obrigatórios.",
-                    });
-                }
-            },
-            excluido: () => {
-                if (!data.exclusao.data || !data.exclusao.motivo) {
-                    ctx.addIssue({
-                        path: ["exclusao"],
-                        message:
-                            "Para membros excluídos, os campos de exclusão são obrigatórios.",
-                    });
-                }
-            },
-        };
-
-        if (statusValidations[data.status]) {
-            statusValidations[data.status]();
-        }
-
-        // Validação para estado civil `casado`
-        // if (data.informacoesPessoais.estadoCivil === CivilStateEnumV2.CASADO) {
-        //     const casamento = data.informacoesPessoais.casamento;
-        //
-        //     if (!casamento?.dataCasamento) {
-        //         ctx.addIssue({
-        //             path: ["informacoesPessoais", "casamento", "dataCasamento"],
-        //             message: "A data de casamento é obrigatória.",
-        //         });
-        //     }
-        //
-        //     if (!casamento?.conjugue) {
-        //         ctx.addIssue({
-        //             path: ["informacoesPessoais", "casamento", "conjugue"],
-        //             message:
-        //                 "As informações do cônjuge são obrigatórias para estado civil 'casado'.",
-        //         });
-        //     } else {
-        //         const { conjugue } = casamento;
-        //
-        //         if (!conjugue?.nome) {
-        //             ctx.addIssue({
-        //                 path: ["informacoesPessoais", "casamento", "conjugue", "nome"],
-        //                 message: "O nome do cônjuge é obrigatório.",
-        //             });
-        //         }
-        //
-        //         if (typeof conjugue?.isMember !== "boolean") {
-        //             ctx.addIssue({
-        //                 path: ["informacoesPessoais", "casamento", "conjugue", "isMember"],
-        //                 message: "Deve ser especificado se o cônjuge é membro.",
-        //             });
-        //         }
-        //     }
-        // }
-    });
-
-// In a real application, you would fetch this data from an API
-const dataForm: z.infer<typeof formSchema> = {
-    "_id": "",
-    "isDiacono": false,
-    "nome": "",
-    "rg": "",
-    "role": UserRolesV2.MEMBRO,
-    "telefone": "",
-    "cpf": "",
-    "email": "",
-    "dataNascimento": "",
-    "idade": 0,
-    "foto": "",
-    "diacono": {
-        "nome": "",
-        "isDiacono": false,
-        "isMember": false,
-        "id": '-1'
-    },
-    "endereco": {
-        "cep": "",
-        "rua": "",
-        "numero": "",
-        "complemento": "",
-        "bairro": "",
-        "cidade": "",
-        "estado": "",
-        "pais": ""
-    },
-    "status": "visitante",
-    "exclusao": {
-        "data": null,
-        "motivo": null,
-    },
-    "falecimento": {
-        "data": null,
-        "local": null,
-        "motivo": null,
-    },
-    "informacoesPessoais": {
-        "casamento": {
-            "conjugue": {
-                "nome": "",
-                "isDiacono": false,
-                "isMember": true,
-                "id": '-1'
-            },
-            "dataCasamento": null,
-        },
-        "estadoCivil": "solteiro",
-        "temFilhos": false,
-        "filhos": []
-    },
-    "ingresso": {
-        "data": null,
-        "forma": null,
-        "local": null,
-    },
-    "ministerio": [],
-    "transferencia": {
-        "data": null,
-        "local": null,
-        "motivo": null,
-    },
-    "visitas": {
-        "motivo": null,
-    },
-    "updatedAt": null,
-    "createdAt": null
-}
-
-export type FormValuesMember = z.infer<typeof formSchema>;
-export type FormValuesUniqueMember = z.infer<typeof memberSchema>;
 
 export default function MemberForm() {
     const useStoreIbbZus: IStore = useStoreIbb((state: IStore) => state)
@@ -362,6 +59,9 @@ export default function MemberForm() {
     const [diaconos, setDiaconos] = useState<FormValuesUniqueMember[]>([]);
     const [membros, setMembros] = useState<FormValuesMember[]>([]);
 
+    const [openLoading, setLoading] = useState<boolean>(false);
+    const [openLoadingMessage, setLoadingMessage] = useState<string>('');
+
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
     })
@@ -372,6 +72,8 @@ export default function MemberForm() {
     });
 
     const onSubmit = async (data: FormValuesMember) => {
+        setLoading(true);
+        setLoadingMessage(idMembro && idMembro.length > 0 ? 'Editando membro' : 'Salvando membro');
         const result = formSchema.safeParse(data);
 
         if (!result.success) {
@@ -386,22 +88,30 @@ export default function MemberForm() {
         console.log('Form submitted with data:', {...data, foto: photo})
 
         try {
+            const {_id, ...dataToCreate} = {...data, foto: photo}
+            console.log('dataToCreate: ', dataToCreate)
+
             if (idMembro && idMembro.length > 0) {
-                await UserApi.updateMember(idMembro, {...data, foto: photo})
+                await UserApi.updateMember(idMembro, dataToCreate)
                 alert('Membro editado com sucesso!');
+                setLoading(false);
+                setLoadingMessage('')
+                router.push('/member-list')
                 return;
             }
 
-            await UserApi.createMember({...data, foto: photo})
+            await UserApi.createMember(dataToCreate)
             alert('Membro salvo com sucesso!')
+            setLoading(false);
+            setLoadingMessage('')
+            router.push('/member-list')
         } catch (e) {
-            alert(`Erro: ${e}!`)
+            console.log(e);
+            alert(`Erro: ${e.response.data.message}!`)
         }
 
-        // Simulating an API call
-        await new Promise(resolve => setTimeout(resolve, 1000))
-
-        alert('Membro salvo com sucesso!')
+        setLoading(false);
+        setLoadingMessage('')
     }
 
     const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -550,42 +260,16 @@ export default function MemberForm() {
         }
     }
 
-    const formatDateShort = (date: string) => {
-        return new Date(formatDate(new Date(date).setDate(new Date(date).getDate() + 1), 'yyyy-MM-dd', {locale: ptBR}))
-    }
     const getUniqueMember = async (): Promise<void> => {
         try {
             if (idMembro && idMembro.length > 0) {
                 UserApi.fetchMemberById(idMembro)
                     .then((response: FormValuesMember) => {
                         if (response) {
-                            response.dataNascimento = formatDateShort(response.dataNascimento);
-                            response.exclusao = response.exclusao.data ? formatDateShort(response.exclusao) : null;
-                            response.transferencia = response.transferencia.data ? formatDateShort(response.transferencia) : null;
-                            response.falecimento = response.falecimento.data ? formatDateShort(response.falecimento) : null;
-                            response.informacoesPessoais.casamento.dataCasamento = response.informacoesPessoais.casamento.dataCasamento ? formatDateShort(response.informacoesPessoais.casamento.dataCasamento) : null;
-                            response.exclusao = response.exclusao ? response.exclusao : {data: null, motivo: ''}
-                            response.falecimento = response.falecimento ? response.falecimento : {
-                                data: null,
-                                motivo: '',
-                                local: ''
-                            }
-                            response.ingresso = response.ingresso ? response.ingresso : {
-                                data: null,
-                                local: '',
-                                forma: ''
-                            }
-                            response.transferencia = response.transferencia ? response.transferencia : {
-                                data: null,
-                                motivo: '',
-                                local: ''
-                            }
-                            response.visitas = response.visitas ? response.visitas : {motivo: ''}
-
-                            console.log('membro: ', response);
-                            setInitialData(response);
-                            setPhoto(response.foto || null)
-                            form.reset(response)
+                            const member: FormValuesMember = formatUserV2(response);
+                            setInitialData(member);
+                            setPhoto(member.foto || null)
+                            form.reset(member)
                             return;
                         }
 
@@ -626,6 +310,18 @@ export default function MemberForm() {
             <div className="flex flex-col items-center">
                 <CircularProgress color="inherit"/>
                 Carregando
+            </div>
+        </Backdrop>
+    }
+
+    if (openLoading) {
+        return <Backdrop
+            sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
+            open={true}
+        >
+            <div className="flex flex-col items-center">
+                <CircularProgress color="inherit"/>
+                {openLoadingMessage}
             </div>
         </Backdrop>
     }
@@ -844,417 +540,421 @@ export default function MemberForm() {
                     </Card>
 
                     {/*NIVEL DE ACESSO E STATUS MEMBRESIA*/}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Nível de Acesso e Status de Membresia</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {/*ROLE*/}
-                            <FormField
-                                control={form.control}
-                                name="role"
-                                render={({field}) => (
-                                    <FormItem className="space-y-3">
-                                        <FormLabel>Nível de Acesso</FormLabel>
-                                        <FormControl>
-                                            <RadioGroup
-                                                onValueChange={field.onChange}
-                                                defaultValue={field.value}
-                                                className="flex flex-col space-y-1"
-                                            >
-                                                <FormItem className="flex items-center space-x-3 space-y-0">
-                                                    <FormControl>
-                                                        <RadioGroupItem value={UserRolesV2.ADMIN}/>
-                                                    </FormControl>
-                                                    <FormLabel className="font-normal">
-                                                        Admin
-                                                    </FormLabel>
-                                                </FormItem>
-                                                <FormItem className="flex items-center space-x-3 space-y-0">
-                                                    <FormControl>
-                                                        <RadioGroupItem value={UserRolesV2.MEMBRO}/>
-                                                    </FormControl>
-                                                    <FormLabel className="font-normal">
-                                                        Membro
-                                                    </FormLabel>
-                                                </FormItem>
-                                            </RadioGroup>
-                                        </FormControl>
-                                        <FormMessage/>
-                                    </FormItem>
-                                )}
-                            />
-
-                            {/*STATUS*/}
-                            <FormField
-                                control={form.control}
-                                name="status"
-                                render={({field}) => (
-                                    <FormItem>
-                                        <FormLabel>Status de Membresia</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Selecione o status"/>
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {Object.values(StatusEnumV2).map((status) => (
-                                                    <SelectItem key={status} value={status}>
-                                                        {status}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage/>
-                                    </FormItem>
-                                )}
-                            />
-
-                            {/*STATUS ATIVO*/}
-                            {form.watch('status') === StatusEnumV2.ATIVO && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Dados de Ingresso</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <FormField
-                                            control={form.control}
-                                            name="ingresso.data"
-                                            render={({field}) => (
-                                                <FormItem className="flex flex-col">
-                                                    <FormLabel>Data de Ingresso</FormLabel>
-                                                    <Popover>
-                                                        <PopoverTrigger asChild>
+                    {
+                        useStoreIbbZus.role === UserRolesV2.ADMIN && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Nível de Acesso e Status de Membresia</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {/*ROLE*/}
+                                    <FormField
+                                        control={form.control}
+                                        name="role"
+                                        render={({field}) => (
+                                            <FormItem className="space-y-3">
+                                                <FormLabel>Nível de Acesso</FormLabel>
+                                                <FormControl>
+                                                    <RadioGroup
+                                                        onValueChange={field.onChange}
+                                                        defaultValue={field.value}
+                                                        className="flex flex-col space-y-1"
+                                                    >
+                                                        <FormItem className="flex items-center space-x-3 space-y-0">
                                                             <FormControl>
-                                                                <Button
-                                                                    variant={"outline"}
-                                                                    className={cn(
-                                                                        "w-[280px] pl-3 text-left font-normal",
-                                                                        !field.value && "text-muted-foreground"
-                                                                    )}
-                                                                >
-                                                                    {field.value ? (
-                                                                        format(field.value, "dd/MM/yyyy") // Exibir dia, mês e ano
-                                                                    ) : (
-                                                                        <span>Selecione uma data</span>
-                                                                    )}
-                                                                    <CalendarIcon
-                                                                        className="ml-auto h-4 w-4 opacity-50"/>
-                                                                </Button>
+                                                                <RadioGroupItem value={UserRolesV2.ADMIN}/>
                                                             </FormControl>
-                                                        </PopoverTrigger>
-                                                        <PopoverContent className="w-auto p-0" align="start">
-                                                            <ReactDatePicker
-                                                                selected={field.value}
-                                                                onChange={field.onChange}
-                                                                showPopperArrow={false} // Remove seta visual (opcional)
-                                                                dateFormat="dd/MM/yyyy"
-                                                                maxDate={new Date()}
-                                                                minDate={new Date("1900-01-01")}
-                                                                showMonthDropdown // Exibir dropdown de mês
-                                                                showYearDropdown // Exibir dropdown de ano
-                                                                dropdownMode="select" // Alterna para dropdown em vez de scroll
-                                                                locale="pt-BR" // Local para PT-BR
-                                                                className="w-full p-5 text-sm border border-gray-300 rounded-md"
-                                                            />
-                                                        </PopoverContent>
-                                                    </Popover>
-                                                    <FormMessage/>
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="ingresso.forma"
-                                            render={({field}) => (
-                                                <FormItem>
-                                                    <FormLabel>Forma de Ingresso</FormLabel>
-                                                    <FormControl>
-                                                        <Input {...field} />
-                                                    </FormControl>
-                                                    <FormMessage/>
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="ingresso.local"
-                                            render={({field}) => (
-                                                <FormItem>
-                                                    <FormLabel>Local de Ingresso</FormLabel>
-                                                    <FormControl>
-                                                        <Input {...field} />
-                                                    </FormControl>
-                                                    <FormMessage/>
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </CardContent>
-                                </Card>
-                            )}
-
-                            {/*STATUS TRANSFERIDO*/}
-                            {form.watch('status') === StatusEnumV2.TRANSFERIDO && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Transferência</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <FormField
-                                            control={form.control}
-                                            name="transferencia.data"
-                                            render={({field}) => (
-                                                <FormItem className="flex flex-col">
-                                                    <FormLabel>Data de Transferência</FormLabel>
-                                                    <Popover>
-                                                        <PopoverTrigger asChild>
+                                                            <FormLabel className="font-normal">
+                                                                Admin
+                                                            </FormLabel>
+                                                        </FormItem>
+                                                        <FormItem className="flex items-center space-x-3 space-y-0">
                                                             <FormControl>
-                                                                <Button
-                                                                    variant={"outline"}
-                                                                    className={cn(
-                                                                        "w-[280px] pl-3 text-left font-normal",
-                                                                        !field.value && "text-muted-foreground"
-                                                                    )}
-                                                                >
-                                                                    {field.value ? (
-                                                                        format(field.value, "dd/MM/yyyy") // Exibir dia, mês e ano
-                                                                    ) : (
-                                                                        <span>Selecione uma data</span>
-                                                                    )}
-                                                                    <CalendarIcon
-                                                                        className="ml-auto h-4 w-4 opacity-50"/>
-                                                                </Button>
+                                                                <RadioGroupItem value={UserRolesV2.MEMBRO}/>
                                                             </FormControl>
-                                                        </PopoverTrigger>
-                                                        <PopoverContent className="w-auto p-0" align="start">
-                                                            <ReactDatePicker
-                                                                selected={field.value}
-                                                                onChange={field.onChange}
-                                                                showPopperArrow={false} // Remove seta visual (opcional)
-                                                                dateFormat="dd/MM/yyyy"
-                                                                maxDate={new Date()}
-                                                                minDate={new Date("1900-01-01")}
-                                                                showMonthDropdown // Exibir dropdown de mês
-                                                                showYearDropdown // Exibir dropdown de ano
-                                                                dropdownMode="select" // Alterna para dropdown em vez de scroll
-                                                                locale="pt-BR" // Local para PT-BR
-                                                                className="w-full p-5 text-sm border border-gray-300 rounded-md"
-                                                            />
-                                                        </PopoverContent>
-                                                    </Popover>
-                                                    <FormMessage/>
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="transferencia.motivo"
-                                            render={({field}) => (
-                                                <FormItem>
-                                                    <FormLabel>Motivo da Transferência</FormLabel>
-                                                    <FormControl>
-                                                        <Textarea {...field} />
-                                                    </FormControl>
-                                                    <FormMessage/>
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="transferencia.local"
-                                            render={({field}) => (
-                                                <FormItem>
-                                                    <FormLabel>Local de Transferência</FormLabel>
-                                                    <FormControl>
-                                                        <Input {...field} />
-                                                    </FormControl>
-                                                    <FormMessage/>
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </CardContent>
-                                </Card>
-                            )}
+                                                            <FormLabel className="font-normal">
+                                                                Membro
+                                                            </FormLabel>
+                                                        </FormItem>
+                                                    </RadioGroup>
+                                                </FormControl>
+                                                <FormMessage/>
+                                            </FormItem>
+                                        )}
+                                    />
 
-                            {/*STATUS FALECIDO*/}
-                            {form.watch('status') === StatusEnumV2.FALECIDO && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Falecimento</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <FormField
-                                            control={form.control}
-                                            name="falecimento.data"
-                                            render={({field}) => (
-                                                <FormItem className="flex flex-col">
-                                                    <FormLabel>Data de Falecimento</FormLabel>
-                                                    <Popover>
-                                                        <PopoverTrigger asChild>
+                                    {/*STATUS*/}
+                                    <FormField
+                                        control={form.control}
+                                        name="status"
+                                        render={({field}) => (
+                                            <FormItem>
+                                                <FormLabel>Status de Membresia</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Selecione o status"/>
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {Object.values(StatusEnumV2).map((status) => (
+                                                            <SelectItem key={status} value={status}>
+                                                                {status}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage/>
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    {/*STATUS ATIVO*/}
+                                    {form.watch('status') === StatusEnumV2.ATIVO && (
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle>Dados de Ingresso</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="ingresso.data"
+                                                    render={({field}) => (
+                                                        <FormItem className="flex flex-col">
+                                                            <FormLabel>Data de Ingresso</FormLabel>
+                                                            <Popover>
+                                                                <PopoverTrigger asChild>
+                                                                    <FormControl>
+                                                                        <Button
+                                                                            variant={"outline"}
+                                                                            className={cn(
+                                                                                "w-[280px] pl-3 text-left font-normal",
+                                                                                !field.value && "text-muted-foreground"
+                                                                            )}
+                                                                        >
+                                                                            {field.value ? (
+                                                                                format(field.value, "dd/MM/yyyy") // Exibir dia, mês e ano
+                                                                            ) : (
+                                                                                <span>Selecione uma data</span>
+                                                                            )}
+                                                                            <CalendarIcon
+                                                                                className="ml-auto h-4 w-4 opacity-50"/>
+                                                                        </Button>
+                                                                    </FormControl>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent className="w-auto p-0" align="start">
+                                                                    <ReactDatePicker
+                                                                        selected={field.value}
+                                                                        onChange={field.onChange}
+                                                                        showPopperArrow={false} // Remove seta visual (opcional)
+                                                                        dateFormat="dd/MM/yyyy"
+                                                                        maxDate={new Date()}
+                                                                        minDate={new Date("1900-01-01")}
+                                                                        showMonthDropdown // Exibir dropdown de mês
+                                                                        showYearDropdown // Exibir dropdown de ano
+                                                                        dropdownMode="select" // Alterna para dropdown em vez de scroll
+                                                                        locale="pt-BR" // Local para PT-BR
+                                                                        className="w-full p-5 text-sm border border-gray-300 rounded-md"
+                                                                    />
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                            <FormMessage/>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="ingresso.forma"
+                                                    render={({field}) => (
+                                                        <FormItem>
+                                                            <FormLabel>Forma de Ingresso</FormLabel>
                                                             <FormControl>
-                                                                <Button
-                                                                    variant={"outline"}
-                                                                    className={cn(
-                                                                        "w-[280px] pl-3 text-left font-normal",
-                                                                        !field.value && "text-muted-foreground"
-                                                                    )}
-                                                                >
-                                                                    {field.value ? (
-                                                                        format(field.value, "dd/MM/yyyy") // Exibir dia, mês e ano
-                                                                    ) : (
-                                                                        <span>Selecione uma data</span>
-                                                                    )}
-                                                                    <CalendarIcon
-                                                                        className="ml-auto h-4 w-4 opacity-50"/>
-                                                                </Button>
+                                                                <Input {...field} />
                                                             </FormControl>
-                                                        </PopoverTrigger>
-                                                        <PopoverContent className="w-auto p-0" align="start">
-                                                            <ReactDatePicker
-                                                                selected={field.value}
-                                                                onChange={field.onChange}
-                                                                showPopperArrow={false} // Remove seta visual (opcional)
-                                                                dateFormat="dd/MM/yyyy"
-                                                                maxDate={new Date()}
-                                                                minDate={new Date("1900-01-01")}
-                                                                showMonthDropdown // Exibir dropdown de mês
-                                                                showYearDropdown // Exibir dropdown de ano
-                                                                dropdownMode="select" // Alterna para dropdown em vez de scroll
-                                                                locale="pt-BR" // Local para PT-BR
-                                                                className="w-full p-5 text-sm border border-gray-300 rounded-md"
-                                                            />
-                                                        </PopoverContent>
-                                                    </Popover>
-                                                    <FormMessage/>
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="falecimento.motivo"
-                                            render={({field}) => (
-                                                <FormItem>
-                                                    <FormLabel>Motivo do Falecimento</FormLabel>
-                                                    <FormControl>
-                                                        <Textarea {...field} />
-                                                    </FormControl>
-                                                    <FormMessage/>
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="falecimento.local"
-                                            render={({field}) => (
-                                                <FormItem>
-                                                    <FormLabel>Local do Falecimento</FormLabel>
-                                                    <FormControl>
-                                                        <Input {...field} />
-                                                    </FormControl>
-                                                    <FormMessage/>
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </CardContent>
-                                </Card>
-                            )}
-
-                            {/*STATUS EXCLUIDO*/}
-                            {form.watch('status') === StatusEnumV2.EXCLUIDO && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Exclusão</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <FormField
-                                            control={form.control}
-                                            name="exclusao.data"
-                                            render={({field}) => (
-                                                <FormItem className="flex flex-col">
-                                                    <FormLabel>Data de Exclusão</FormLabel>
-                                                    <Popover>
-                                                        <PopoverTrigger asChild>
+                                                            <FormMessage/>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="ingresso.local"
+                                                    render={({field}) => (
+                                                        <FormItem>
+                                                            <FormLabel>Local de Ingresso</FormLabel>
                                                             <FormControl>
-                                                                <Button
-                                                                    variant={"outline"}
-                                                                    className={cn(
-                                                                        "w-[280px] pl-3 text-left font-normal",
-                                                                        !field.value && "text-muted-foreground"
-                                                                    )}
-                                                                >
-                                                                    {field.value ? (
-                                                                        format(field.value, "dd/MM/yyyy") // Exibir dia, mês e ano
-                                                                    ) : (
-                                                                        <span>Selecione uma data</span>
-                                                                    )}
-                                                                    <CalendarIcon
-                                                                        className="ml-auto h-4 w-4 opacity-50"/>
-                                                                </Button>
+                                                                <Input {...field} />
                                                             </FormControl>
-                                                        </PopoverTrigger>
-                                                        <PopoverContent className="w-auto p-0" align="start">
-                                                            <ReactDatePicker
-                                                                selected={field.value}
-                                                                onChange={field.onChange}
-                                                                showPopperArrow={false} // Remove seta visual (opcional)
-                                                                dateFormat="dd/MM/yyyy"
-                                                                maxDate={new Date()}
-                                                                minDate={new Date("1900-01-01")}
-                                                                showMonthDropdown // Exibir dropdown de mês
-                                                                showYearDropdown // Exibir dropdown de ano
-                                                                dropdownMode="select" // Alterna para dropdown em vez de scroll
-                                                                locale="pt-BR" // Local para PT-BR
-                                                                className="w-full p-5 text-sm border border-gray-300 rounded-md"
-                                                            />
-                                                        </PopoverContent>
-                                                    </Popover>
-                                                    <FormMessage/>
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="exclusao.motivo"
-                                            render={({field}) => (
-                                                <FormItem>
-                                                    <FormLabel>Motivo da Exclusão</FormLabel>
-                                                    <FormControl>
-                                                        <Textarea {...field} />
-                                                    </FormControl>
-                                                    <FormMessage/>
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </CardContent>
-                                </Card>
-                            )}
+                                                            <FormMessage/>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </CardContent>
+                                        </Card>
+                                    )}
 
-                            {/*STATUS VISITANTE*/}
-                            {form.watch('status') === StatusEnumV2.VISITANTE && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Visitas</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <FormField
-                                            control={form.control}
-                                            name="visitas.motivo"
-                                            render={({field}) => (
-                                                <FormItem>
-                                                    <FormLabel>Motivo da Visita</FormLabel>
-                                                    <FormControl>
-                                                        <Textarea {...field} />
-                                                    </FormControl>
-                                                    <FormMessage/>
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </CardContent>
-                                </Card>
-                            )}
-                        </CardContent>
-                    </Card>
+                                    {/*STATUS TRANSFERIDO*/}
+                                    {form.watch('status') === StatusEnumV2.TRANSFERIDO && (
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle>Transferência</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="transferencia.data"
+                                                    render={({field}) => (
+                                                        <FormItem className="flex flex-col">
+                                                            <FormLabel>Data de Transferência</FormLabel>
+                                                            <Popover>
+                                                                <PopoverTrigger asChild>
+                                                                    <FormControl>
+                                                                        <Button
+                                                                            variant={"outline"}
+                                                                            className={cn(
+                                                                                "w-[280px] pl-3 text-left font-normal",
+                                                                                !field.value && "text-muted-foreground"
+                                                                            )}
+                                                                        >
+                                                                            {field.value ? (
+                                                                                format(field.value, "dd/MM/yyyy") // Exibir dia, mês e ano
+                                                                            ) : (
+                                                                                <span>Selecione uma data</span>
+                                                                            )}
+                                                                            <CalendarIcon
+                                                                                className="ml-auto h-4 w-4 opacity-50"/>
+                                                                        </Button>
+                                                                    </FormControl>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent className="w-auto p-0" align="start">
+                                                                    <ReactDatePicker
+                                                                        selected={field.value}
+                                                                        onChange={(date) => field.onChange(new Date(date))}
+                                                                        showPopperArrow={false} // Remove seta visual (opcional)
+                                                                        dateFormat="dd/MM/yyyy"
+                                                                        maxDate={new Date()}
+                                                                        minDate={new Date("1900-01-01")}
+                                                                        showMonthDropdown // Exibir dropdown de mês
+                                                                        showYearDropdown // Exibir dropdown de ano
+                                                                        dropdownMode="select" // Alterna para dropdown em vez de scroll
+                                                                        locale="pt-BR" // Local para PT-BR
+                                                                        className="w-full p-5 text-sm border border-gray-300 rounded-md"
+                                                                    />
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                            <FormMessage/>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="transferencia.motivo"
+                                                    render={({field}) => (
+                                                        <FormItem>
+                                                            <FormLabel>Motivo da Transferência</FormLabel>
+                                                            <FormControl>
+                                                                <Textarea {...field} />
+                                                            </FormControl>
+                                                            <FormMessage/>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="transferencia.local"
+                                                    render={({field}) => (
+                                                        <FormItem>
+                                                            <FormLabel>Local de Transferência</FormLabel>
+                                                            <FormControl>
+                                                                <Input {...field} />
+                                                            </FormControl>
+                                                            <FormMessage/>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </CardContent>
+                                        </Card>
+                                    )}
+
+                                    {/*STATUS FALECIDO*/}
+                                    {form.watch('status') === StatusEnumV2.FALECIDO && (
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle>Falecimento</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="falecimento.data"
+                                                    render={({field}) => (
+                                                        <FormItem className="flex flex-col">
+                                                            <FormLabel>Data de Falecimento</FormLabel>
+                                                            <Popover>
+                                                                <PopoverTrigger asChild>
+                                                                    <FormControl>
+                                                                        <Button
+                                                                            variant={"outline"}
+                                                                            className={cn(
+                                                                                "w-[280px] pl-3 text-left font-normal",
+                                                                                !field.value && "text-muted-foreground"
+                                                                            )}
+                                                                        >
+                                                                            {field.value ? (
+                                                                                format(field.value, "dd/MM/yyyy") // Exibir dia, mês e ano
+                                                                            ) : (
+                                                                                <span>Selecione uma data</span>
+                                                                            )}
+                                                                            <CalendarIcon
+                                                                                className="ml-auto h-4 w-4 opacity-50"/>
+                                                                        </Button>
+                                                                    </FormControl>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent className="w-auto p-0" align="start">
+                                                                    <ReactDatePicker
+                                                                        selected={field.value}
+                                                                        onChange={field.onChange}
+                                                                        showPopperArrow={false} // Remove seta visual (opcional)
+                                                                        dateFormat="dd/MM/yyyy"
+                                                                        maxDate={new Date()}
+                                                                        minDate={new Date("1900-01-01")}
+                                                                        showMonthDropdown // Exibir dropdown de mês
+                                                                        showYearDropdown // Exibir dropdown de ano
+                                                                        dropdownMode="select" // Alterna para dropdown em vez de scroll
+                                                                        locale="pt-BR" // Local para PT-BR
+                                                                        className="w-full p-5 text-sm border border-gray-300 rounded-md"
+                                                                    />
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                            <FormMessage/>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="falecimento.motivo"
+                                                    render={({field}) => (
+                                                        <FormItem>
+                                                            <FormLabel>Motivo do Falecimento</FormLabel>
+                                                            <FormControl>
+                                                                <Textarea {...field} />
+                                                            </FormControl>
+                                                            <FormMessage/>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="falecimento.local"
+                                                    render={({field}) => (
+                                                        <FormItem>
+                                                            <FormLabel>Local do Falecimento</FormLabel>
+                                                            <FormControl>
+                                                                <Input {...field} />
+                                                            </FormControl>
+                                                            <FormMessage/>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </CardContent>
+                                        </Card>
+                                    )}
+
+                                    {/*STATUS EXCLUIDO*/}
+                                    {form.watch('status') === StatusEnumV2.EXCLUIDO && (
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle>Exclusão</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="exclusao.data"
+                                                    render={({field}) => (
+                                                        <FormItem className="flex flex-col">
+                                                            <FormLabel>Data de Exclusão</FormLabel>
+                                                            <Popover>
+                                                                <PopoverTrigger asChild>
+                                                                    <FormControl>
+                                                                        <Button
+                                                                            variant={"outline"}
+                                                                            className={cn(
+                                                                                "w-[280px] pl-3 text-left font-normal",
+                                                                                !field.value && "text-muted-foreground"
+                                                                            )}
+                                                                        >
+                                                                            {field.value ? (
+                                                                                format(field.value, "dd/MM/yyyy") // Exibir dia, mês e ano
+                                                                            ) : (
+                                                                                <span>Selecione uma data</span>
+                                                                            )}
+                                                                            <CalendarIcon
+                                                                                className="ml-auto h-4 w-4 opacity-50"/>
+                                                                        </Button>
+                                                                    </FormControl>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent className="w-auto p-0" align="start">
+                                                                    <ReactDatePicker
+                                                                        selected={field.value}
+                                                                        onChange={field.onChange}
+                                                                        showPopperArrow={false} // Remove seta visual (opcional)
+                                                                        dateFormat="dd/MM/yyyy"
+                                                                        maxDate={new Date()}
+                                                                        minDate={new Date("1900-01-01")}
+                                                                        showMonthDropdown // Exibir dropdown de mês
+                                                                        showYearDropdown // Exibir dropdown de ano
+                                                                        dropdownMode="select" // Alterna para dropdown em vez de scroll
+                                                                        locale="pt-BR" // Local para PT-BR
+                                                                        className="w-full p-5 text-sm border border-gray-300 rounded-md"
+                                                                    />
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                            <FormMessage/>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="exclusao.motivo"
+                                                    render={({field}) => (
+                                                        <FormItem>
+                                                            <FormLabel>Motivo da Exclusão</FormLabel>
+                                                            <FormControl>
+                                                                <Textarea {...field} />
+                                                            </FormControl>
+                                                            <FormMessage/>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </CardContent>
+                                        </Card>
+                                    )}
+
+                                    {/*STATUS VISITANTE*/}
+                                    {form.watch('status') === StatusEnumV2.VISITANTE && (
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle>Visitas</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="visitas.motivo"
+                                                    render={({field}) => (
+                                                        <FormItem>
+                                                            <FormLabel>Motivo da Visita</FormLabel>
+                                                            <FormControl>
+                                                                <Textarea {...field} />
+                                                            </FormControl>
+                                                            <FormMessage/>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </CardContent>
+                                        </Card>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )
+                    }
 
                     {/*ESTADO CIVIL*/}
                     <Card>
@@ -1352,8 +1052,9 @@ export default function MemberForm() {
                                                                 </FormControl>
                                                                 <SelectContent>
                                                                     {membros.map((member: FormValuesMember, index: number) => (
-                                                                        <SelectItem key={`${member._id}_casamento_${index}`}
-                                                                                    value={member._id.toString()}>
+                                                                        <SelectItem
+                                                                            key={`${member._id}_casamento_${index}`}
+                                                                            value={member._id.toString()}>
                                                                             {member.nome}
                                                                         </SelectItem>
                                                                     ))}
@@ -1527,8 +1228,9 @@ export default function MemberForm() {
                                                                         </FormControl>
                                                                         <SelectContent>
                                                                             {membros.map((member: FormValuesMember, index: number) => (
-                                                                                <SelectItem key={`${member._id}_filho_${index}`}
-                                                                                            value={member._id}>
+                                                                                <SelectItem
+                                                                                    key={`${member._id}_filho_${index}`}
+                                                                                    value={member._id}>
                                                                                     {member.nome}
                                                                                 </SelectItem>
                                                                             ))}
@@ -1577,116 +1279,120 @@ export default function MemberForm() {
                         </CardContent>
                     </Card>
 
-                    {/*DIACONO*/}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Diácono/Diaconisa e Ministério</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {/*DIACONO*/}
-                            <FormField
-                                control={form.control}
-                                name="isDiacono"
-                                render={({field}) => (
-                                    <FormItem
-                                        className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                                        <FormControl>
-                                            <Checkbox
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                            />
-                                        </FormControl>
-                                        <div className="space-y-1 leading-none">
-                                            <FormLabel>
-                                                Membro é um diácono ou diaconisa?
-                                            </FormLabel>
-                                            <FormDescription>
-                                                Marque esta opção caso seja.
-                                            </FormDescription>
-                                        </div>
-                                    </FormItem>
-                                )}
-                            />
+                    {/*DIACONO e MINISTERIO*/}
+                    {
+                        useStoreIbbZus.role === UserRolesV2.ADMIN && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Diácono/Diaconisa e Ministério</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {/*DIACONO*/}
+                                    <FormField
+                                        control={form.control}
+                                        name="isDiacono"
+                                        render={({field}) => (
+                                            <FormItem
+                                                className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                                <FormControl>
+                                                    <Checkbox
+                                                        checked={field.value}
+                                                        onCheckedChange={field.onChange}
+                                                    />
+                                                </FormControl>
+                                                <div className="space-y-1 leading-none">
+                                                    <FormLabel>
+                                                        Membro é um diácono ou diaconisa?
+                                                    </FormLabel>
+                                                    <FormDescription>
+                                                        Marque esta opção caso seja.
+                                                    </FormDescription>
+                                                </div>
+                                            </FormItem>
+                                        )}
+                                    />
 
-                            <FormField
-                                control={form.control}
-                                name={`diacono.id`}
-                                render={({field}) => (
-                                    <FormItem>
-                                        <FormLabel>Selecione o Diácono/Diaconisa</FormLabel>
-                                        <Select onValueChange={field.onChange}
-                                                defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue
-                                                        placeholder="Selecione um Diácono/Diaconisa"/>
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {diaconos.map((member: FormValuesUniqueMember, index: number) => (
-                                                    <SelectItem key={`${member.id}_diacono_${index}`}
-                                                                value={member.id.toString()}>
-                                                        {member.nome}
-                                                    </SelectItem>
+                                    <FormField
+                                        control={form.control}
+                                        name={`diacono.id`}
+                                        render={({field}) => (
+                                            <FormItem>
+                                                <FormLabel>Selecione o Diácono/Diaconisa</FormLabel>
+                                                <Select onValueChange={field.onChange}
+                                                        defaultValue={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue
+                                                                placeholder="Selecione um Diácono/Diaconisa"/>
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {diaconos.map((member: FormValuesUniqueMember, index: number) => (
+                                                            <SelectItem key={`${member.id}_diacono_${index}`}
+                                                                        value={member.id.toString()}>
+                                                                {member.nome}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage/>
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    {/*MINISTÉRIO*/}
+                                    <FormField
+                                        control={form.control}
+                                        name="ministerio"
+                                        render={() => (
+                                            <FormItem>
+                                                <div className="mb-4">
+                                                    <FormLabel className="text-base">Ministérios</FormLabel>
+                                                    <FormDescription>
+                                                        Selecione os ministérios em que o membro está envolvido.
+                                                    </FormDescription>
+                                                </div>
+                                                {ministerios.map((item: MinistriesEntity) => (
+                                                    <FormField
+                                                        key={item}
+                                                        control={form.control}
+                                                        name="ministerio"
+                                                        render={({field}) => {
+                                                            return (
+                                                                <FormItem
+                                                                    key={item}
+                                                                    className="flex flex-row items-start space-x-3 space-y-0"
+                                                                >
+                                                                    <FormControl>
+                                                                        <Checkbox
+                                                                            checked={field.value?.includes(item._id)}
+                                                                            onCheckedChange={(checked: any) => {
+                                                                                return checked
+                                                                                    ? field.onChange([...field.value, item._id])
+                                                                                    : field.onChange(
+                                                                                        field.value?.filter(
+                                                                                            (value) => value !== item._id
+                                                                                        )
+                                                                                    )
+                                                                            }}
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormLabel className="font-normal">
+                                                                        {item.nome}
+                                                                    </FormLabel>
+                                                                </FormItem>
+                                                            )
+                                                        }}
+                                                    />
                                                 ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage/>
-                                    </FormItem>
-                                )}
-                            />
-
-                            {/*MINISTÉRIO*/}
-                            <FormField
-                                control={form.control}
-                                name="ministerio"
-                                render={() => (
-                                    <FormItem>
-                                        <div className="mb-4">
-                                            <FormLabel className="text-base">Ministérios</FormLabel>
-                                            <FormDescription>
-                                                Selecione os ministérios em que o membro está envolvido.
-                                            </FormDescription>
-                                        </div>
-                                        {ministerios.map((item: MinistriesEntity) => (
-                                            <FormField
-                                                key={item}
-                                                control={form.control}
-                                                name="ministerio"
-                                                render={({field}) => {
-                                                    return (
-                                                        <FormItem
-                                                            key={item}
-                                                            className="flex flex-row items-start space-x-3 space-y-0"
-                                                        >
-                                                            <FormControl>
-                                                                <Checkbox
-                                                                    checked={field.value?.includes(item._id)}
-                                                                    onCheckedChange={(checked: any) => {
-                                                                        return checked
-                                                                            ? field.onChange([...field.value, item._id])
-                                                                            : field.onChange(
-                                                                                field.value?.filter(
-                                                                                    (value) => value !== item._id
-                                                                                )
-                                                                            )
-                                                                    }}
-                                                                />
-                                                            </FormControl>
-                                                            <FormLabel className="font-normal">
-                                                                {item.nome}
-                                                            </FormLabel>
-                                                        </FormItem>
-                                                    )
-                                                }}
-                                            />
-                                        ))}
-                                        <FormMessage/>
-                                    </FormItem>
-                                )}
-                            />
-                        </CardContent>
-                    </Card>
+                                                <FormMessage/>
+                                            </FormItem>
+                                        )}
+                                    />
+                                </CardContent>
+                            </Card>
+                        )
+                    }
 
                     <Card>
                         <CardHeader>
@@ -1714,7 +1420,12 @@ export default function MemberForm() {
                                         <FormItem>
                                             <FormLabel>Número</FormLabel>
                                             <FormControl>
-                                                <Input {...field} />
+                                                <InputMask
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                >
+                                                    {(inputProps: any) => <Input{...inputProps} />}
+                                                </InputMask>
                                             </FormControl>
                                             <FormMessage/>
                                         </FormItem>
@@ -1783,7 +1494,14 @@ export default function MemberForm() {
                                         <FormItem>
                                             <FormLabel>CEP</FormLabel>
                                             <FormControl>
-                                                <Input {...field} />
+                                                <InputMask
+                                                    mask="99999-999"
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                >
+                                                    {(inputProps: any) => <Input
+                                                        placeholder={"99999-999"} {...inputProps} />}
+                                                </InputMask>
                                             </FormControl>
                                             <FormMessage/>
                                         </FormItem>
@@ -1795,9 +1513,16 @@ export default function MemberForm() {
 
                     <div className="flex flex-1 justify-end mt-4 mb-4">
                         <Button type="submit" className="ml-auto" onClick={() => {
-                            const result = formSchema.safeParse(form.getValues());
+                            const result: SafeParseSuccess<FormValuesMember> | SafeParseError<FormValuesMember> = formSchema.safeParse(form.getValues());
                             console.log(form.getValues());
                             console.log(result);
+                            const errorMessages: string[] = [];
+                            if (result && result.error && result.error.issues) {
+                                result.error.issues.forEach((errorItem: ZodIssue) => {
+                                    errorMessages.push(errorItem.message);
+                                })
+                                alert(errorMessages);
+                            }
                         }}>
                             {isEditing ? 'Atualizar' : 'Salvar'}
                         </Button>

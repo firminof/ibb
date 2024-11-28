@@ -40,14 +40,20 @@ export class UserApi {
         return user.data;
     }
 
+    static async requestUpdateUserInfo(body: string[]): Promise<any> {
+        const user = await api.post(`/v2/user/request-update`, body);
+
+        return user.data;
+    }
+
     static async updateMember(id: string, body: any): Promise<UserV2> {
         const user = await api.put(`/v2/user/${id}`, body);
 
         return user.data;
     }
 
-    static async createMemberByInvite(body: ITempInvite): Promise<any | undefined> {
-        const user = await api.post(`/v2/user/accept-invite`, body);
+    static async createMemberByInvite(body: UserV2, inviteId: string, password: string): Promise<any | undefined> {
+        const user = await api.post(`/v2/user/accept-invite/${inviteId}/${password}`, body);
 
         return user.data;
     }

@@ -59,7 +59,7 @@ export function InviteForm(props: any) {
 
             console.log('userForm: ', userForm)
 
-            await UserApi.createMemberByInvite(userForm);
+            await UserApi.createMemberByInvite(userForm, '', '');
             setIsSuccessSaveInvite(true);
             setShowWarningToast(false);
             setShowWarningMessage('');

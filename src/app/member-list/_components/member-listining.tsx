@@ -16,7 +16,14 @@ import {useForm} from "react-hook-form"
 import {zodResolver} from "@hookform/resolvers/zod"
 import * as z from "zod"
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form"
-import {statusColors, StatusEnumV2, UserRoles, UserRolesV2} from "@/lib/models/user";
+import {
+    FormValuesMember,
+    FormValuesUniqueMember,
+    statusColors,
+    StatusEnumV2,
+    UserRoles,
+    UserRolesV2
+} from "@/lib/models/user";
 import * as React from "react";
 import InputMask from "react-input-mask";
 import {ChevronLeftIcon, PersonIcon} from "@radix-ui/react-icons";
@@ -24,15 +31,17 @@ import {PlusIcon} from "@/components/plus-icon/plus-icon";
 import {useRouter} from "next/navigation";
 import {UserApi} from "@/lib/api/user-api";
 import {IMinistries} from "@/lib/models/user-response-api";
-import {FormValuesMember, FormValuesUniqueMember} from "@/app/member/_components/member-create-update.form";
 import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
 import Image from "next/image";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
+import {Backdrop, CircularProgress} from "@mui/material";
+import {SafeParseError, SafeParseSuccess, ZodIssue} from "zod";
+import ptBR from "date-fns/locale/pt-BR";
 
 // Status validation schema
 const statusUpdateSchema = z.object({
     status: z.nativeEnum(StatusEnumV2),
-    visitante: z.object({
+    visitas: z.object({
         motivo: z.string({required_error: "Motivo é obrigatório"}).min(1).nullable(),
     }).optional(),
     ingresso: z.object({
@@ -55,58 +64,6 @@ const statusUpdateSchema = z.object({
         motivo: z.string({required_error: "Local é obrigatório"}).min(1).nullable(),
     }).optional(),
 });
-
-// Sample data
-const sampleMembers: MemberTableData[] = [
-    {
-        _id: '1',
-        nome: 'João Silva',
-        status: StatusEnumV2.ativo,
-        role: UserRolesV2.MEMBRO,
-        updatedAt: new Date('2023-05-15'),
-        dataNascimento: new Date('1988-03-10'),
-        ministerio: ['Louvor', 'Jovens'],
-        diacono: {id: '101', nome: 'Carlos Santos', isMember: true, isDiacono: true},
-        idade: 35,
-        cpf: '123.456.789-00',
-        rg: '1234567',
-        telefone: '(11) 98765-4321',
-        email: 'joao.silva@example.com',
-        isDiacono: false,
-    },
-    {
-        _id: '2',
-        nome: 'Maria Santos',
-        status: StatusEnumV2.inativo,
-        role: UserRolesV2.ADMIN,
-        updatedAt: new Date('2023-06-20'),
-        dataNascimento: new Date('1981-09-22'),
-        ministerio: ['Ensino', 'Mulheres'],
-        diacono: {id: '102', nome: 'Ana Oliveira', isMember: true, isDiacono: true},
-        idade: 42,
-        cpf: '987.654.321-00',
-        rg: '7654321',
-        telefone: '(11) 91234-5678',
-        email: 'maria.santos@example.com',
-        isDiacono: true,
-    },
-    {
-        _id: '3',
-        nome: 'Pedro Oliveira',
-        status: StatusEnumV2.congregado,
-        role: UserRolesV2.MEMBRO,
-        updatedAt: new Date('2023-07-05'),
-        dataNascimento: new Date('1995-11-30'),
-        ministerio: ['Evangelismo'],
-        diacono: {id: '103', nome: 'José Ferreira', isMember: true, isDiacono: true},
-        idade: 28,
-        cpf: '456.789.123-00',
-        rg: '3456789',
-        telefone: '(11) 94567-8901',
-        email: 'pedro.oliveira@example.com',
-        isDiacono: false,
-    },
-]
 
 const memberSchema = z.object({
     id: z.string().nullable(),
@@ -139,36 +96,25 @@ export default function MemberListing() {
     const [diaconos, setDiaconos] = useState<FormValuesUniqueMember[]>([]);
     const [membros, setMembros] = useState<FormValuesMember[]>([]);
 
+    const [openLoading, setLoading] = useState<boolean>(false);
+    const [openLoadingMessage, setLoadingMessage] = useState<string>('');
+
     const [filteredMembers, setFilteredMembers] = useState<FormValuesMember[]>([])
     const [selectedMembers, setSelectedMembers] = useState<string[]>([])
     const [filters, setFilters] = useState({
         nome: '',
-        cpf: '',
-        rg: '',
         telefone: '',
-        email: '',
         isDiacono: 'all',
     })
     const [selectedMember, setSelectedMember] = useState<FormValuesMember | null>(null);
-    const form = useForm({
+    const form = useForm<z.infer<typeof statusUpdateSchema>>({
         resolver: zodResolver(statusUpdateSchema),
-        defaultValues: {
-            status: "ativo",
-            ingresso: {data: null, forma: null, local: null},
-            transferido: {data: null, motivo: null, local: null},
-            falecido: {data: null, motivo: null, local: null},
-            excluido: {data: null, motivo: null},
-            visitante: {motivo: null},
-        },
     });
 
     useEffect(() => {
         const filtered: FormValuesMember[] = membros.filter(member =>
             member.nome.toLowerCase().includes(filters.nome.toLowerCase()) &&
-            member.cpf.includes(filters.cpf) &&
-            member.rg.includes(filters.rg) &&
             member.telefone.includes(filters.telefone) &&
-            member.email.toLowerCase().includes(filters.email.toLowerCase()) &&
             (filters.isDiacono === 'all' || member.isDiacono.toString() === filters.isDiacono)
         )
         setFilteredMembers(filtered)
@@ -185,37 +131,152 @@ export default function MemberListing() {
     }
 
     const handleDeleteSelected = () => {
+        setLoading(true);
+        setLoadingMessage('Excluindo membro...');
         console.log('Deleting members:', selectedMembers)
+        Promise.all(
+            selectedMembers.map((member: string) => {
+                return UserApi.deleteMember(member);
+            })
+        )
+            .then(() => {
+                alert(`${selectedMembers.length === 1 ? 'Sucesso ao excluir o membro!' : 'Sucesso ao excluir os membros!'}`);
+            })
+            .catch(() => {
+                alert(`${selectedMembers.length === 1 ? 'Erro ao excluir o membro!' : 'Sucesso ao excluir os membros!'}`)
+            })
+            .finally(() => {
+                getAllMembers();
+                setSelectedMembers([]);
+            });
+
+        setLoading(false);
+        setLoadingMessage('');
     }
 
     const handleRequestUpdate = () => {
+        setLoading(true);
+        setLoadingMessage('Solicitando atualizando cadastral...');
         console.log('Requesting update for members:', selectedMembers)
+
+        try {
+            if (selectedMembers && selectedMembers.length > 0) {
+                UserApi.requestUpdateUserInfo({_id: selectedMembers})
+                    .then((response: FormValuesMember) => {
+                        alert(`Atualização cadastral solicitada com sucesso!`);
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                        switch (error.code) {
+                            case 'ERR_BAD_REQUEST':
+                                console.log(error);
+                                break;
+                            case 'ERR_NETWORK':
+                                console.log(error);
+                                break;
+
+                            default:
+                                console.log(error);
+                                break;
+                        }
+                    })
+                    .finally(() => {
+                        setLoading(false);
+                        setLoadingMessage('');
+                        setSelectedMembers([]);
+                    })
+            }
+        } catch (e) {
+            setLoading(false);
+            setLoadingMessage('');
+            setSelectedMembers([]);
+        }
+
+        setLoading(false);
+        setLoadingMessage('');
     }
 
     const handleReloadTable = () => {
-        console.log('Reloading table')
+        fetchMembers()
     }
 
-    const handleStatusChange = (member: MemberTableData) => {
+    const handleStatusChange = (member: FormValuesMember) => {
         setSelectedMember(member)
+        let valorAtual;
+
+        switch (member.status) {
+            case StatusEnumV2.VISITANTE:
+                valorAtual = {visitas: member.visitas};
+                break;
+            case StatusEnumV2.ATIVO:
+                valorAtual = {ingresso: member.ingresso};
+                break;
+            case StatusEnumV2.TRANSFERIDO:
+                valorAtual = {transferencia: member.transferencia};
+                break;
+            case StatusEnumV2.FALECIDO:
+                valorAtual = {falecimento: member.falecimento};
+                break;
+            case StatusEnumV2.EXCLUIDO:
+                valorAtual = {exclusao: member.exclusao};
+                break;
+        }
+
+        console.log({
+            status: member.status,
+            ...valorAtual
+        })
         form.reset({
             status: member.status,
+            ...valorAtual
         })
     }
 
 
     const handleStatusUpdateSubmit = (data: any) => {
+        setLoading(true);
+        setLoadingMessage('Atualizando status do membro');
+
         console.log("Form Data:", data);
         const result = statusUpdateSchema.safeParse(data);
         if (!result.success) {
             const errors = result.error.format();
             console.error("Validation Errors:", errors);
-            alert(
-                "Existem erros no formulário:\n" +
-                JSON.stringify(errors, null, 2)
-            );
+            alert('Atenção! Preencha corretamente os campos para atualização do status do membro.');
         } else {
-            alert("Formulário válido! Dados enviados com sucesso.");
+            try {
+                if (selectedMember && selectedMember._id) {
+                    UserApi.updateMember(selectedMember._id, data)
+                        .then((response: FormValuesMember) => {
+                            alert(`Status do membro: ${selectedMember.nome} atualizado`);
+                            fetchMembers();
+                        })
+                        .catch((error) => {
+                            console.log(error);
+                            switch (error.code) {
+                                case 'ERR_BAD_REQUEST':
+                                    setMembros([]);
+                                    break;
+                                case 'ERR_NETWORK':
+                                    setMembros([]);
+                                    break;
+
+                                default:
+                                    setMembros([]);
+                                    break;
+                            }
+                        })
+                        .finally(() => {
+                            setLoading(false);
+                            setLoadingMessage('');
+                            form.reset();
+                        })
+                }
+            } catch (e) {
+                setLoading(false);
+                setLoadingMessage('');
+                form.reset();
+            }
         }
     };
 
@@ -232,7 +293,7 @@ export default function MemberListing() {
         );
     };
 
-    useEffect(() => {
+    const fetchMembers = async () => {
         if (useStoreIbbZus.hasHydrated && useStoreIbbZus.role === UserRoles.MEMBRO) {
             router.push('/user')
             return
@@ -250,9 +311,17 @@ export default function MemberListing() {
         getAllMinistries();
         getAllMembersDiaconos();
         getAllMembers();
+    }
+
+    useEffect(() => {
+        setLoading(true);
+        setLoadingMessage('Carregando...')
+        fetchMembers();
     }, [useStoreIbbZus.hasHydrated])
 
     const getAllMinistries = () => {
+        setLoading(true);
+        setLoadingMessage('Carregando...');
         try {
             UserApi.fetchMinistries()
                 .then((response: IMinistries[]) => {
@@ -278,14 +347,19 @@ export default function MemberListing() {
                     }
                 })
                 .finally(() => {
-
+                    setLoading(false);
+                    setLoadingMessage('');
                 });
         } catch (e) {
             setMinisterios([]);
+            setLoading(false);
+            setLoadingMessage('');
         }
     }
 
     const getAllMembersDiaconos = async (): Promise<void> => {
+        setLoading(true);
+        setLoadingMessage('Carregando...');
         try {
             UserApi.fetchMembersDiaconos()
                 .then((response: FormValuesMember[]) => {
@@ -319,11 +393,19 @@ export default function MemberListing() {
                             break;
                     }
                 })
+                .finally(() => {
+                    setLoading(false);
+                    setLoadingMessage('');
+                })
         } catch (e) {
             setDiaconos([]);
+            setLoading(false);
+            setLoadingMessage('');
         }
     }
     const getAllMembers = async (): Promise<void> => {
+        setLoading(true);
+        setLoadingMessage('Carregando...');
         try {
             UserApi.fetchMembers()
                 .then((response: FormValuesMember[]) => {
@@ -349,8 +431,14 @@ export default function MemberListing() {
                             break;
                     }
                 })
+                .finally(() => {
+                    setLoading(false);
+                    setLoadingMessage('');
+                })
         } catch (e) {
             setMembros([]);
+            setLoading(false);
+            setLoadingMessage('');
         }
     }
 
@@ -359,6 +447,18 @@ export default function MemberListing() {
         return ministerios
             .filter((ministerio: MinistriesEntity) => member.ministerio.includes(ministerio._id))
             .map((ministerio: MinistriesEntity): string => ministerio.nome ? ministerio.nome : '-');
+    }
+
+    if (openLoading) {
+        return <Backdrop
+            sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
+            open={true}
+        >
+            <div className="flex flex-col items-center">
+                <CircularProgress color="inherit"/>
+                {openLoadingMessage}
+            </div>
+        </Backdrop>
     }
 
     return (
@@ -447,11 +547,11 @@ export default function MemberListing() {
                         onClick={handleRequestUpdate}
                         disabled={selectedMembers.length === 0}
                     >
-                        <UserCog className="mr-2 h-4 w-4"/> Solicitar Atualização
+                        <UserCog className="mr-2 h-4 w-4"/> Solicitar Atualização Cadastral
                     </Button>
                 </div>
                 <Button variant="outline" onClick={handleReloadTable}>
-                    <RefreshCw className="mr-2 h-4 w-4"/> Recarregar Tabela
+                    <RefreshCw className="mr-2 h-4 w-4"/> Recarregar
                 </Button>
             </div>
 
@@ -490,7 +590,7 @@ export default function MemberListing() {
                                     {/* Imagem do membro */}
                                     <span className="block">
                                         <Avatar className="w-16 h-16">
-                                            <AvatarImage src={member.foto} alt={member.nome} />
+                                            <AvatarImage src={member.foto} alt={member.nome}/>
                                             <AvatarFallback>{member.nome.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                     </span>
@@ -508,7 +608,7 @@ export default function MemberListing() {
                                                     <DialogTitle>Foto de: {member?.nome}</DialogTitle>
                                                 </DialogHeader>
                                                 <Avatar className="w-96 h-96">
-                                                    <AvatarImage src={member.foto} alt={member.nome} />
+                                                    <AvatarImage src={member.foto} alt={member.nome}/>
                                                     <AvatarFallback>{member.nome.charAt(0)}</AvatarFallback>
                                                 </Avatar>
                                             </DialogContent>
@@ -576,12 +676,12 @@ export default function MemberListing() {
                                                         />
 
                                                         {/* STATUS ATIVO */}
-                                                        {form.watch('status') === StatusEnumV2.ativo && (
+                                                        {form.watch('status') === StatusEnumV2.ATIVO && (
                                                             <>
                                                                 <FormField
                                                                     control={form.control}
                                                                     name="ingresso.data"
-                                                                    render={({ field }) => (
+                                                                    render={({field}) => (
                                                                         <FormItem>
                                                                             <FormLabel>Data</FormLabel>
                                                                             <FormControl>
@@ -595,33 +695,33 @@ export default function MemberListing() {
                                                                                     }
                                                                                 />
                                                                             </FormControl>
-                                                                            <FormMessage />
+                                                                            <FormMessage/>
                                                                         </FormItem>
                                                                     )}
                                                                 />
                                                                 <FormField
                                                                     control={form.control}
                                                                     name="ingresso.forma"
-                                                                    render={({ field }) => (
+                                                                    render={({field}) => (
                                                                         <FormItem>
                                                                             <FormLabel>Forma</FormLabel>
                                                                             <FormControl>
                                                                                 <Input {...field} />
                                                                             </FormControl>
-                                                                            <FormMessage />
+                                                                            <FormMessage/>
                                                                         </FormItem>
                                                                     )}
                                                                 />
                                                                 <FormField
                                                                     control={form.control}
                                                                     name="ingresso.local"
-                                                                    render={({ field }) => (
+                                                                    render={({field}) => (
                                                                         <FormItem>
                                                                             <FormLabel>Local</FormLabel>
                                                                             <FormControl>
                                                                                 <Input {...field} />
                                                                             </FormControl>
-                                                                            <FormMessage />
+                                                                            <FormMessage/>
                                                                         </FormItem>
                                                                     )}
                                                                 />
@@ -629,12 +729,12 @@ export default function MemberListing() {
                                                         )}
 
                                                         {/* STATUS TRANSFERIDO */}
-                                                        {form.watch('status') === StatusEnumV2.transferido && (
+                                                        {form.watch('status') === StatusEnumV2.TRANSFERIDO && (
                                                             <>
                                                                 <FormField
                                                                     control={form.control}
                                                                     name="transferido.data"
-                                                                    render={({ field }) => (
+                                                                    render={({field}) => (
                                                                         <FormItem>
                                                                             <FormLabel>Data</FormLabel>
                                                                             <FormControl>
@@ -648,33 +748,33 @@ export default function MemberListing() {
                                                                                     }
                                                                                 />
                                                                             </FormControl>
-                                                                            <FormMessage />
+                                                                            <FormMessage/>
                                                                         </FormItem>
                                                                     )}
                                                                 />
                                                                 <FormField
                                                                     control={form.control}
                                                                     name="transferido.motivo"
-                                                                    render={({ field }) => (
+                                                                    render={({field}) => (
                                                                         <FormItem>
                                                                             <FormLabel>Motivo</FormLabel>
                                                                             <FormControl>
                                                                                 <Input {...field} />
                                                                             </FormControl>
-                                                                            <FormMessage />
+                                                                            <FormMessage/>
                                                                         </FormItem>
                                                                     )}
                                                                 />
                                                                 <FormField
                                                                     control={form.control}
                                                                     name="transferido.local"
-                                                                    render={({ field }) => (
+                                                                    render={({field}) => (
                                                                         <FormItem>
                                                                             <FormLabel>Local</FormLabel>
                                                                             <FormControl>
                                                                                 <Input {...field} />
                                                                             </FormControl>
-                                                                            <FormMessage />
+                                                                            <FormMessage/>
                                                                         </FormItem>
                                                                     )}
                                                                 />
@@ -682,12 +782,12 @@ export default function MemberListing() {
                                                         )}
 
                                                         {/* STATUS FALECIDO */}
-                                                        {form.watch('status') === StatusEnumV2.falecido && (
+                                                        {form.watch('status') === StatusEnumV2.FALECIDO && (
                                                             <>
                                                                 <FormField
                                                                     control={form.control}
                                                                     name="falecido.data"
-                                                                    render={({ field }) => (
+                                                                    render={({field}) => (
                                                                         <FormItem>
                                                                             <FormLabel>Data</FormLabel>
                                                                             <FormControl>
@@ -701,33 +801,33 @@ export default function MemberListing() {
                                                                                     }
                                                                                 />
                                                                             </FormControl>
-                                                                            <FormMessage />
+                                                                            <FormMessage/>
                                                                         </FormItem>
                                                                     )}
                                                                 />
                                                                 <FormField
                                                                     control={form.control}
                                                                     name="falecido.motivo"
-                                                                    render={({ field }) => (
+                                                                    render={({field}) => (
                                                                         <FormItem>
                                                                             <FormLabel>Motivo</FormLabel>
                                                                             <FormControl>
                                                                                 <Input {...field} />
                                                                             </FormControl>
-                                                                            <FormMessage />
+                                                                            <FormMessage/>
                                                                         </FormItem>
                                                                     )}
                                                                 />
                                                                 <FormField
                                                                     control={form.control}
                                                                     name="falecido.local"
-                                                                    render={({ field }) => (
+                                                                    render={({field}) => (
                                                                         <FormItem>
                                                                             <FormLabel>Local</FormLabel>
                                                                             <FormControl>
                                                                                 <Input {...field} />
                                                                             </FormControl>
-                                                                            <FormMessage />
+                                                                            <FormMessage/>
                                                                         </FormItem>
                                                                     )}
                                                                 />
@@ -735,12 +835,12 @@ export default function MemberListing() {
                                                         )}
 
                                                         {/* STATUS EXCLUIDO */}
-                                                        {form.watch('status') === StatusEnumV2.excluido && (
+                                                        {form.watch('status') === StatusEnumV2.EXCLUIDO && (
                                                             <>
                                                                 <FormField
                                                                     control={form.control}
                                                                     name="excluido.data"
-                                                                    render={({ field }) => (
+                                                                    render={({field}) => (
                                                                         <FormItem>
                                                                             <FormLabel>Data</FormLabel>
                                                                             <FormControl>
@@ -754,20 +854,20 @@ export default function MemberListing() {
                                                                                     }
                                                                                 />
                                                                             </FormControl>
-                                                                            <FormMessage />
+                                                                            <FormMessage/>
                                                                         </FormItem>
                                                                     )}
                                                                 />
                                                                 <FormField
                                                                     control={form.control}
                                                                     name="excluido.motivo"
-                                                                    render={({ field }) => (
+                                                                    render={({field}) => (
                                                                         <FormItem>
                                                                             <FormLabel>Motivo</FormLabel>
                                                                             <FormControl>
                                                                                 <Input {...field} />
                                                                             </FormControl>
-                                                                            <FormMessage />
+                                                                            <FormMessage/>
                                                                         </FormItem>
                                                                     )}
                                                                 />
@@ -775,18 +875,18 @@ export default function MemberListing() {
                                                         )}
 
                                                         {/* STATUS VISITANTE */}
-                                                        {form.watch('status') === StatusEnumV2.visitante && (
+                                                        {form.watch('status') === StatusEnumV2.VISITANTE && (
                                                             <>
                                                                 <FormField
                                                                     control={form.control}
-                                                                    name="visitante.motivo"
-                                                                    render={({ field }) => (
+                                                                    name="visitas.motivo"
+                                                                    render={({field}) => (
                                                                         <FormItem>
                                                                             <FormLabel>Motivo</FormLabel>
                                                                             <FormControl>
                                                                                 <Input {...field} />
                                                                             </FormControl>
-                                                                            <FormMessage />
+                                                                            <FormMessage/>
                                                                         </FormItem>
                                                                     )}
                                                                 />
@@ -794,7 +894,18 @@ export default function MemberListing() {
                                                         )}
 
                                                         {/* Botão de envio */}
-                                                        <Button type="submit">Salvar Alterações</Button>
+                                                        <Button type="submit" onClick={() => {
+                                                            const result: SafeParseSuccess<any> | SafeParseError<any> = statusUpdateSchema.safeParse(form.getValues());
+                                                            console.log(form.getValues());
+                                                            console.log(result);
+                                                            const errorMessages: string[] = [];
+                                                            if (result && result.error && result.error.issues) {
+                                                                result.error.issues.forEach((errorItem: ZodIssue) => {
+                                                                    errorMessages.push(errorItem.message);
+                                                                })
+                                                                alert(errorMessages);
+                                                            }
+                                                        }}>Salvar Alterações</Button>
                                                     </form>
                                                 </Form>
                                             </DialogContent>
@@ -806,12 +917,13 @@ export default function MemberListing() {
                                 <TableCell>{member.isDiacono ? 'Sim' : 'Não'}</TableCell>
                                 <TableCell>{mapMinisterios(member)}</TableCell>
                                 <TableCell>{member.diacono.nome}</TableCell>
-                                <TableCell>{format(member.updatedAt, 'dd/MM/yyyy hh:mm:ss')}</TableCell>
+                                <TableCell>{format(member.updatedAt, 'dd/MM/yyyy HH:MM:ss', {locale: ptBR})}</TableCell>
 
 
                                 <TableCell>
                                     <div className="flex space-x-2">
-                                        <Button variant="ghost" size="sm" onClick={() => router.push(`/user?id=${member._id.toString()}`)}>
+                                        <Button variant="ghost" size="sm"
+                                                onClick={() => router.push(`/user?id=${member._id.toString()}`)}>
                                             <Eye className="h-4 w-4"/>
                                         </Button>
                                         <Button variant="ghost" size="sm"
