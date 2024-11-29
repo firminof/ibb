@@ -18,9 +18,9 @@ import {
     LogIn,
     LogOut,
     Mail,
-    MapPin,
+    MapPin, MessageCircleIcon,
     Phone,
-    Send,
+    Send, SendIcon,
     Skull,
     UserMinus,
     UserPlus,
@@ -29,7 +29,7 @@ import {
 } from 'lucide-react'
 import {
     formatUserV2,
-    FormValuesMember, Historico,
+    FormValuesMember, FormValuesUniqueMember, Historico,
     MinistriesEntity,
     statusColors,
     StatusEnumV2,
@@ -47,6 +47,18 @@ import {format, formatDate} from 'date-fns'
 import {IInviteEntity} from "@/lib/models/invite";
 import {ChevronLeftIcon} from "@radix-ui/react-icons";
 import {PlusIcon} from "@/components/plus-icon/plus-icon";
+import {WhatsappMessageWithTwilioInput} from "@/lib/models/twilio-whatsapp";
+import {Backdrop, CircularProgress} from "@mui/material";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger
+} from "@/components/ui/dialog";
+import {Textarea} from "@/components/ui/textarea";
 
 // Registrar o local (se necessário)
 registerLocale("pt-BR", ptBR);
@@ -58,6 +70,12 @@ export default function UserForm() {
     const [invitations, setInvitations] = useState<IInviteEntity[]>([])
 
     const [ministerios, setMinisterios] = useState<MinistriesEntity[]>([]);
+    const [diaconos, setDiaconos] = useState<FormValuesMember[]>([]);
+
+    const [message, setMessage] = useState('')
+
+    const [openLoading, setLoading] = useState<boolean>(false)
+    const [openLoadingMessage, setLoadingMessage] = useState<string>('')
 
     const searchParams = useSearchParams();
     let idMembro: string | null = searchParams.get('id');
@@ -115,6 +133,45 @@ export default function UserForm() {
         }
     }
 
+    const getAllMembersDiaconos = async (): Promise<void> => {
+        setLoading(true);
+        setLoadingMessage('Carregando...');
+        try {
+            UserApi.fetchMembersDiaconos()
+                .then((response: FormValuesMember[]) => {
+                    if (response.length > 0) {
+                        setDiaconos(response);
+                        return;
+                    }
+
+                    setDiaconos([]);
+                })
+                .catch((error) => {
+                    console.log(error);
+                    switch (error.code) {
+                        case 'ERR_BAD_REQUEST':
+                            setDiaconos([]);
+                            break;
+                        case 'ERR_NETWORK':
+                            setDiaconos([]);
+                            break;
+
+                        default:
+                            setDiaconos([]);
+                            break;
+                    }
+                })
+                .finally(() => {
+                    setLoading(false);
+                    setLoadingMessage('');
+                })
+        } catch (e) {
+            setDiaconos([]);
+            setLoading(false);
+            setLoadingMessage('');
+        }
+    }
+
     const getUniqueMember = async (): Promise<void> => {
         try {
             if (idMembro && idMembro.length > 0 && member === null) {
@@ -122,8 +179,6 @@ export default function UserForm() {
                     .then((response: FormValuesMember) => {
                         if (response) {
                             const member: FormValuesMember = formatUserV2(response);
-
-                            console.log('membro: ', member);
                             setMember(member);
                         }
                     })
@@ -206,6 +261,7 @@ export default function UserForm() {
     }, [useStoreIbbZus.hasHydrated])
 
     useEffect(() => {
+        getAllMembersDiaconos();
         getAllInvites();
     }, [member]);
 
@@ -267,8 +323,70 @@ export default function UserForm() {
                 .join('; ');
         }
 
+        if (String(value).includes('data:image/png;base64')){
+            return 'FOTO DE PERFIL ATUALIZADA!';
+        }
         // Converte para string para os demais tipos de dados
         return String(value);
+    }
+
+    const obterDiaconoMembro = (member: FormValuesMember): FormValuesMember | undefined => {
+        console.log('diaconos: ', diaconos);
+        return diaconos.find((diacono: FormValuesMember) => member.diacono.id === diacono._id);
+    }
+
+    const handleSendMessage = async (member: FormValuesMember) => {
+        setMessage('Enviando mensagem ao diácono/diaconisa');
+        setLoading(true);
+
+        const diacono: FormValuesMember | undefined = obterDiaconoMembro(member);
+
+        if (!diacono) {
+            alert('Você precisa ter um diácono/diaconisa associado para pedir oração, se não tiver peça ao administrador para alterar!');
+            setMessage('');
+            setLoading(false);
+            return;
+        }
+
+        try {
+            const payload: WhatsappMessageWithTwilioInput = {
+                nomeMembro: diacono.nome,
+                nomeCompanhia: 'Igreja Batista do Brooklin',
+                numeroWhatsapp: diacono.telefone,
+                linkAplicacao: '',
+                conteudoMensagem: message
+            }
+            const nomeMembro: string = member.nome.toString();
+
+            UserApi.sendWhatsAppMessagePedirOracao(payload, nomeMembro)
+                .then(() => {
+                    alert('Pedido de oração enviado com sucesso!');
+                })
+                .catch(() => {
+                    alert('Erro ao enviar pedido de oração , tente novamente');
+                })
+                .finally(() => {
+                    setMessage('');
+                    setMessage('');
+                    setLoading(false);
+                })
+        } catch (e) {
+            setMessage('');
+            setLoading(false);
+            setLoadingMessage('');
+        }
+    }
+
+    if (openLoading) {
+        return <Backdrop
+            sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
+            open={true}
+        >
+            <div className="flex flex-col items-center">
+                <CircularProgress color="inherit"/>
+                {openLoadingMessage}
+            </div>
+        </Backdrop>
     }
 
     return (
@@ -324,6 +442,39 @@ export default function UserForm() {
                                     className="flex flex-wrap items-start justify-start sm:justify-start gap-2 flex-col">
                                     {renderStatusBadge(member.status)}
                                     <span>Nível de acesso: <Badge variant="outline">{member.role}</Badge></span>
+
+                                    <Dialog>
+                                        <DialogTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="z-10"
+                                            >
+                                                <MessageCircleIcon className="w-4 h-4 mr-2"/>
+                                                Pedir Oração ao Diácono/Diaconisa
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="sm:max-w-[425px]">
+                                            <DialogHeader>
+                                                <DialogTitle>Pedir oração ao diácono/diaconisa</DialogTitle>
+                                                <DialogDescription>Digite abaixo sua mensagem explicando seu pedido de oração</DialogDescription>
+                                            </DialogHeader>
+                                            <div className="grid gap-4 py-4">
+                                                <Textarea
+                                                    placeholder="Digite sua mensagem aqui..."
+                                                    value={message}
+                                                    onChange={(e) => setMessage(e.target.value)}
+                                                    className="min-h-[100px]"
+                                                />
+                                            </div>
+                                            <DialogFooter>
+                                                <Button type="submit" onClick={() => handleSendMessage(member)}>
+                                                    <SendIcon className="w-4 h-4 mr-2"/>
+                                                    Enviar
+                                                </Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
                                 </div>
 
                                 <Separator/>

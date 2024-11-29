@@ -117,4 +117,11 @@ export class UserApi {
 
         return user.data;
     }
+
+    static async sendWhatsAppMessagePedirOracao(body: WhatsappMessageWithTwilioInput, membro: string): Promise<any | undefined> {
+        console.log(`/v2/user/whatsapp/send-message/pedir-oracao/${membro}`)
+        const user = await api.post(`/v2/user/whatsapp/send-message/pedir-oracao/${membro}`, body);
+
+        return user.data;
+    }
 }

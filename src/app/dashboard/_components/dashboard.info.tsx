@@ -98,7 +98,7 @@ export function DashboardInfo() {
     const handleConvidarMembro = async (e: any) => {
         e.preventDefault();
         setIsLoading(true);
-        setMessageLoading('Enviando convite por email');
+        setMessageLoading(`Enviando convite ${isModeInviteEmail ? 'por email' : 'por WhatsApp'}`);
         setOpenBackLoading(true);
 
         try {
@@ -124,7 +124,8 @@ export function DashboardInfo() {
                 subject: 'Convite para membresia',
                 text: 'Você está sendo convidado para fazer parte da Igreja Batista do Brooklink',
                 requestName: '',
-                phone: whatsapp
+                phone: whatsapp,
+                memberIdRequested: useStoreIbbZus.mongoId
             };
 
             const sendingEmail = await UserApi.sendInvite(body)

@@ -1,6 +1,7 @@
 'use client'
 
-import {useState, useEffect} from 'react'
+import * as React from 'react'
+import {useEffect, useState} from 'react'
 import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table"
@@ -9,32 +10,23 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog"
 import {Label} from "@/components/ui/label"
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from "@/components/ui/accordion"
-import {RefreshCw, Trash, UserCog, Filter, Eye, Edit, CameraIcon, ViewIcon} from 'lucide-react'
+import {Edit, Eye, Filter, RefreshCw, Trash, UserCog, ViewIcon} from 'lucide-react'
 import {format} from 'date-fns'
 import {useForm} from "react-hook-form"
 import {zodResolver} from "@hookform/resolvers/zod"
 import * as z from "zod"
+import {SafeParseError, SafeParseSuccess, ZodIssue} from "zod"
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form"
-import {
-    FormValuesMember,
-    FormValuesUniqueMember,
-    statusColors,
-    StatusEnumV2,
-    UserRoles,
-    UserRolesV2
-} from "@/lib/models/user";
-import * as React from "react";
+import {FormValuesMember, FormValuesUniqueMember, statusColors, StatusEnumV2, UserRoles} from "@/lib/models/user";
 import InputMask from "react-input-mask";
-import {ChevronLeftIcon, PersonIcon} from "@radix-ui/react-icons";
+import {ChevronLeftIcon} from "@radix-ui/react-icons";
 import {PlusIcon} from "@/components/plus-icon/plus-icon";
 import {useRouter} from "next/navigation";
 import {UserApi} from "@/lib/api/user-api";
 import {IMinistries} from "@/lib/models/user-response-api";
 import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
-import Image from "next/image";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Backdrop, CircularProgress} from "@mui/material";
-import {SafeParseError, SafeParseSuccess, ZodIssue} from "zod";
 import ptBR from "date-fns/locale/pt-BR";
 import {Card, CardContent} from "@/components/ui/card";
 

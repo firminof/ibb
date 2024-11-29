@@ -6,14 +6,21 @@ import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
-import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription, DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger
+} from "@/components/ui/dialog"
 import {Label} from "@/components/ui/label"
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from "@/components/ui/accordion"
-import {Eye, Filter, MessageCircleIcon, RefreshCw, ViewIcon} from 'lucide-react'
+import {Eye, Filter, MessageCircleIcon, RefreshCw, SendIcon, ViewIcon} from 'lucide-react'
 import {format} from 'date-fns'
 import * as z from "zod"
 import {FormValuesMember, statusColors, StatusEnumV2, UserRoles} from "@/lib/models/user"
-import InputMask from "react-input-mask"
+import InputMask, {Props as InputMaskProps} from "react-input-mask"
 import {useRouter} from "next/navigation"
 import {UserApi} from "@/lib/api/user-api"
 import {IMinistries} from "@/lib/models/user-response-api"
@@ -24,6 +31,8 @@ import ptBR from "date-fns/locale/pt-BR"
 import {Card, CardContent} from "@/components/ui/card"
 import {IMesAtual} from "@/lib/models/mes-atual";
 import {obterMesAtual} from "@/lib/helpers/helpers";
+import {Textarea} from "@/components/ui/textarea";
+import {WhatsappMessageWithTwilioInput} from "@/lib/models/twilio-whatsapp";
 
 const memberSchema = z.object({
     id: z.string().nullable(),
@@ -59,6 +68,8 @@ export default function BirthdaysV2() {
     const [openLoadingMessage, setLoadingMessage] = useState<string>('')
 
     const {codigo: codigoMes, descricao: nomeMes}: IMesAtual = obterMesAtual();
+
+    const [message, setMessage] = useState('')
 
     const [filteredMembers, setFilteredMembers] = useState<FormValuesMember[]>([])
     const [filters, setFilters] = useState({
@@ -198,30 +209,22 @@ export default function BirthdaysV2() {
         }
     }
 
-    const mapMinisterios = (member: FormValuesMember) => {
+    const mapMinisterios = (member: FormValuesMember): string => {
         return ministerios
-            .filter((ministerio: MinistriesEntity) => member.ministerio.includes(ministerio._id))
-            .map((ministerio: MinistriesEntity): string => ministerio.nome ? ministerio.nome : '-').join(', ')
-    }
-
-    if (openLoading) {
-        return <Backdrop
-            sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
-            open={true}
-        >
-            <div className="flex flex-col items-center">
-                <CircularProgress color="inherit"/>
-                {openLoadingMessage}
-            </div>
-        </Backdrop>
-    }
+            .filter(
+                (ministerio: MinistriesEntity) =>
+                    member && member.ministerio && Array.isArray(member.ministerio) && ministerio._id && member.ministerio.includes(ministerio._id)
+            )
+            .map((ministerio: MinistriesEntity): string => (ministerio.nome ? ministerio.nome : '-'))
+            .join(', ');
+    };
 
     const mapearNomeMes = (codigo: string): string => {
         if (codigo === 'all') {
             return 'TODOS OS MESES';
         }
 
-        const meses = [
+        const meses: {codigo: number; descricao: string}[] = [
             {codigo: 1, descricao: 'Janeiro'},
             {codigo: 2, descricao: 'Fevereiro'},
             {codigo: 3, descricao: 'Março'},
@@ -236,7 +239,50 @@ export default function BirthdaysV2() {
             {codigo: 12, descricao: 'Dezembro'},
         ]
 
-        return meses[codigo - 1].descricao.toUpperCase();
+        return meses[parseInt(codigo, 10) - 1].descricao.toUpperCase();
+    }
+
+    const handleSendMessage = async (member: FormValuesMember) => {
+        setMessage('Enviando mensagem de parabéns');
+        setLoading(true);
+
+        try {
+            const payload: WhatsappMessageWithTwilioInput = {
+                nomeMembro: member.nome,
+                nomeCompanhia: 'Igreja Batista do Brooklin',
+                numeroWhatsapp: member.telefone,
+                linkAplicacao: '',
+                conteudoMensagem: message
+            }
+            UserApi.sendWhatsAppMessage(payload)
+                .then(() => {
+                    alert('Mensagem de parabéns enviado com sucesso!');
+                })
+                .catch(() => {
+                    alert('Erro ao enviar mensagem de parabéns, tente novamente');
+                })
+                .finally(() => {
+                    setMessage('');
+                    setMessage('');
+                    setLoading(false);
+                })
+        } catch (e) {
+            setMessage('');
+            setLoading(false);
+            setLoadingMessage('');
+        }
+    }
+
+    if (openLoading) {
+        return <Backdrop
+            sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
+            open={true}
+        >
+            <div className="flex flex-col items-center">
+                <CircularProgress color="inherit"/>
+                {openLoadingMessage}
+            </div>
+        </Backdrop>
     }
 
     return (
@@ -302,7 +348,7 @@ export default function BirthdaysV2() {
                                     value={filters.telefone}
                                     onChange={(e) => handleFilterChange('telefone', e.target.value)}
                                 >
-                                    {(inputProps: any) => <Input
+                                    {(inputProps: InputMaskProps) => <Input
                                         placeholder={"(99) 99999-9999"} {...inputProps} />}
                                 </InputMask>
                             </div>
@@ -400,16 +446,31 @@ export default function BirthdaysV2() {
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
-                                                            className="z-10" // Garante que o botão esteja sempre no topo
+                                                            className="z-10"
                                                         >
                                                             <MessageCircleIcon className="w-4 h-4 mr-2"/>
                                                             Enviar parabéns
                                                         </Button>
                                                     </DialogTrigger>
-                                                    <DialogContent>
+                                                    <DialogContent className="sm:max-w-[425px]">
                                                         <DialogHeader>
                                                             <DialogTitle>Enviar Parabéns ao membro: {member.nome}</DialogTitle>
+                                                            <DialogDescription>Mande uma mensagem parabenizando o membro</DialogDescription>
                                                         </DialogHeader>
+                                                        <div className="grid gap-4 py-4">
+                                                            <Textarea
+                                                                placeholder="Digite sua mensagem aqui..."
+                                                                value={message}
+                                                                onChange={(e) => setMessage(e.target.value)}
+                                                                className="min-h-[100px]"
+                                                            />
+                                                        </div>
+                                                        <DialogFooter>
+                                                            <Button type="submit" onClick={() => handleSendMessage(member)}>
+                                                                <SendIcon className="w-4 h-4 mr-2"/>
+                                                                Enviar
+                                                            </Button>
+                                                        </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
                                             </div>

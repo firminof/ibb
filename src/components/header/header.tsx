@@ -11,6 +11,11 @@ import Image from "next/image";
 import {useState} from "react";
 import {UserRoles} from "@/lib/helpers/helpers";
 import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
+import {UserIcon} from "lucide-react";
+import {UserApi} from "@/lib/api/user-api";
+import {formatUserV2, FormValuesMember} from "@/lib/models/user";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
+import * as React from "react";
 
 export function Header() {
     const useStoreIbbZus: IStore = useStoreIbb((state: IStore) => state);
@@ -19,6 +24,7 @@ export function Header() {
     const [signOut] = useSignOut(auth);
     const router = useRouter();
     const [menuOpen, setMenuOpen] = useState(false);
+    const [photo, setPhoto] = useState<string>('')
 
     const handleSignOut = (e: any) => {
         e.preventDefault();
@@ -39,8 +45,40 @@ export function Header() {
         } catch (e) {
             console.log('[TRY-CATCH] error: ', e);
         }
-
     }
+
+    const getUniqueMember = async (): Promise<void> => {
+        try {
+            if (useStoreIbbZus && useStoreIbbZus.mongoId.length === 24) {
+                UserApi.fetchMemberById(useStoreIbbZus.mongoId)
+                    .then((response: FormValuesMember) => {
+                        if (response) {
+                            const member: FormValuesMember = formatUserV2(response);
+                            setPhoto(member.foto);
+                        }
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                        switch (error.code) {
+                            case 'ERR_BAD_REQUEST':
+                                setPhoto('');
+                                break;
+                            case 'ERR_NETWORK':
+                                setPhoto('');
+                                break;
+
+                            default:
+                                setPhoto('');
+                                break;
+                        }
+                    })
+            }
+        } catch (e) {
+            setPhoto('');
+        }
+    }
+
+    getUniqueMember();
 
     return (
         <header className="bg-background border-b-2 border-border px-4 py-3 flex items-center justify-between sm:px-6">
@@ -109,18 +147,20 @@ export function Header() {
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button variant="ghost" size="icon" className="rounded-full">
-                                <img src={user && user.photoURL ? user.photoURL : '/vercel.svg'} width="32" height="32"
-                                     className="rounded-full" alt="User Avatar"/>
+                                <Avatar className="w-12 h-12">
+                                    <AvatarImage src={photo} alt={'Foto do membro'}/>
+                                    <AvatarFallback>{'IBB'}</AvatarFallback>
+                                </Avatar>
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-56 p-2 bg-background shadow-lg rounded-md right-0 sm:right-auto">
-                            {/*<Link*/}
-                            {/*    href="/user"*/}
-                            {/*    className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-accent hover:text-accent-foreground"*/}
-                            {/*>*/}
-                            {/*    <SettingsIcon className="w-4 h-4"/>*/}
-                            {/*    Minha conta*/}
-                            {/*</Link>*/}
+                            <Link
+                                href={`/user?id=${useStoreIbbZus.mongoId}`}
+                                className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-accent hover:text-accent-foreground"
+                            >
+                                <UserIcon className="w-4 h-4"/>
+                                Meu perfil
+                            </Link>
                             <Link
                                 href="#"
                                 className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-accent hover:text-accent-foreground"
