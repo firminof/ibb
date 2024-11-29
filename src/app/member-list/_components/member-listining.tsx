@@ -5,7 +5,6 @@ import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table"
 import {Checkbox} from "@/components/ui/checkbox"
-import {MemberTableData} from '@/lib/types/user'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog"
 import {Label} from "@/components/ui/label"

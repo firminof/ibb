@@ -243,7 +243,7 @@ export default function BirthdaysV2() {
         <div className="py-10">
             <section>
                 <div className="flex justify-between items-center">
-                    <h2 className="text-black text-2xl font-semibold mb-4 mt-4">Aniversariantes</h2>
+                    <h2 className="text-black text-2xl font-semibold mb-4 mt-4">Aniversariantes de {mapearNomeMes(filters.mesAniversario)}</h2>
 
                     <div className="space-y-2">
                         <Label htmlFor="mesAniversario">Mês de Aniversário</Label>

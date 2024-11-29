@@ -1,6 +1,6 @@
 import api from "@/lib/api/api";
-import {IInviteByEmail, IInviteEntity, ITempInvite} from "@/lib/models/invite";
-import {ITempUserCreate, ITempUserUpdate, UserV2} from "@/lib/models/user";
+import {IInviteByEmail, IInviteEntity} from "@/lib/models/invite";
+import {UserV2} from "@/lib/models/user";
 import {ICreateMinisterio, IEditMinisterio, IMinisteriosResponseApi} from "@/lib/models/misterios";
 import {IMinistries} from "@/lib/models/user-response-api";
 import {WhatsappMessageWithTwilioInput} from "@/lib/models/twilio-whatsapp";
@@ -76,12 +76,6 @@ export class UserApi {
         return user.data;
     }
 
-    static async updateInfo(body: string[]): Promise<any | undefined> {
-        const user = await api.post(`/v1/user/update-info`, body);
-
-        return user.data;
-    }
-
     static async sendInvite(body: IInviteByEmail): Promise<any | undefined> {
         const user = await api.post(`/v2/user/send-invite`, body);
 
@@ -89,12 +83,6 @@ export class UserApi {
     }
 
     static async fetchMinistries (): Promise<IMinistries[]> {
-        const user = await api.get(`/v1/ministrie/all`);
-
-        return user.data;
-    }
-
-    static async fetchMinistriesV2 (): Promise<IMinisteriosResponseApi[]> {
         const user = await api.get(`/v1/ministrie/all`);
 
         return user.data;
@@ -113,7 +101,6 @@ export class UserApi {
     }
 
     static async getUserByEmail(email: string): Promise<any> {
-        console.log('api: ', process.env.URL_BACKEND_LOCAL)
         const user = await api.get(`/v1/auth/find-user/${email}`);
 
         return user.data;
