@@ -1420,12 +1420,7 @@ export default function MemberForm() {
                                         <FormItem>
                                             <FormLabel>Número</FormLabel>
                                             <FormControl>
-                                                <InputMask
-                                                    value={field.value}
-                                                    onChange={field.onChange}
-                                                >
-                                                    {(inputProps: any) => <Input{...inputProps} />}
-                                                </InputMask>
+                                                <Input{...field} />
                                             </FormControl>
                                             <FormMessage/>
                                         </FormItem>

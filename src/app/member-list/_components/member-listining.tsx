@@ -912,7 +912,7 @@ export default function MemberListing() {
                                         <TableCell>{member.isDiacono ? 'Sim' : 'Não'}</TableCell>
                                         <TableCell>{mapMinisterios(member)}</TableCell>
                                         <TableCell>{member.diacono.nome}</TableCell>
-                                        <TableCell>{format(member.updatedAt, 'dd/MM/yyyy HH:MM:ss', {locale: ptBR})}</TableCell>
+                                        <TableCell>{format(member.updatedAt, 'dd/MM/yyyy HH:mm:ss', {locale: ptBR})}</TableCell>
 
 
                                         <TableCell>

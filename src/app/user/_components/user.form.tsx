@@ -654,12 +654,12 @@ export default function UserForm() {
                                                                 className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                                                                 <div className="flex items-center">
                                                                     <Send className="mr-2 h-4 w-4"/>
-                                                                    <span>{invitation.to}</span>
+                                                                    <span>{invitation.to === '' ? invitation.phone : invitation.to}</span>
                                                                 </div>
                                                                 <div
                                                                     className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                                                     <span className="text-sm text-muted-foreground">
-                                                        {format(invitation.createdAt, 'dd/MM/yyyy')}
+                                                        {format(invitation.createdAt, 'dd/MM/yyyy HH:mm:ss')}
                                                     </span>
                                                                     <span
                                                                         className={`text-sm text-muted-foreground px-2 py-1 rounded-full font-semibold ${invitation.isAccepted ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
@@ -724,6 +724,9 @@ export default function UserForm() {
                                         </div>
                                     </div>
                                 </div>
+                            </CardFooter>
+                            <CardFooter>
+                                Última atualização: {format(new Date(member.updatedAt), 'dd/MM/yyyy HH:mm:ss')}
                             </CardFooter>
                         </Card>
                     </>
