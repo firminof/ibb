@@ -397,7 +397,7 @@ export default function MemberForm() {
                                     name="nome"
                                     render={({field}) => (
                                         <FormItem>
-                                            <FormLabel>Nome</FormLabel>
+                                            <FormLabel>Nome *</FormLabel>
                                             <FormControl>
                                                 <Input {...field} />
                                             </FormControl>
@@ -414,7 +414,7 @@ export default function MemberForm() {
                                     name="cpf"
                                     render={({field}) => (
                                         <FormItem>
-                                            <FormLabel>CPF</FormLabel>
+                                            <FormLabel>CPF *</FormLabel>
                                             <FormControl>
                                                 <InputMask
                                                     mask="999.999.999-99"
@@ -436,7 +436,7 @@ export default function MemberForm() {
                                     name="rg"
                                     render={({field}) => (
                                         <FormItem>
-                                            <FormLabel>RG</FormLabel>
+                                            <FormLabel>RG *</FormLabel>
                                             <FormControl>
                                                 <InputMask
                                                     mask="999.999.999"
@@ -460,7 +460,7 @@ export default function MemberForm() {
                                     name="email"
                                     render={({field}) => (
                                         <FormItem>
-                                            <FormLabel>Email</FormLabel>
+                                            <FormLabel>Email *</FormLabel>
                                             <FormControl>
                                                 <Input type="email" {...field} placeholder={"jhon@email.com"}/>
                                             </FormControl>
@@ -473,7 +473,7 @@ export default function MemberForm() {
                                     name="telefone"
                                     render={({field}) => (
                                         <FormItem>
-                                            <FormLabel>Telefone</FormLabel>
+                                            <FormLabel>Telefone *</FormLabel>
                                             <FormControl>
                                                 <InputMask
                                                     mask="(99) 99999-9999"
@@ -496,7 +496,7 @@ export default function MemberForm() {
                                 name="dataNascimento"
                                 render={({field}) => (
                                     <FormItem className="flex flex-col">
-                                        <FormLabel>Data de Nascimento</FormLabel>
+                                        <FormLabel>Data de Nascimento *</FormLabel>
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
@@ -553,7 +553,7 @@ export default function MemberForm() {
                                         name="role"
                                         render={({field}) => (
                                             <FormItem className="space-y-3">
-                                                <FormLabel>Nível de Acesso</FormLabel>
+                                                <FormLabel>Nível de Acesso *</FormLabel>
                                                 <FormControl>
                                                     <RadioGroup
                                                         onValueChange={field.onChange}
@@ -968,7 +968,7 @@ export default function MemberForm() {
                                 name="informacoesPessoais.estadoCivil"
                                 render={({field}) => (
                                     <FormItem>
-                                        <FormLabel>Estado Civil</FormLabel>
+                                        <FormLabel>Estado Civil *</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl>
                                                 <SelectTrigger>
@@ -1041,7 +1041,7 @@ export default function MemberForm() {
                                                     name="informacoesPessoais.casamento.conjugue.id"
                                                     render={({field}) => (
                                                         <FormItem>
-                                                            <FormLabel>Selecione o(a) cônjugue</FormLabel>
+                                                            <FormLabel>Selecione o(a) cônjugue *</FormLabel>
                                                             <Select onValueChange={field.onChange}
                                                                     defaultValue={field.value}>
                                                                 <FormControl>
@@ -1070,7 +1070,7 @@ export default function MemberForm() {
                                                     name="informacoesPessoais.casamento.conjugue.nome"
                                                     render={({field}) => (
                                                         <FormItem>
-                                                            <FormLabel>Cônjuge</FormLabel>
+                                                            <FormLabel>Cônjuge *</FormLabel>
                                                             <FormControl>
                                                                 <Input {...field}
                                                                        placeholder="Digite o nome do(a) cônjuge"/>
@@ -1087,7 +1087,7 @@ export default function MemberForm() {
                                                 name="informacoesPessoais.casamento.dataCasamento"
                                                 render={({field}) => (
                                                     <FormItem className="flex flex-col">
-                                                        <FormLabel>Data do Casamento</FormLabel>
+                                                        <FormLabel>Data do Casamento *</FormLabel>
                                                         <Popover>
                                                             <PopoverTrigger asChild>
                                                                 <FormControl>
@@ -1139,7 +1139,7 @@ export default function MemberForm() {
                                 name="informacoesPessoais.temFilhos"
                                 render={({field}) => (
                                     <FormItem className="space-y-3">
-                                        <FormLabel>Tem filhos?</FormLabel>
+                                        <FormLabel>Tem filhos? *</FormLabel>
                                         <FormControl>
                                             <RadioGroup
                                                 onValueChange={field.onChange}

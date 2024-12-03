@@ -175,7 +175,6 @@ export function LoginForm() {
 
                     setTimeout(() => setEmailForgotPass(email), 500);
                     setTimeout(() => handleForgotPassword(e), 1000);
-
                 })
                 .catch((error) => {
                     console.log(error);
@@ -183,10 +182,14 @@ export function LoginForm() {
 
                     setShowErrorLogin(true);
                     if (!error.response.data || error.response.data.message === '') {
-                        setErrorMessage('Erro inesperado, tente novamente!');
+                        setErrorMessage('Algo inesperado acontecer, recarregue a página e tente novamente!');
                         return;
                     }
-                    setErrorMessage(error.response.data.message);
+
+                    if (error.response.data.message.toString().includes('There is no user record corresponding to the provided identifier')) {
+                        setErrorMessage('Membro não cadastrado, solicite um convite para fazer parte da nossa comunidade');
+                        return;
+                    }
                 })
                 .finally(() => {
                     setOpenBackLoading(false);
@@ -199,6 +202,16 @@ export function LoginForm() {
             setShowFieldPassword(false);
 
             setShowErrorLogin(true);
+
+            if (error.response.data.message.toString().includes('There is no user record corresponding to the provided identifier')) {
+                setErrorMessage('Membro não cadastrado, solicite um convite para fazer parte da nossa comunidade');
+                return;
+            }
+
+            if (error.response.data.message.toString() === ''){
+                setErrorMessage('Algo inesperado acontecer, recarregue a página e tente novamente');
+                return;
+            }
             setErrorMessage(error.response.data.message);
         }
     }

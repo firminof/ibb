@@ -52,7 +52,7 @@ export function PasswordSection({ password, setPassword, confirmPassword, setCon
 
             <CardContent className="space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="password">Senha</Label>
+                    <Label htmlFor="password">Senha *</Label>
                     <div className="relative">
                         <Input
                             id="password"
@@ -76,7 +76,7 @@ export function PasswordSection({ password, setPassword, confirmPassword, setCon
                     </div>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirme a Senha</Label>
+                    <Label htmlFor="confirmPassword">Confirme a Senha *</Label>
                     <Input
                         id="confirmPassword"
                         type={showPassword ? "text" : "password"}
