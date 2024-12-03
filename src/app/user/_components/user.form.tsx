@@ -21,7 +21,7 @@ import {
     MapPin, MessageCircleIcon,
     Phone,
     Send, SendIcon,
-    Skull,
+    Skull, Trash2,
     UserMinus,
     UserPlus,
     Users,
@@ -59,6 +59,15 @@ import {
     DialogTrigger
 } from "@/components/ui/dialog";
 import {Textarea} from "@/components/ui/textarea";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 
 // Registrar o local (se necessário)
 registerLocale("pt-BR", ptBR);
@@ -260,9 +269,13 @@ export default function UserForm() {
         }
     }, [useStoreIbbZus.hasHydrated])
 
-    useEffect(() => {
+    const reloadUser = () => {
         getAllMembersDiaconos();
         getAllInvites();
+    }
+
+    useEffect(() => {
+        reloadUser();
     }, [member]);
 
     const groupedHistory = member?.historico.reduce((acc, change) => {
@@ -323,7 +336,7 @@ export default function UserForm() {
                 .join('; ');
         }
 
-        if (String(value).includes('data:image/png;base64')){
+        if (String(value).includes('data:image/png;base64')) {
             return 'FOTO DE PERFIL ATUALIZADA!';
         }
         // Converte para string para os demais tipos de dados
@@ -369,6 +382,31 @@ export default function UserForm() {
                     setMessage('');
                     setMessage('');
                     setLoading(false);
+                })
+        } catch (e) {
+            setMessage('');
+            setLoading(false);
+            setLoadingMessage('');
+        }
+    }
+
+    const handleDeleteInvite = (id: string) => {
+        setMessage('Excluindo convite');
+        setLoading(true);
+
+        try {
+            UserApi.deleteInvite(id)
+                .then(() => {
+                    alert('Convite excluído com sucesso!');
+                })
+                .catch(() => {
+                    alert('Erro ao excluir o convite , tente novamente');
+                })
+                .finally(() => {
+                    setMessage('');
+                    setMessage('');
+                    setLoading(false);
+                    reloadUser();
                 })
         } catch (e) {
             setMessage('');
@@ -457,7 +495,8 @@ export default function UserForm() {
                                         <DialogContent className="sm:max-w-[425px]">
                                             <DialogHeader>
                                                 <DialogTitle>Pedir oração ao diácono/diaconisa</DialogTitle>
-                                                <DialogDescription>Digite abaixo sua mensagem explicando seu pedido de oração</DialogDescription>
+                                                <DialogDescription>Digite abaixo sua mensagem explicando seu pedido de
+                                                    oração</DialogDescription>
                                             </DialogHeader>
                                             <div className="grid gap-4 py-4">
                                                 <Textarea
@@ -626,7 +665,8 @@ export default function UserForm() {
                                         <div className="flex items-start">
                                             <MapPin className="mr-2 h-4 w-4 mt-1"/>
                                             <div>
-                                                Rua: {member.endereco.rua ? member.endereco.rua : '-'}, Número: {member.endereco.numero ? member.endereco.numero : '-'}
+                                                Rua: {member.endereco.rua ? member.endereco.rua : '-'},
+                                                Número: {member.endereco.numero ? member.endereco.numero : '-'}
                                                 {member.endereco.complemento && `, ${member.endereco.complemento}`}<br/>
                                                 Bairro: {member.endereco.bairro ? member.endereco.bairro : '-'}<br/>
                                                 Cidade: {member.endereco.cidade ? member.endereco.cidade : '-'}<br/>
@@ -658,13 +698,40 @@ export default function UserForm() {
                                                                 </div>
                                                                 <div
                                                                     className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                                                    <span className="text-sm text-muted-foreground">
-                                                        {format(invitation.createdAt, 'dd/MM/yyyy HH:mm:ss')}
-                                                    </span>
+                                                                    <span className="text-sm text-muted-foreground">
+                                                                        {format(invitation.createdAt, 'dd/MM/yyyy HH:mm:ss')}
+                                                                    </span>
+
                                                                     <span
                                                                         className={`text-sm text-muted-foreground px-2 py-1 rounded-full font-semibold ${invitation.isAccepted ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
-                                                        {invitation.isAccepted ? 'CONVITE ACEITO' : 'CONVITE PENDENTE DE ACEITAÇÃO'}
-                                                    </span>
+                                                                        {invitation.isAccepted ? 'CONVITE ACEITO' : 'CONVITE PENDENTE DE ACEITAÇÃO'}
+                                                                    </span>
+                                                                    <span>
+                                                                        <AlertDialog>
+                                                                            <AlertDialogTrigger asChild>
+                                                                                <Button variant="outline" size="icon">
+                                                                                    <Trash2 className="h-4 w-4"/>
+                                                                                </Button>
+                                                                            </AlertDialogTrigger>
+                                                                            <AlertDialogContent>
+                                                                                <AlertDialogHeader>
+                                                                                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                                                                                    <AlertDialogDescription>
+                                                                                        Tem certeza que deseja excluir o convite para: <b>{invitation.to === '' ? invitation.phone : invitation.to}</b>?
+                                                                                        <br/>
+                                                                                        <br/>
+                                                                                        Esta ação não pode ser desfeita.
+                                                                                    </AlertDialogDescription>
+                                                                                </AlertDialogHeader>
+                                                                                <AlertDialogFooter>
+                                                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                                    <AlertDialogAction onClick={() => handleDeleteInvite(invitation._id)}>
+                                                                                        Confirmar
+                                                                                    </AlertDialogAction>
+                                                                                </AlertDialogFooter>
+                                                                            </AlertDialogContent>
+                                                                        </AlertDialog>
+                                                                    </span>
                                                                 </div>
                                                             </li>
                                                             {
@@ -700,13 +767,16 @@ export default function UserForm() {
                                                                     <div className="flex justify-between items-start">
                                                                         <div className="space-y-2">
                                                                             <p className="font-medium text-gray-900 dark:text-gray-100">
-                                                                                <b>Campo alterado:</b> {formatFieldName(change.chave)}
+                                                                                <b>Campo
+                                                                                    alterado:</b> {formatFieldName(change.chave)}
                                                                             </p>
                                                                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                                                <b>Valor anterior:</b> {formatValue(change.antigo)}
+                                                                                <b>Valor
+                                                                                    anterior:</b> {formatValue(change.antigo)}
                                                                             </p>
                                                                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                                                <b>Novo valor:</b> {formatValue(change.novo)}
+                                                                                <b>Novo
+                                                                                    valor:</b> {formatValue(change.novo)}
                                                                             </p>
                                                                         </div>
                                                                         <p className="text-xs text-gray-400 dark:text-gray-500">
@@ -719,7 +789,8 @@ export default function UserForm() {
                                                     </div>
                                                 ))
                                             ) : (
-                                                <p className="text-gray-500 dark:text-gray-400">Nenhuma alteração recente.</p>
+                                                <p className="text-gray-500 dark:text-gray-400">Nenhuma alteração
+                                                    recente.</p>
                                             )}
                                         </div>
                                     </div>

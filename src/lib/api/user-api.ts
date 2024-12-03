@@ -53,7 +53,7 @@ export class UserApi {
     }
 
     static async createMemberByInvite(body: UserV2, inviteId: string, password: string): Promise<any | undefined> {
-        const user = await api.post(`/v2/user/accept-invite/${inviteId}/${password}`, body);
+        const user = await api.post(`/v2/user/accept-invite/${password}/${inviteId}`, body);
 
         return user.data;
     }
@@ -121,6 +121,12 @@ export class UserApi {
     static async sendWhatsAppMessagePedirOracao(body: WhatsappMessageWithTwilioInput, membro: string): Promise<any | undefined> {
         console.log(`/v2/user/whatsapp/send-message/pedir-oracao/${membro}`)
         const user = await api.post(`/v2/user/whatsapp/send-message/pedir-oracao/${membro}`, body);
+
+        return user.data;
+    }
+
+    static async deleteInvite(id: string): Promise<any | undefined> {
+        const user = await api.delete(`/v2/user/invite/${id}`);
 
         return user.data;
     }
