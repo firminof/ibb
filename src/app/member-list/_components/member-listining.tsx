@@ -7,7 +7,14 @@ import {Input} from "@/components/ui/input"
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table"
 import {Checkbox} from "@/components/ui/checkbox"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
-import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger
+} from "@/components/ui/dialog"
 import {Label} from "@/components/ui/label"
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from "@/components/ui/accordion"
 import {Edit, Eye, Filter, RefreshCw, Trash, UserCog, ViewIcon} from 'lucide-react'
@@ -19,7 +26,7 @@ import {SafeParseError, SafeParseSuccess, ZodIssue} from "zod"
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form"
 import {FormValuesMember, FormValuesUniqueMember, statusColors, StatusEnumV2, UserRoles} from "@/lib/models/user";
 import InputMask from "react-input-mask";
-import {ChevronLeftIcon} from "@radix-ui/react-icons";
+import {ArrowRightIcon, ChevronLeftIcon} from "@radix-ui/react-icons";
 import {PlusIcon} from "@/components/plus-icon/plus-icon";
 import {useRouter} from "next/navigation";
 import {UserApi} from "@/lib/api/user-api";
@@ -29,6 +36,11 @@ import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Backdrop, CircularProgress} from "@mui/material";
 import ptBR from "date-fns/locale/pt-BR";
 import {Card, CardContent} from "@/components/ui/card";
+import {SendIcon} from "@/components/send-icon/send-icon";
+import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group";
+import {EmailInput, PhoneInput} from "@/components/form-inputs/form-inputs";
+import {emailRegex} from "@/lib/helpers/helpers";
+import {IInviteByEmail} from "@/lib/models/invite";
 
 // Status validation schema
 const statusUpdateSchema = z.object({
@@ -103,6 +115,12 @@ export default function MemberListing() {
         resolver: zodResolver(statusUpdateSchema),
     });
 
+    const [isSuccessSendInvite, setIsSuccessSendInvite] = useState(false);
+    const [isModeInviteEmail, setIsModeInviteEmail] = useState(true);
+    const [email, setEmail] = useState('');
+    const [whatsapp, setWhatsapp] = useState('');
+    const [openDialogInvite, setOpenDialogInvite] = useState(false);
+
     useEffect(() => {
         const filtered: FormValuesMember[] = membros.filter(member =>
             member.nome.toLowerCase().includes(filters.nome.toLowerCase()) &&
@@ -126,6 +144,7 @@ export default function MemberListing() {
         setLoading(true);
         setLoadingMessage('Excluindo membro...');
         console.log('Deleting members:', selectedMembers)
+
         Promise.all(
             selectedMembers.map((member: string) => {
                 return UserApi.deleteMember(member);
@@ -138,12 +157,11 @@ export default function MemberListing() {
                 alert(`${selectedMembers.length === 1 ? 'Erro ao excluir o membro!' : 'Sucesso ao excluir os membros!'}`)
             })
             .finally(() => {
+                setLoading(false);
+                setLoadingMessage('');
                 getAllMembers();
                 setSelectedMembers([]);
             });
-
-        setLoading(false);
-        setLoadingMessage('');
     }
 
     const handleRequestUpdate = () => {
@@ -190,6 +208,61 @@ export default function MemberListing() {
 
     const handleReloadTable = () => {
         fetchMembers()
+    }
+
+    const handleConvidarMembro = async (e: any) => {
+        e.preventDefault();
+        setLoading(true);
+        setLoadingMessage(`Enviando convite ${isModeInviteEmail ? 'por email' : 'por WhatsApp'}`);
+
+        try {
+            if (isModeInviteEmail) {
+                const validateEmail = emailRegex.test(email);
+
+                if (!validateEmail) {
+                    alert('Email inválido, insira um corretamente!');
+
+                    setOpenDialogInvite(false);
+                    setIsSuccessSendInvite(true);
+
+                    setLoading(false);
+                    setLoadingMessage('');
+                    return;
+                }
+            }
+
+            const body: IInviteByEmail = {
+                to: email,
+                subject: 'Convite para membresia',
+                text: 'Você está sendo convidado para fazer parte da Igreja Batista do Brooklink',
+                requestName: '',
+                phone: whatsapp,
+                memberIdRequested: useStoreIbbZus.mongoId
+            };
+
+            const sendingEmail = await UserApi.sendInvite(body)
+
+            if (sendingEmail) {
+                setOpenDialogInvite(false);
+                setIsSuccessSendInvite(true);
+                setEmail('');
+                setIsModeInviteEmail(true);
+                setWhatsapp('');
+            }
+
+            setLoading(false);
+            setLoadingMessage('');
+        } catch (error) {
+            console.log('[TRY-CATCH] error: ', error);
+            setOpenDialogInvite(false);
+            setIsSuccessSendInvite(false);
+            setEmail('');
+            setIsModeInviteEmail(true);
+            setWhatsapp('');
+
+            setLoading(false);
+            setLoadingMessage('');
+        }
     }
 
     const handleStatusChange = (member: FormValuesMember) => {
@@ -462,11 +535,85 @@ export default function MemberListing() {
 
                 <div className="flex justify-between items-center">
                     <h2 className="text-black text-3xl font-semibold mb-4 mt-4">Membros</h2>
-                    <Button size="sm" className="font-bold sm:inline-flex md:inline-flex"
-                            onClick={() => router.push('/member')}>
-                        <PlusIcon className="w-4 h-4 mr-1"/>
-                        Adicionar Membro
-                    </Button>
+                    <div className="flex justify-end items-center gap-4">
+                        <Button size="sm" className="font-bold sm:inline-flex md:inline-flex"
+                                onClick={() => router.push('/member')}>
+                            <PlusIcon className="w-4 h-4 mr-1"/>
+                            Adicionar Membro
+                        </Button>
+
+                        <Dialog open={openDialogInvite} onOpenChange={setOpenDialogInvite}>
+                            <DialogTrigger asChild>
+                                <Button variant="outline" size="sm"
+                                        className="border-2 font-bold sm:inline-flex md:inline-flex"
+                                        onClick={() => setOpenDialogInvite(true)}>
+                                    <SendIcon className="w-4 h-4 mr-1"/>
+                                    Convidar Membro
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>Convidar Membro</DialogTitle>
+                                    <DialogDescription>
+                                        <div className="flex flex-col justify-items-start space-x-2 gap-3">
+                                            <Label htmlFor="opcao_convite">Escolha como enviar o convite ao membro</Label>
+                                            <RadioGroup id='opcao_convite'
+                                                        onValueChange={(value: string) => setIsModeInviteEmail(value.includes('email'))}
+                                                        defaultValue={'email'}
+                                                        className="text-black"
+                                            >
+                                                <div className="flex items-center space-x-2">
+                                                    <RadioGroupItem value="email" id="email"/>
+                                                    <Label htmlFor="email">Email</Label>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <RadioGroupItem value="whatsapp" id="whatsapp"/>
+                                                    <Label htmlFor="whatsapp">WhatsApp</Label>
+                                                </div>
+                                            </RadioGroup>
+                                        </div>
+
+                                        {
+                                            isModeInviteEmail ? (
+                                                <p className="flex mt-4">
+                                                    Será enviado um email para o membro solicitando que aceite e atualize as
+                                                    informações de membresia.
+                                                </p>
+                                            ) : (
+                                                <p className="flex mt-4">
+                                                    Será enviado um link para o WhatsApp do membro solicitando que aceite e
+                                                    atualize as informações de membresia.
+                                                </p>
+                                            )
+                                        }
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="flex items-center space-x-2">
+                                    <div className="grid flex-1 gap-2">
+                                        {
+                                            isModeInviteEmail ? (
+                                                <EmailInput
+                                                    id="convite_email"
+                                                    onChange={(e: any) => setEmail(e.target.value)}/>
+                                            ) : (
+                                                <PhoneInput
+                                                    id="convite_whatsapp"
+                                                    required
+                                                    onChange={(e: any) => setWhatsapp(e.target.value)}/>
+                                            )
+                                        }
+
+                                    </div>
+                                    <Button type="submit" size="sm" className="px-3"
+                                            disabled={isModeInviteEmail ? email.length === 0 || !emailRegex.test(email) : whatsapp.length == 0}
+                                            onClick={(e) => handleConvidarMembro(e)}>
+                                        Convidar
+                                        <ArrowRightIcon className="w-4 h-4 ml-1"/>
+                                    </Button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                 </div>
             </section>
 
@@ -917,11 +1064,11 @@ export default function MemberListing() {
 
                                         <TableCell>
                                             <div className="flex space-x-2">
-                                                <Button variant="ghost" size="sm"
+                                                <Button variant="outline" size="icon"
                                                         onClick={() => router.push(`/user?id=${member._id.toString()}`)}>
                                                     <Eye className="h-4 w-4"/>
                                                 </Button>
-                                                <Button variant="ghost" size="sm"
+                                                <Button variant="outline" size="icon"
                                                         onClick={() => router.push(`/member?id=${member._id.toString()}`)}>
                                                     <Edit className="h-4 w-4"/>
                                                 </Button>

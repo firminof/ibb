@@ -61,6 +61,7 @@ export default function MemberForm() {
 
     const [openLoading, setLoading] = useState<boolean>(false);
     const [openLoadingMessage, setLoadingMessage] = useState<string>('');
+    const [error, setError] = useState<string | null>(null);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -80,12 +81,12 @@ export default function MemberForm() {
             // `result.error` contém os detalhes dos erros
             const errors = result.error.format();
             console.log("Erros encontrados:", errors);
+            setLoading(false);
+            setLoadingMessage('');
+            alert(error)
             return errors;
         }
 
-
-        // Here you would typically send the data to your backend
-        console.log('Form submitted with data:', {...data, foto: photo})
 
         try {
             const {_id, ...dataToCreate} = {...data, foto: photo}
@@ -115,7 +116,21 @@ export default function MemberForm() {
     }
 
     const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0]
+        const file = event.target.files?.[0];
+
+        // Limpar mensagens de erro
+        setError(null);
+
+        if (!file) return;
+
+        // Verificar tamanho máximo do arquivo (1MB)
+        const maxSize = 1.2 * 1024 * 1024; // 1.3MB em bytes
+        if (file.size > maxSize) {
+            setError("A imagem deve ter tamanho máximo de 1.2MB");
+            alert("A imagem deve ter tamanho máximo de 1.2MB")
+            return;
+        }
+
         if (file) {
             const reader = new FileReader()
             reader.onloadend = () => {
@@ -374,9 +389,8 @@ export default function MemberForm() {
                                                 className="w-32 h-32 rounded-full object-cover border-2 border-zinc-800 border-solid p-1"
                                             />
                                         )}
-                                        <Label htmlFor="photo-upload"
-                                               className="cursor-pointer flex flex-col items-center">
-                                            <CameraIcon className="w-12 h-12"/>
+                                        <Label htmlFor="photo-upload" className="cursor-pointer flex flex-col items-center">
+                                            <CameraIcon className="w-12 h-12" />
                                             <span className="sr-only">Upload foto</span>
                                         </Label>
                                         <Input
@@ -386,6 +400,8 @@ export default function MemberForm() {
                                             className="hidden"
                                             onChange={handlePhotoUpload}
                                         />
+                                        {/* Exibir mensagem de erro */}
+                                        {error && <p className="text-red-500 text-sm">{error}</p>}
                                     </div>
                                 </div>
                             </div>

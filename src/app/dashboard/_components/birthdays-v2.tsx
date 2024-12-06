@@ -243,8 +243,8 @@ export default function BirthdaysV2() {
     }
 
     const handleSendMessage = async (member: FormValuesMember) => {
-        setMessage('Enviando mensagem de parabéns');
         setLoading(true);
+        setLoadingMessage('Enviando mensagem de parabéns');
 
         try {
             const payload: WhatsappMessageWithTwilioInput = {
@@ -435,7 +435,7 @@ export default function BirthdaysV2() {
 
 
                                         <TableCell>
-                                            <Button variant="ghost" size="sm"
+                                            <Button variant="outline" size="icon"
                                                     onClick={() => router.push(`/user?id=${member._id.toString()}`)}>
                                                 <Eye className="h-4 w-4"/>
                                             </Button>

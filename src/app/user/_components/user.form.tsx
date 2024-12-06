@@ -13,7 +13,7 @@ import {
     Calendar,
     Edit,
     Eye,
-    Heart,
+    Heart, Info,
     ListIcon,
     LogIn,
     LogOut,
@@ -68,6 +68,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
+import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 
 // Registrar o local (se necessário)
 registerLocale("pt-BR", ptBR);
@@ -694,7 +695,17 @@ export default function UserForm() {
                                                                 className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                                                                 <div className="flex items-center">
                                                                     <Send className="mr-2 h-4 w-4"/>
-                                                                    <span>{invitation.to === '' ? invitation.phone : invitation.to}</span>
+                                                                    <span>{invitation.to === '' ? `${invitation.phone}` : invitation.to}</span>
+                                                                    <Popover>
+                                                                        <PopoverTrigger asChild>
+                                                                            <Button variant="ghost" size="icon" className="ml-2">
+                                                                                <Info className="h-4 w-4" />
+                                                                            </Button>
+                                                                        </PopoverTrigger>
+                                                                        <PopoverContent className="w-auto">
+                                                                            <p className="text-sm">ID do Convite: {invitation._id}</p>
+                                                                        </PopoverContent>
+                                                                    </Popover>
                                                                 </div>
                                                                 <div
                                                                     className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">

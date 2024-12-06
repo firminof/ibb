@@ -30,6 +30,12 @@ export class UserApi {
         return user.data;
     }
 
+    static async fetchInviteInfo(id: string): Promise<IInviteEntity> {
+        const user = await api.get(`/v2/user/invite/info/${id}`);
+
+        return user.data;
+    }
+
     static async fetchBirthdaysMembers(month: number): Promise<any | undefined> {
         return await api.get(`/v2/user/birthdays-month/${month}`);
     }
