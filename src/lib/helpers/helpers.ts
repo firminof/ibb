@@ -116,3 +116,58 @@ export const formatDateShort = (date: string) => {
     }
     return new Date(formatDate(new Date(date).setDate(new Date(date).getDate() + 1), 'yyyy-MM-dd', {locale: ptBR}))
 }
+
+export async function compressBase64Image(
+    base64Image: string,
+    maxWidth: number,
+    quality: number
+): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            if (!ctx) {
+                reject('Erro ao criar contexto do Canvas.');
+                return;
+            }
+
+            // Calcular escala mantendo a proporção
+            const scale = maxWidth / img.width;
+            const newWidth = maxWidth;
+            const newHeight = img.height * scale;
+
+            // Configurar tamanho do canvas
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+
+            // Desenhar imagem no canvas
+            ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+            // Exportar como Base64 comprimido no formato JPEG
+            canvas.toBlob(
+                (blob) => {
+                    if (!blob) {
+                        reject('Erro ao criar Blob.');
+                        return;
+                    }
+
+                    // Ler o Blob como Base64
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.onerror = (err) => reject(err);
+                    reader.readAsDataURL(blob);
+                },
+                'image/jpeg', // Formato de saída
+                quality // Qualidade da compressão (0 a 1)
+            );
+        };
+
+        img.onerror = (err) => reject(err);
+
+        // Configurar a origem da imagem como o Base64 fornecido
+        img.src = base64Image;
+    });
+}

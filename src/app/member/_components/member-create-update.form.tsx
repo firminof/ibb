@@ -38,6 +38,7 @@ import {
 import {UserApi} from "@/lib/api/user-api";
 import {IMinistries} from "@/lib/models/user-response-api";
 import {RefinementCtx, SafeParseError, SafeParseSuccess, ZodIssue} from "zod";
+import {compressBase64Image} from "@/lib/helpers/helpers";
 
 // Registrar o local (se necessário)
 registerLocale("pt-BR", ptBR);
@@ -123,21 +124,30 @@ export default function MemberForm() {
 
         if (!file) return;
 
-        // Verificar tamanho máximo do arquivo (1MB)
-        const maxSize = 1.2 * 1024 * 1024; // 1.3MB em bytes
+        // Verificar tamanho máximo do arquivo (500 KB)
+        const maxSize = 0.5 * 1024 * 1024; // 500 KB em bytes
         if (file.size > maxSize) {
-            setError("A imagem deve ter tamanho máximo de 1.2MB");
-            alert("A imagem deve ter tamanho máximo de 1.2MB")
+            setError("A imagem deve ter tamanho máximo de 500 KB");
+            alert("A imagem deve ter tamanho máximo de 500 KB")
             return;
         }
 
-        if (file) {
-            const reader = new FileReader()
-            reader.onloadend = () => {
-                setPhoto(reader.result as string)
+        // Ler a imagem como Base64
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const base64Image = e.target?.result as string;
+
+            try {
+                // Compactar a imagem para largura máxima de 800px e qualidade de 60%
+                const compressed = await compressBase64Image(base64Image, 800, 0.6);
+                setPhoto(compressed);
+            } catch (error) {
+                alert('Atenção: somente arquivo de imagem é permitido!')
+                console.error('Erro ao compactar a imagem:', error);
             }
-            reader.readAsDataURL(file)
-        }
+        };
+
+        reader.readAsDataURL(file);
     }
 
     useEffect(() => {
