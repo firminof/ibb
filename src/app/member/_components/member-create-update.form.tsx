@@ -28,7 +28,7 @@ import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
 import {Backdrop, CircularProgress} from "@mui/material";
 import {
     CivilStateEnumV2,
-    dataForm, formatUserV2,
+    dataForm, FormaIngressoEnumV2, formatUserV2,
     formSchema,
     FormValuesMember,
     FormValuesUniqueMember,
@@ -90,8 +90,21 @@ export default function MemberForm() {
 
 
         try {
-            const {_id, ...dataToCreate} = {...data, foto: photo}
+            let {_id, ...dataToCreate} = {...data, foto: photo}
             console.log('dataToCreate: ', dataToCreate)
+
+            if (dataToCreate.informacoesPessoais.temFilhos && dataToCreate.informacoesPessoais.filhos.length === 0) {
+                alert('Adicione pelo menos 1 filho se a opção Tem Filho está como SIM.');
+                setLoading(false);
+                setLoadingMessage('');
+                return
+            }
+
+            if (!dataToCreate.informacoesPessoais.casamento.conjugue?.isMember) {
+                if (dataToCreate.informacoesPessoais.casamento.conjugue && dataToCreate.informacoesPessoais.casamento.conjugue.nome) {
+                    dataToCreate.informacoesPessoais.casamento.conjugue.id = '';
+                }
+            }
 
             if (idMembro && idMembro.length > 0) {
                 await UserApi.updateMember(idMembro, dataToCreate)
@@ -258,7 +271,8 @@ export default function MemberForm() {
                                 "isMember": true,
                                 "id": diacono._id.toString()
                             }
-                        ))
+                        )).filter((diacono: FormValuesUniqueMember) => diacono.id != idMembro)
+
                         setDiaconos(mapDiaconos);
                         return;
                     }
@@ -694,9 +708,23 @@ export default function MemberForm() {
                                                     render={({field}) => (
                                                         <FormItem>
                                                             <FormLabel>Forma de Ingresso</FormLabel>
-                                                            <FormControl>
-                                                                <Input {...field} />
-                                                            </FormControl>
+                                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                <FormControl>
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder="Selecione a forma de ingresso"/>
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    {Object.values(FormaIngressoEnumV2).map((formaIngresso: string) => (
+                                                                        <SelectItem key={formaIngresso} value={formaIngresso}>
+                                                                            {formaIngresso}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                            {/*<FormControl>*/}
+                                                            {/*    <Input {...field} />*/}
+                                                            {/*</FormControl>*/}
                                                             <FormMessage/>
                                                         </FormItem>
                                                     )}
@@ -1166,6 +1194,7 @@ export default function MemberForm() {
                                 render={({field}) => (
                                     <FormItem className="space-y-3">
                                         <FormLabel>Tem filhos? *</FormLabel>
+                                        <FormMessage/>
                                         <FormControl>
                                             <RadioGroup
                                                 onValueChange={field.onChange}
@@ -1192,7 +1221,6 @@ export default function MemberForm() {
                                                 </FormItem>
                                             </RadioGroup>
                                         </FormControl>
-                                        <FormMessage/>
                                     </FormItem>
                                 )}
                             />

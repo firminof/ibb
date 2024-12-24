@@ -105,6 +105,13 @@ export default function InviteV2Form() {
             }
 
             if (inviteId && inviteId.length > 0 && password === confirmPassword) {
+                if (dataToCreate.informacoesPessoais.temFilhos && dataToCreate.informacoesPessoais.filhos.length === 0) {
+                    alert('Adicione pelo menos 1 filho se a opção "Tem Filho" está como SIM.');
+                    setLoading(false);
+                    setLoadingMessage('');
+                    return
+                }
+
                 await UserApi.createMemberByInvite(dataToCreate, inviteId, password)
                 alert('Membro cadastrado com sucesso!')
                 setLoading(false)

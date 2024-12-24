@@ -60,6 +60,13 @@ export enum CivilStateEnumV2 {
     VIUVO = 'viuvo',
 }
 
+export enum FormaIngressoEnumV2 {
+    TRANSFERENCIA = 'Transferência de Igreja da mesma Denominação',
+    ACLAMACAO = 'Aclamação de Igrejas de outras Denominação',
+    BATISMO = 'Batismo',
+    RECONCILIACAO = 'Reconciliação',
+}
+
 export interface UserAddressV2 {
     rua: string
     numero: string
@@ -253,7 +260,7 @@ export const formSchema = z
                 }),
             }),
             casamento: z.object({
-                conjugue: memberSchema.nullable(), // Permite nulo, mas será validado em `superRefine`
+                conjugue: memberSchema.nullable(),
                 dataCasamento: parseDate,
             }),
             temFilhos: z.boolean(),
@@ -318,8 +325,7 @@ export const formSchema = z
                 ) {
                     ctx.addIssue({
                         path: ["transferencia"],
-                        message:
-                            "Para membros transferidos, os campos de transferência são obrigatórios.",
+                        message: "Para membros transferidos, os campos de transferência são obrigatórios.",
                     });
                 }
             },
@@ -331,8 +337,7 @@ export const formSchema = z
                 ) {
                     ctx.addIssue({
                         path: ["falecimento"],
-                        message:
-                            "Para membros falecidos, os campos de falecimento são obrigatórios.",
+                        message: "Para membros falecidos, os campos de falecimento são obrigatórios.",
                     });
                 }
             },
@@ -340,8 +345,7 @@ export const formSchema = z
                 if (!data.exclusao.data || !data.exclusao.motivo) {
                     ctx.addIssue({
                         path: ["exclusao"],
-                        message:
-                            "Para membros excluídos, os campos de exclusão são obrigatórios.",
+                        message: "Para membros excluídos, os campos de exclusão são obrigatórios.",
                     });
                 }
             },
@@ -350,7 +354,8 @@ export const formSchema = z
         if (statusValidations[data.status]) {
             statusValidations[data.status]();
         }
-    });
+    })
+
 
 // In a real application, you would fetch this data from an API
 export const dataForm: z.infer<typeof formSchema> = {

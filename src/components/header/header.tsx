@@ -82,7 +82,7 @@ export function Header() {
 
     return (
         <header className="bg-background border-b-2 border-border px-4 py-3 flex items-center justify-between sm:px-6">
-            <Link href={`${useStoreIbbZus.role === UserRoles.MEMBRO ? '/user' : '/dashboard'}`} prefetch={false}>
+            <Link href={`${useStoreIbbZus.role === UserRoles.MEMBRO ? 'https://www.ibbrooklin.org.br/' : '/dashboard'}`} prefetch={false}>
                 <div>
                     <Image
                         src="/ibb_azul.png"
