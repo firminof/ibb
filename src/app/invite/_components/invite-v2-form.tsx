@@ -112,6 +112,12 @@ export default function InviteV2Form() {
                     return
                 }
 
+                if (!dataToCreate.informacoesPessoais.casamento.conjugue?.isMember) {
+                    if (dataToCreate.informacoesPessoais.casamento.conjugue && dataToCreate.informacoesPessoais.casamento.conjugue.nome) {
+                        dataToCreate.informacoesPessoais.casamento.conjugue.id = '';
+                    }
+                }
+
                 await UserApi.createMemberByInvite(dataToCreate, inviteId, password)
                 alert('Membro cadastrado com sucesso!')
                 setLoading(false)
@@ -358,7 +364,7 @@ export default function InviteV2Form() {
                                     </div>
 
                                     {/*CPF e RG*/}
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField
                                             control={form.control}
                                             name="cpf"
@@ -404,7 +410,7 @@ export default function InviteV2Form() {
                                     </div>
 
                                     {/*EMAIL e TELEFONE*/}
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField
                                             control={form.control}
                                             name="email"
@@ -826,7 +832,7 @@ export default function InviteV2Form() {
                                     <CardTitle>Endereço (Opcional)</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField
                                             control={form.control}
                                             name="endereco.rua"
@@ -872,7 +878,7 @@ export default function InviteV2Form() {
                                             </FormItem>
                                         )}
                                     />
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField
                                             control={form.control}
                                             name="endereco.bairro"
@@ -900,7 +906,7 @@ export default function InviteV2Form() {
                                             )}
                                         />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField
                                             control={form.control}
                                             name="endereco.estado"
@@ -941,8 +947,8 @@ export default function InviteV2Form() {
                             <div className="flex flex-1 justify-end mt-4 mb-4">
                                 <Button type="submit" className="ml-auto" onClick={() => {
                                     const result: SafeParseSuccess<FormValuesMember> | SafeParseError<FormValuesMember> = formSchema.safeParse(form.getValues());
-                                    console.log(form.getValues());
-                                    console.log(result);
+                                    // console.log(form.getValues());
+                                    // console.log(result);
                                     const errorMessages: string[] = [];
                                     if (result && result.error && result.error.issues) {
                                         result.error.issues.forEach((errorItem: ZodIssue) => {

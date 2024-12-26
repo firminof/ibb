@@ -372,7 +372,6 @@ export default function MemberListing() {
             return
         }
 
-
         getAllMinistries();
         getAllMembersDiaconos();
         getAllMembers();
@@ -529,86 +528,120 @@ export default function MemberListing() {
     return (
         <div className="container mx-auto py-10">
             <section>
-                <Button variant="outline" className="text-black" onClick={() => router.back()}>
-                    <ChevronLeftIcon className="h-4 w-4"/> voltar
-                </Button>
+                {/* Botão Voltar */}
+                <div className="mb-4">
+                    <Button
+                        variant="outline"
+                        className="text-black flex items-center gap-2"
+                        onClick={() => router.back()}
+                    >
+                        <ChevronLeftIcon className="h-4 w-4" /> Voltar
+                    </Button>
+                </div>
 
-                <div className="flex justify-between items-center">
-                    <h2 className="text-black text-3xl font-semibold mb-4 mt-4">Membros</h2>
-                    <div className="flex justify-end items-center gap-4">
-                        <Button size="sm" className="font-bold sm:inline-flex md:inline-flex"
-                                onClick={() => router.push('/member')}>
-                            <PlusIcon className="w-4 h-4 mr-1"/>
+                {/* Título e Ações */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    {/* Título */}
+                    <h2 className="text-black text-2xl sm:text-3xl font-semibold">
+                        Membros
+                    </h2>
+
+                    {/* Botões de Ação */}
+                    <div className="flex flex-wrap justify-end items-center gap-4">
+                        <Button
+                            size="sm"
+                            className="font-bold flex items-center gap-2"
+                            onClick={() => router.push('/member')}
+                        >
+                            <PlusIcon className="w-4 h-4" />
                             Adicionar Membro
                         </Button>
 
                         <Dialog open={openDialogInvite} onOpenChange={setOpenDialogInvite}>
                             <DialogTrigger asChild>
-                                <Button variant="outline" size="sm"
-                                        className="border-2 font-bold sm:inline-flex md:inline-flex"
-                                        onClick={() => setOpenDialogInvite(true)}>
-                                    <SendIcon className="w-4 h-4 mr-1"/>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-2 font-bold flex items-center gap-2"
+                                    onClick={() => setOpenDialogInvite(true)}
+                                >
+                                    <SendIcon className="w-4 h-4" />
                                     Convidar Membro
                                 </Button>
                             </DialogTrigger>
-                            <DialogContent className="sm:max-w-md">
+
+                            {/* Conteúdo do Diálogo */}
+                            <DialogContent className="w-full max-w-sm sm:max-w-md">
                                 <DialogHeader>
                                     <DialogTitle>Convidar Membro</DialogTitle>
                                     <DialogDescription>
-                                        <div className="flex flex-col justify-items-start space-x-2 gap-3">
-                                            <Label htmlFor="opcao_convite">Escolha como enviar o convite ao membro</Label>
-                                            <RadioGroup id='opcao_convite'
-                                                        onValueChange={(value: string) => setIsModeInviteEmail(value.includes('email'))}
-                                                        defaultValue={'email'}
-                                                        className="text-black"
+                                        <div className="flex flex-col gap-4">
+                                            <Label htmlFor="opcao_convite">
+                                                Escolha como enviar o convite ao membro
+                                            </Label>
+                                            <RadioGroup
+                                                id="opcao_convite"
+                                                onValueChange={(value: string) =>
+                                                    setIsModeInviteEmail(value.includes('email'))
+                                                }
+                                                defaultValue="email"
+                                                className="text-black"
                                             >
                                                 <div className="flex items-center space-x-2">
-                                                    <RadioGroupItem value="email" id="email"/>
+                                                    <RadioGroupItem value="email" id="email" />
                                                     <Label htmlFor="email">Email</Label>
                                                 </div>
                                                 <div className="flex items-center space-x-2">
-                                                    <RadioGroupItem value="whatsapp" id="whatsapp"/>
+                                                    <RadioGroupItem value="whatsapp" id="whatsapp" />
                                                     <Label htmlFor="whatsapp">WhatsApp</Label>
                                                 </div>
                                             </RadioGroup>
                                         </div>
 
-                                        {
-                                            isModeInviteEmail ? (
-                                                <p className="flex mt-4">
-                                                    Será enviado um email para o membro solicitando que aceite e atualize as
-                                                    informações de membresia.
-                                                </p>
+                                        <p className="mt-4">
+                                            {isModeInviteEmail ? (
+                                                <>
+                                                    Será enviado um email para o membro
+                                                    solicitando que aceite e atualize as informações de membresia.
+                                                </>
                                             ) : (
-                                                <p className="flex mt-4">
-                                                    Será enviado um link para o WhatsApp do membro solicitando que aceite e
-                                                    atualize as informações de membresia.
-                                                </p>
-                                            )
-                                        }
+                                                <>
+                                                    Será enviado um link para o WhatsApp do
+                                                    membro solicitando que aceite e atualize as informações de membresia.
+                                                </>
+                                            )}
+                                        </p>
                                     </DialogDescription>
                                 </DialogHeader>
-                                <div className="flex items-center space-x-2">
-                                    <div className="grid flex-1 gap-2">
-                                        {
-                                            isModeInviteEmail ? (
-                                                <EmailInput
-                                                    id="convite_email"
-                                                    onChange={(e: any) => setEmail(e.target.value)}/>
-                                            ) : (
-                                                <PhoneInput
-                                                    id="convite_whatsapp"
-                                                    required
-                                                    onChange={(e: any) => setWhatsapp(e.target.value)}/>
-                                            )
-                                        }
 
+                                <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                                    <div className="flex-1">
+                                        {isModeInviteEmail ? (
+                                            <EmailInput
+                                                id="convite_email"
+                                                onChange={(e: any) => setEmail(e.target.value)}
+                                            />
+                                        ) : (
+                                            <PhoneInput
+                                                id="convite_whatsapp"
+                                                required
+                                                onChange={(e: any) => setWhatsapp(e.target.value)}
+                                            />
+                                        )}
                                     </div>
-                                    <Button type="submit" size="sm" className="px-3"
-                                            disabled={isModeInviteEmail ? email.length === 0 || !emailRegex.test(email) : whatsapp.length == 0}
-                                            onClick={(e) => handleConvidarMembro(e)}>
+                                    <Button
+                                        type="submit"
+                                        size="sm"
+                                        className="px-3 flex items-center gap-2"
+                                        disabled={
+                                            isModeInviteEmail
+                                                ? email.length === 0 || !emailRegex.test(email)
+                                                : whatsapp.length === 0
+                                        }
+                                        onClick={(e) => handleConvidarMembro(e)}
+                                    >
                                         Convidar
-                                        <ArrowRightIcon className="w-4 h-4 ml-1"/>
+                                        <ArrowRightIcon className="w-4 h-4" />
                                     </Button>
                                 </div>
                             </DialogContent>
@@ -626,7 +659,7 @@ export default function MemberListing() {
                         </div>
                     </AccordionTrigger>
                     <AccordionContent>
-                        <div className="grid grid-cols-3 gap-4 mt-4">
+                        <div className="grid sm:grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                             <div className="space-y-2">
                                 <Label htmlFor="nome">Nome</Label>
                                 <Input
@@ -672,8 +705,8 @@ export default function MemberListing() {
                 </AccordionItem>
             </Accordion>
 
-            <div className="flex justify-between mb-5">
-                <div className="space-x-2">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-5">
+                <div className="flex flex-col md:flex-row gap-2">
                     <Button
                         variant="destructive"
                         onClick={handleDeleteSelected}

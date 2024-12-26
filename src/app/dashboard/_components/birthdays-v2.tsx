@@ -288,7 +288,7 @@ export default function BirthdaysV2() {
     return (
         <div className="py-10">
             <section>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <h2 className="text-black text-2xl font-semibold mb-4 mt-4">Aniversariantes de {mapearNomeMes(filters.mesAniversario)}</h2>
 
                     <div className="space-y-2">
@@ -329,7 +329,7 @@ export default function BirthdaysV2() {
                         </div>
                     </AccordionTrigger>
                     <AccordionContent>
-                        <div className="grid grid-cols-4 gap-4 mt-4">
+                        <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             <div className="space-y-2">
                                 <Label htmlFor="nome">Nome</Label>
                                 <Input

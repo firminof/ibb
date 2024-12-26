@@ -1,24 +1,26 @@
 'use client'
 
 import Link from "next/link";
-import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {Button} from "@/components/ui/button";
 import {useSignOut} from "react-firebase-hooks/auth";
 import {auth} from "@/app/firebase/config";
 import {useRouter} from "next/navigation";
-import {LoggoutIcon} from "@/components/loggout-icon/loggout-icon";
 import Image from "next/image";
+import * as React from "react";
 import {useState} from "react";
 import {UserRoles} from "@/lib/helpers/helpers";
 import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
-import {UserIcon} from "lucide-react";
+import {LogOutIcon, Menu, UserIcon} from "lucide-react";
 import {UserApi} from "@/lib/api/user-api";
 import {formatUserV2, FormValuesMember} from "@/lib/models/user";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
-import * as React from "react";
+import {Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger} from "@/components/ui/sheet";
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 
 export function Header() {
     const useStoreIbbZus: IStore = useStoreIbb((state: IStore) => state);
+    const [isOpen, setIsOpen] = useState(false)
+
     const user = useStoreIbbZus.user;
 
     const [signOut] = useSignOut(auth);
@@ -79,100 +81,106 @@ export function Header() {
     }
 
     getUniqueMember();
+    const logoLink = useStoreIbbZus.role === UserRoles.MEMBRO ? 'https://www.ibbrooklin.org.br/' : '/dashboard'
 
     return (
-        <header className="bg-background border-b-2 border-border px-4 py-3 flex items-center justify-between sm:px-6">
-            <Link href={`${useStoreIbbZus.role === UserRoles.MEMBRO ? 'https://www.ibbrooklin.org.br/' : '/dashboard'}`} prefetch={false}>
-                <div>
-                    <Image
-                        src="/ibb_azul.png"
-                        alt="Login background"
-                        className="object-cover"
-                        width="256"
-                        height="128"
-                    />
-                </div>
+        <header className="bg-background border-b-2 border-border px-4 py-3 flex items-center justify-between">
+            <Link href={logoLink} prefetch={false} className="flex-shrink-0">
+                <Image
+                    src="/ibb_azul.png"
+                    alt="IBB Logo"
+                    width={256}
+                    height={100}
+                    className="object-contain"
+                />
             </Link>
 
             <div className="flex items-center gap-4">
-                {/* Mobile menu button */}
-                {
-                    useStoreIbbZus.role === UserRoles.ADMIN && (
-                        <div>
-                            <div className="sm:hidden">
-                                <button
-                                    type="button"
-                                    className="text-black hover:text-gray-400 focus:outline-none"
-                                    onClick={() => setMenuOpen(!menuOpen)}
-                                >
-                                    <svg
-                                        className="h-6 w-6"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        aria-hidden="true"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M4 6h16M4 12h16M4 18h16"
-                                        />
-                                    </svg>
-                                </button>
-                            </div>
-
-                            {/* Navigation Menu */}
-                            <nav
-                                className={`${
-                                    menuOpen ? "block" : "hidden"
-                                } sm:flex items-center gap-4`}
+                {useStoreIbbZus.role === UserRoles.ADMIN && (
+                    <>
+                        <nav className="hidden md:flex items-center gap-6">
+                            <Link
+                                href="/member-list"
+                                className="font-medium text-primary hover:text-primary/80 transition-colors"
+                                prefetch={false}
                             >
-                                <Link href="/member-list" className="font-medium text-primary text-black hover:text-gray-400"
-                                      prefetch={false}>
-                                    Membros
-                                </Link>
-                                <Link href="/ministrie-list" className="font-medium text-primary text-black hover:text-gray-400"
-                                      prefetch={false}>
-                                    Ministérios
-                                </Link>
-                            </nav>
-                        </div>
-                    )
-                }
+                                Membros
+                            </Link>
+                            <Link
+                                href="/ministrie-list"
+                                className="font-medium text-primary hover:text-primary/80 transition-colors"
+                                prefetch={false}
+                            >
+                                Ministérios
+                            </Link>
+                        </nav>
 
-                {/* User Profile Dropdown */}
-                <div className="relative">
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant="ghost" size="icon" className="rounded-full">
-                                <Avatar className="w-12 h-12">
-                                    <AvatarImage src={photo} alt={'Foto do membro'}/>
-                                    <AvatarFallback>{'IBB'}</AvatarFallback>
-                                </Avatar>
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-56 p-2 bg-background shadow-lg rounded-md right-0 sm:right-auto">
+                        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+                            <SheetTrigger asChild>
+                                <Button variant="ghost" size="icon" className="md:hidden">
+                                    <Menu className="h-6 w-6" />
+                                    <span className="sr-only">Abrir menu</span>
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent side="top">
+                                <SheetHeader>
+                                    <SheetTitle>Menu</SheetTitle>
+                                </SheetHeader>
+                                <nav className="flex flex-col gap-4 mt-4">
+                                    <Link
+                                        href="/member-list"
+                                        className="font-medium text-primary hover:text-primary/80 transition-colors"
+                                        prefetch={false}
+                                        onClick={() => setIsOpen(false)}
+                                    >
+                                        Membros
+                                    </Link>
+                                    <Link
+                                        href="/ministrie-list"
+                                        className="font-medium text-primary hover:text-primary/80 transition-colors"
+                                        prefetch={false}
+                                        onClick={() => setIsOpen(false)}
+                                    >
+                                        Ministérios
+                                    </Link>
+                                </nav>
+                            </SheetContent>
+                        </Sheet>
+                    </>
+                )}
+
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="rounded-full">
+                            <Avatar className="w-10 h-10">
+                                <AvatarImage src={photo} alt="Foto do membro" />
+                                <AvatarFallback>IBB</AvatarFallback>
+                            </Avatar>
+                            <span className="sr-only">Abrir menu de perfil</span>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuItem asChild>
                             <Link
                                 href={`/user?id=${useStoreIbbZus.mongoId}`}
-                                className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-accent hover:text-accent-foreground"
+                                className="flex items-center gap-2"
                             >
-                                <UserIcon className="w-4 h-4"/>
+                                <UserIcon className="w-4 h-4" />
                                 Meu perfil
                             </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
                             <Link
                                 href="#"
-                                className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-accent hover:text-accent-foreground"
-                                prefetch={false}
-                                onClick={(e) => handleSignOut(e)}
+                                className="flex items-center gap-2"
+                                onClick={handleSignOut}
                             >
-                                <LoggoutIcon className="w-4 h-4"/>
+                                <LogOutIcon className="w-4 h-4" />
                                 Sair
                             </Link>
-                        </PopoverContent>
-                    </Popover>
-                </div>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         </header>
     )

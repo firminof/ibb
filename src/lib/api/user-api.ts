@@ -46,6 +46,16 @@ export class UserApi {
         return user.data;
     }
 
+    static async uploadPhoto(body: any): Promise<any> {
+        const user = await api.post(`/v2/user/photo`, body, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            }
+        });
+
+        return user.data;
+    }
+
     static async requestUpdateUserInfo(body: string[]): Promise<any> {
         const user = await api.post(`/v2/user/request-update`, body);
 

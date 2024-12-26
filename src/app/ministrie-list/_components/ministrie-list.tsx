@@ -125,9 +125,9 @@ export default function MinistrieList() {
                     <ChevronLeftIcon className="h-4 w-4"/> voltar
                 </Button>
 
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <h2 className="text-black text-3xl font-semibold mb-4 mt-4">Ministérios</h2>
-                    <Button size="sm" className="font-bold sm:inline-flex md:inline-flex"
+                    <Button size="sm" className="font-bold sm:inline-flex md:inline-flex mb-3"
                             onClick={() => router.push('/ministries')}>
                         <PlusIcon className="w-4 h-4 mr-1"/>
                         Adicionar Ministério

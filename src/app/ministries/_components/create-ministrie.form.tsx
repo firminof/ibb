@@ -259,8 +259,8 @@ export default function CreateMinistrieForm() {
                     <ChevronLeftIcon className="mr-2 h-4 w-4"/> Voltar
                 </Button>
 
-                <div className="flex justify-between items-center">
-                    <h2 className="text-3xl font-semibold">{isEditing ? 'Editar Ministério' : 'Cadastrar Novo Ministério'}</h2>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <h2 className="text-3xl font-semibold">{isEditing ? 'Editar Ministério' : 'Novo Ministério'}</h2>
                     <Button size="sm" onClick={() => router.push('/ministrie-list')}>
                         <ListIcon className="mr-2 h-4 w-4"/>
                         Lista de Ministérios

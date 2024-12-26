@@ -440,7 +440,7 @@ export default function UserForm() {
                                         <ChevronLeftIcon className="h-4 w-4"/> voltar
                                     </Button>
 
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-5">
                                         <h2 className="text-black text-3xl font-semibold mb-4 mt-4">Detalhes do membro</h2>
                                         <div className="flex justify-end items-center gap-4">
                                             <Button size="sm" className="font-bold sm:inline-flex md:inline-flex"
@@ -759,54 +759,59 @@ export default function UserForm() {
                                 )
                             }
 
-                            <CardFooter>
-                                {/* Histórico de Alterações */}
-                                <div className="space-y-2">
-                                    <h3 className="text-lg font-semibold mb-4">Histórico de Alterações</h3>
-                                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-                                        <div className="p-6">
-                                            {Object.entries(groupedHistory).length > 0 ? (
-                                                Object.entries(groupedHistory).map(([group, changes]) => (
-                                                    <div key={group} className="mb-8 last:mb-0">
-                                                        <h4 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300">{group}</h4>
-                                                        <div className="space-y-4">
-                                                            {changes.map((change, index) => (
-                                                                <div
-                                                                    key={`${change.chave}_${index}`}
-                                                                    className="bg-white dark:bg-gray-700 p-4 rounded-md shadow-sm"
-                                                                >
-                                                                    <div className="flex justify-between items-start">
-                                                                        <div className="space-y-2">
-                                                                            <p className="font-medium text-gray-900 dark:text-gray-100">
-                                                                                <b>Campo
-                                                                                    alterado:</b> {formatFieldName(change.chave)}
-                                                                            </p>
-                                                                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                                                <b>Valor
-                                                                                    anterior:</b> {formatValue(change.antigo)}
-                                                                            </p>
-                                                                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                                                <b>Novo
-                                                                                    valor:</b> {formatValue(change.novo)}
-                                                                            </p>
+                            {
+                                member.role === UserRolesV2.ADMIN && (
+                                    <CardFooter>
+                                        {/* Histórico de Alterações */}
+                                        <div className="space-y-2">
+                                            <h3 className="text-lg font-semibold mb-4">Histórico de Alterações</h3>
+                                            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+                                                <div className="p-6">
+                                                    {Object.entries(groupedHistory).length > 0 ? (
+                                                        Object.entries(groupedHistory).map(([group, changes]) => (
+                                                            <div key={group} className="mb-8 last:mb-0">
+                                                                <h4 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300">{group}</h4>
+                                                                <div className="space-y-4">
+                                                                    {changes.map((change, index) => (
+                                                                        <div
+                                                                            key={`${change.chave}_${index}`}
+                                                                            className="bg-white dark:bg-gray-700 p-4 rounded-md shadow-sm"
+                                                                        >
+                                                                            <div className="flex justify-between items-start">
+                                                                                <div className="space-y-2">
+                                                                                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                                                                                        <b>Campo
+                                                                                            alterado:</b> {formatFieldName(change.chave)}
+                                                                                    </p>
+                                                                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                                                        <b>Valor
+                                                                                            anterior:</b> {formatValue(change.antigo)}
+                                                                                    </p>
+                                                                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                                                        <b>Novo
+                                                                                            valor:</b> {formatValue(change.novo)}
+                                                                                    </p>
+                                                                                </div>
+                                                                                <p className="text-xs text-gray-400 dark:text-gray-500">
+                                                                                    {format(new Date(change.updatedAt), 'dd/MM/yyyy HH:mm')}
+                                                                                </p>
+                                                                            </div>
                                                                         </div>
-                                                                        <p className="text-xs text-gray-400 dark:text-gray-500">
-                                                                            {format(new Date(change.updatedAt), 'dd/MM/yyyy HH:mm')}
-                                                                        </p>
-                                                                    </div>
+                                                                    ))}
                                                                 </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <p className="text-gray-500 dark:text-gray-400">Nenhuma alteração
-                                                    recente.</p>
-                                            )}
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <p className="text-gray-500 dark:text-gray-400">Nenhuma alteração
+                                                            recente.</p>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                            </CardFooter>
+                                    </CardFooter>
+                                )
+                            }
+
                             <CardFooter>
                                 Última atualização: {format(new Date(member.updatedAt), 'dd/MM/yyyy HH:mm:ss')}
                             </CardFooter>
