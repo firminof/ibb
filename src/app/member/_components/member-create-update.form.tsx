@@ -50,6 +50,8 @@ export default function MemberForm() {
     const [initialData, setInitialData] = useState<FormValuesMember | null>(null)
     const [photo, setPhoto] = useState<string | null>(null)
 
+    const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+
     const searchParams = useSearchParams()
 
     const idMembro: string | null = searchParams.get('id')
@@ -79,71 +81,77 @@ export default function MemberForm() {
         const result = formSchema.safeParse(data);
 
         if (!result.success) {
-            // `result.error` contém os detalhes dos erros
             const errors = result.error.format();
             console.log("Erros encontrados:", errors);
             setLoading(false);
             setLoadingMessage('');
-            alert(error)
+            alert('Erros no formulário. Verifique os campos e tente novamente.');
             return errors;
         }
 
-
         try {
-            let {_id, ...dataToCreate} = {...data, foto: photo}
-            console.log('dataToCreate: ', dataToCreate)
+            let { _id, ...dataToCreate } = { ...data, foto: photo }; // Inicialmente, foto recebe o valor atual de photo
+            console.log('dataToCreate: ', dataToCreate);
 
+            // Validação de filhos
             if (dataToCreate.informacoesPessoais.temFilhos && dataToCreate.informacoesPessoais.filhos.length === 0) {
-                alert('Adicione pelo menos 1 filho se a opção Tem Filho está como SIM.');
+                alert('Adicione pelo menos 1 filho se a opção "Tem Filho" está como SIM.');
                 setLoading(false);
                 setLoadingMessage('');
-                return
+                return;
             }
 
+            // Validação de cônjuge
             if (!dataToCreate.informacoesPessoais.casamento.conjugue?.isMember) {
                 if (dataToCreate.informacoesPessoais.casamento.conjugue && dataToCreate.informacoesPessoais.casamento.conjugue.nome) {
                     dataToCreate.informacoesPessoais.casamento.conjugue.id = '';
                 }
             }
 
-            if (idMembro && idMembro.length > 0) {
-                await UserApi.updateMember(idMembro, dataToCreate)
-                alert('Membro editado com sucesso!');
-                setLoading(false);
-                setLoadingMessage('')
-                router.push('/member-list')
-                return;
+            // Upload da foto se necessário
+            if (selectedPhoto) {
+                const formData = new FormData();
+                formData.append('file', selectedPhoto);
+
+                try {
+                    const uploadResponse = await UserApi.uploadPhoto(formData);
+                    dataToCreate.foto = uploadResponse.url; // Atribui a URL retornada ao campo foto
+                } catch (uploadError) {
+                    console.error('Erro ao fazer upload da foto:', uploadError);
+                    alert('Erro ao fazer upload da foto. Verifique o arquivo e tente novamente.');
+                    setLoading(false);
+                    setLoadingMessage('');
+                    return;
+                }
             }
 
-            await UserApi.createMember(dataToCreate)
-            alert('Membro salvo com sucesso!')
-            setLoading(false);
-            setLoadingMessage('')
-            router.push('/member-list')
-        } catch (e) {
-            console.log(e);
-            alert(`Erro: ${e.response.data.message}!`)
-        }
+            // Atualização ou criação do membro
+            if (idMembro && idMembro.length > 0) {
+                await UserApi.updateMember(idMembro, dataToCreate);
+                alert('Membro editado com sucesso!');
+            } else {
+                await UserApi.createMember(dataToCreate);
+                alert('Membro salvo com sucesso!');
+            }
 
-        setLoading(false);
-        setLoadingMessage('')
-    }
+            setLoading(false);
+            setLoadingMessage('');
+            router.push('/member-list');
+        } catch (e) {
+            console.error('Erro ao salvar membro:', e);
+            alert(`Erro: ${e.response?.data?.message || 'Erro desconhecido'}!`);
+            setLoading(false);
+            setLoadingMessage('');
+        } finally {
+            setLoading(false);
+            setLoadingMessage('');
+        }
+    };
 
     const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
 
-        // Limpar mensagens de erro
-        setError(null);
-
         if (!file) return;
-
-        // Verificar tamanho máximo do arquivo (500 KB)
-        const maxSize = 0.5 * 1024 * 1024; // 500 KB em bytes
-        if (file.size > maxSize) {
-            setError("A imagem deve ter tamanho máximo de 500 KB");
-            alert("A imagem deve ter tamanho máximo de 500 KB")
-            return;
-        }
 
         // Ler a imagem como Base64
         const reader = new FileReader();
@@ -154,6 +162,9 @@ export default function MemberForm() {
                 // Compactar a imagem para largura máxima de 800px e qualidade de 60%
                 const compressed = await compressBase64Image(base64Image, 800, 0.6);
                 setPhoto(compressed);
+                setTimeout(() => {
+                    setSelectedPhoto(file);
+                }, 200)
             } catch (error) {
                 alert('Atenção: somente arquivo de imagem é permitido!')
                 console.error('Erro ao compactar a imagem:', error);
@@ -163,183 +174,88 @@ export default function MemberForm() {
         reader.readAsDataURL(file);
     }
 
-    useEffect(() => {
-        if (useStoreIbbZus.hasHydrated && useStoreIbbZus.role === UserRoles.MEMBRO && (!idMembro || idMembro.length === 0)) {
-            router.push('/user')
-            return
-        }
-        if (useStoreIbbZus.hasHydrated && useStoreIbbZus.user == null) {
-            useStoreIbbZus.addUser(null)
-            useStoreIbbZus.addRole('')
-            useStoreIbbZus.addMongoId('')
-            useStoreIbbZus.setHasHydrated(true)
-            router.push('/login')
-            return
-        }
-
-        const fetchInitialData = async () => {
-            if (idMembro && idMembro.length > 0) {
-                getUniqueMember();
-                return;
+    const fetchInitialData = async () => {
+        if (idMembro && idMembro.length > 0) {
+            try {
+                const member = await UserApi.fetchMemberById(idMembro);
+                if (member) {
+                    const formattedMember = formatUserV2(member);
+                    setInitialData(formattedMember);
+                    setPhoto(formattedMember.foto || null);
+                    form.reset(formattedMember);
+                } else {
+                    resetFormWithDefaultData();
+                }
+            } catch (error) {
+                console.error('Erro ao carregar membro:', error);
+                resetFormWithDefaultData();
             }
-
-            setInitialData(dataForm)
-            setPhoto(dataForm.foto || null)
-            form.reset(dataForm)
+            return;
         }
 
-        getAllMinistries();
+        resetFormWithDefaultData();
+    };
 
-        getAllMembersDiaconos();
-        getAllMembers();
-        fetchInitialData();
-    }, [useStoreIbbZus.hasHydrated])
+    const resetFormWithDefaultData = () => {
+        setInitialData(dataForm);
+        setPhoto(dataForm.foto || null);
+        form.reset(dataForm);
+    };
 
-    const getAllMinistries = () => {
+    const fetchData = async () => {
         try {
-            UserApi.fetchMinistries()
-                .then((response: IMinistries[]) => {
-                    if (response && response.length > 0) {
-                        setMinisterios(response);
-                        return;
-                    }
+            const [ministries, diaconos, members] = await Promise.all([
+                UserApi.fetchMinistries(),
+                UserApi.fetchMembersDiaconos(),
+                UserApi.fetchMembers(),
+            ]);
 
-                    setMinisterios([]);
-                })
-                .catch((error) => {
-                    console.log(error);
-                    setMinisterios([]);
-
-                    switch (error.code) {
-                        case 'ERR_BAD_REQUEST':
-                            break;
-                        case 'ERR_NETWORK':
-                            break;
-
-                        default:
-                            break;
-                    }
-                })
-                .finally(() => {
-
-                });
-        } catch (e) {
+            setMinisterios(ministries.length > 0 ? ministries : []);
+            setDiaconos(
+                diaconos.length > 0
+                    ? diaconos
+                        .map(diacono => ({
+                            nome: diacono.nome,
+                            isDiacono: diacono.isDiacono,
+                            isMember: true,
+                            id: diacono._id.toString(),
+                        }))
+                        .filter(diacono => diacono.id !== idMembro)
+                    : []
+            );
+            setMembros(members.length > 0 ? members : []);
+        } catch (error) {
+            console.error('Erro ao carregar dados gerais:', error);
             setMinisterios([]);
-        }
-    }
-
-    const getAllMembers = async (): Promise<void> => {
-        try {
-            UserApi.fetchMembers()
-                .then((response: FormValuesMember[]) => {
-                    if (response.length > 0) {
-                        setMembros(response);
-                        return;
-                    }
-
-                    setMembros([]);
-                })
-                .catch((error) => {
-                    console.log(error);
-                    switch (error.code) {
-                        case 'ERR_BAD_REQUEST':
-                            setMembros([]);
-                            break;
-                        case 'ERR_NETWORK':
-                            setMembros([]);
-                            break;
-
-                        default:
-                            setMembros([]);
-                            break;
-                    }
-                })
-        } catch (e) {
-            setMembros([]);
-        }
-    }
-
-    const getAllMembersDiaconos = async (): Promise<void> => {
-        try {
-            UserApi.fetchMembersDiaconos()
-                .then((response: FormValuesMember[]) => {
-                    if (response.length > 0) {
-                        const mapDiaconos: FormValuesUniqueMember[] = response.map((diacono: FormValuesMember) => (
-                            {
-                                "nome": diacono.nome,
-                                "isDiacono": diacono.isDiacono,
-                                "isMember": true,
-                                "id": diacono._id.toString()
-                            }
-                        )).filter((diacono: FormValuesUniqueMember) => diacono.id != idMembro)
-
-                        setDiaconos(mapDiaconos);
-                        return;
-                    }
-
-                    setDiaconos([]);
-                })
-                .catch((error) => {
-                    console.log(error);
-                    switch (error.code) {
-                        case 'ERR_BAD_REQUEST':
-                            setDiaconos([]);
-                            break;
-                        case 'ERR_NETWORK':
-                            setDiaconos([]);
-                            break;
-
-                        default:
-                            setDiaconos([]);
-                            break;
-                    }
-                })
-        } catch (e) {
             setDiaconos([]);
-        }
-    }
-
-    const getUniqueMember = async (): Promise<void> => {
-        try {
-            if (idMembro && idMembro.length > 0) {
-                UserApi.fetchMemberById(idMembro)
-                    .then((response: FormValuesMember) => {
-                        if (response) {
-                            const member: FormValuesMember = formatUserV2(response);
-                            setInitialData(member);
-                            setPhoto(member.foto || null)
-                            form.reset(member)
-                            return;
-                        }
-
-                        setMembros([]);
-                    })
-                    .catch((error) => {
-                        console.log(error);
-                        switch (error.code) {
-                            case 'ERR_BAD_REQUEST':
-                                setInitialData(dataForm)
-                                setPhoto(dataForm.foto || null)
-                                form.reset(dataForm)
-                                break;
-                            case 'ERR_NETWORK':
-                                setInitialData(dataForm)
-                                setPhoto(dataForm.foto || null)
-                                form.reset(dataForm)
-                                break;
-
-                            default:
-                                setInitialData(dataForm)
-                                setPhoto(dataForm.foto || null)
-                                form.reset(dataForm)
-                                break;
-                        }
-                    })
-            }
-        } catch (e) {
             setMembros([]);
         }
-    }
+    };
+
+    useEffect(() => {
+        if (!useStoreIbbZus.hasHydrated) return;
+
+        if (useStoreIbbZus.role === UserRoles.MEMBRO && (!idMembro || idMembro.length === 0)) {
+            router.push('/user');
+            return;
+        }
+
+        if (useStoreIbbZus.user == null) {
+            useStoreIbbZus.addUser(null);
+            useStoreIbbZus.addRole('');
+            useStoreIbbZus.addMongoId('');
+            useStoreIbbZus.setHasHydrated(true);
+            router.push('/login');
+            return;
+        }
+
+        const initialize = async () => {
+            await fetchData();
+            await fetchInitialData();
+        };
+
+        initialize();
+    }, [useStoreIbbZus.hasHydrated, idMembro]);
 
     if (!initialData) {
         return <Backdrop
@@ -376,9 +292,9 @@ export default function MemberForm() {
 
                 {
                     useStoreIbbZus.role === UserRolesV2.ADMIN && (
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <h2 className="text-black text-3xl font-semibold mb-4 mt-4">{isEditing ? 'Editar Membro' : 'Cadastrar Membro'}</h2>
-                            <Button size="sm" className="font-bold sm:inline-flex md:inline-flex"
+                            <Button size="sm" className="font-bold sm:inline-flex md:inline-flex mb-3"
                                     onClick={() => router.push('/member-list')}>
                                 <ListIcon className="w-4 h-4 mr-1"/>
                                 Lista de Membros
@@ -413,8 +329,9 @@ export default function MemberForm() {
                                                 className="w-32 h-32 rounded-full object-cover border-2 border-zinc-800 border-solid p-1"
                                             />
                                         )}
-                                        <Label htmlFor="photo-upload" className="cursor-pointer flex flex-col items-center">
-                                            <CameraIcon className="w-12 h-12" />
+                                        <Label htmlFor="photo-upload"
+                                               className="cursor-pointer flex flex-col items-center">
+                                            <CameraIcon className="w-12 h-12"/>
                                             <span className="sr-only">Upload foto</span>
                                         </Label>
                                         <Input
@@ -448,7 +365,7 @@ export default function MemberForm() {
                             </div>
 
                             {/*CPF e RG*/}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid md:grid-cols-2 sm:grid-cols-1 gap-4">
                                 <FormField
                                     control={form.control}
                                     name="cpf"
@@ -494,7 +411,7 @@ export default function MemberForm() {
                             </div>
 
                             {/*EMAIL e TELEFONE*/}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid md:grid-cols-2 sm:grid-cols-1 gap-4">
                                 <FormField
                                     control={form.control}
                                     name="email"
@@ -708,15 +625,18 @@ export default function MemberForm() {
                                                     render={({field}) => (
                                                         <FormItem>
                                                             <FormLabel>Forma de Ingresso</FormLabel>
-                                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                            <Select onValueChange={field.onChange}
+                                                                    defaultValue={field.value}>
                                                                 <FormControl>
                                                                     <SelectTrigger>
-                                                                        <SelectValue placeholder="Selecione a forma de ingresso"/>
+                                                                        <SelectValue
+                                                                            placeholder="Selecione a forma de ingresso"/>
                                                                     </SelectTrigger>
                                                                 </FormControl>
                                                                 <SelectContent>
                                                                     {Object.values(FormaIngressoEnumV2).map((formaIngresso: string) => (
-                                                                        <SelectItem key={formaIngresso} value={formaIngresso}>
+                                                                        <SelectItem key={formaIngresso}
+                                                                                    value={formaIngresso}>
                                                                             {formaIngresso}
                                                                         </SelectItem>
                                                                     ))}
@@ -1453,7 +1373,7 @@ export default function MemberForm() {
                             <CardTitle>Endereço (Opcional)</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid md:grid-cols-2 sm:grid-cols-1 gap-4">
                                 <FormField
                                     control={form.control}
                                     name="endereco.rua"
@@ -1494,7 +1414,7 @@ export default function MemberForm() {
                                     </FormItem>
                                 )}
                             />
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid md:grid-cols-2 sm:grid-cols-1 gap-4">
                                 <FormField
                                     control={form.control}
                                     name="endereco.bairro"
@@ -1522,7 +1442,7 @@ export default function MemberForm() {
                                     )}
                                 />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid md:grid-cols-2 sm:grid-cols-1 gap-4">
                                 <FormField
                                     control={form.control}
                                     name="endereco.estado"

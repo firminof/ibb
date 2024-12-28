@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import {EmailInput} from "@/components/form-inputs/form-inputs";
 import {ArrowRightIcon} from "@radix-ui/react-icons";
-import {UserRoles} from "@/lib/models/user";
+import {formatUserV2, FormValuesMember, UserRoles} from "@/lib/models/user";
 import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
 
 
@@ -83,7 +83,6 @@ export function LoginForm() {
         try {
             signInWithEmailAndPassword(email, password)
                 .then(async (result: any) => {
-                    console.log(result)
                     if (!result) {
                         setShowErrorLogin(true);
                         setErrorMessage('Falha ao efetuar o login, tente novamente!');
@@ -108,7 +107,37 @@ export function LoginForm() {
                             setTimeout(() => {
                                 api.defaults.headers.Authorization = `Bearer ${token}`;
 
-                                console.log('LOGIN [role]: ', role);
+                                const getUniqueMember = async (): Promise<void> => {
+                                    try {
+                                        if (useStoreIbbZus && useStoreIbbZus.mongoId.length === 24) {
+                                            UserApi.fetchMemberById(useStoreIbbZus.mongoId)
+                                                .then((response: FormValuesMember) => {
+                                                    if (response) {
+                                                        const member: FormValuesMember = formatUserV2(response);
+                                                        useStoreIbbZus.addPhoto(member.foto);
+                                                    }
+                                                })
+                                                .catch((error) => {
+                                                    console.log(error);
+                                                    switch (error.code) {
+                                                        case 'ERR_BAD_REQUEST':
+                                                            useStoreIbbZus.addPhoto('');
+                                                            break;
+                                                        case 'ERR_NETWORK':
+                                                            useStoreIbbZus.addPhoto('');
+                                                            break;
+
+                                                        default:
+                                                            useStoreIbbZus.addPhoto('');
+                                                            break;
+                                                    }
+                                                })
+                                        }
+                                    } catch (e) {
+                                        useStoreIbbZus.addPhoto('');
+                                    }
+                                }
+
                                 switch (role) {
                                     case UserRoles.ADMIN:
                                         setShowSuccess(true);

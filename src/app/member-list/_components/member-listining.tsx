@@ -156,10 +156,13 @@ export default function MemberListing() {
             .catch(() => {
                 alert(`${selectedMembers.length === 1 ? 'Erro ao excluir o membro!' : 'Sucesso ao excluir os membros!'}`)
             })
-            .finally(() => {
+            .finally(async () => {
                 setLoading(false);
                 setLoadingMessage('');
-                getAllMembers();
+                const [members] = await Promise.all([
+                    UserApi.fetchMembers(),
+                ]);
+                setMembros(members.length > 0 ? members : []);
                 setSelectedMembers([]);
             });
     }
@@ -359,152 +362,60 @@ export default function MemberListing() {
     };
 
     const fetchMembers = async () => {
-        if (useStoreIbbZus.hasHydrated && useStoreIbbZus.role === UserRoles.MEMBRO) {
-            router.push('/user')
-            return
-        }
-        if (useStoreIbbZus.hasHydrated && useStoreIbbZus.user == null) {
-            useStoreIbbZus.addUser(null)
-            useStoreIbbZus.addRole('')
-            useStoreIbbZus.addMongoId('')
-            useStoreIbbZus.setHasHydrated(true)
-            router.push('/login')
-            return
+        if (useStoreIbbZus.hasHydrated) {
+            if (useStoreIbbZus.role === UserRoles.MEMBRO) {
+                router.push('/user');
+                return;
+            }
+
+            if (useStoreIbbZus.user == null) {
+                useStoreIbbZus.addUser(null);
+                useStoreIbbZus.addRole('');
+                useStoreIbbZus.addMongoId('');
+                useStoreIbbZus.setHasHydrated(true);
+                router.push('/login');
+                return;
+            }
         }
 
-        getAllMinistries();
-        getAllMembersDiaconos();
-        getAllMembers();
-    }
+        try {
+            setLoading(true);
+            setLoadingMessage('Carregando...');
+
+            const [ministries, diaconos, members] = await Promise.all([
+                UserApi.fetchMinistries(),
+                UserApi.fetchMembersDiaconos(),
+                UserApi.fetchMembers(),
+            ]);
+
+            setMinisterios(ministries.length > 0 ? ministries : []);
+            setDiaconos(
+                diaconos.length > 0
+                    ? diaconos.map(diacono => ({
+                        nome: diacono.nome,
+                        isDiacono: diacono.isDiacono,
+                        isMember: true,
+                        id: diacono._id.toString(),
+                    }))
+                    : []
+            );
+            setMembros(members.length > 0 ? members : []);
+        } catch (error) {
+            console.error('Erro ao carregar dados:', error);
+            setMinisterios([]);
+            setDiaconos([]);
+            setMembros([]);
+        } finally {
+            setLoading(false);
+            setLoadingMessage('');
+        }
+    };
 
     useEffect(() => {
-        setLoading(true);
-        setLoadingMessage('Carregando...')
+        if (!useStoreIbbZus.hasHydrated) return;
+
         fetchMembers();
-    }, [useStoreIbbZus.hasHydrated])
-
-    const getAllMinistries = () => {
-        setLoading(true);
-        setLoadingMessage('Carregando...');
-        try {
-            UserApi.fetchMinistries()
-                .then((response: IMinistries[]) => {
-                    if (response && response.length > 0) {
-                        setMinisterios(response);
-                        return;
-                    }
-
-                    setMinisterios([]);
-                })
-                .catch((error) => {
-                    console.log(error);
-                    setMinisterios([]);
-
-                    switch (error.code) {
-                        case 'ERR_BAD_REQUEST':
-                            break;
-                        case 'ERR_NETWORK':
-                            break;
-
-                        default:
-                            break;
-                    }
-                })
-                .finally(() => {
-                    setLoading(false);
-                    setLoadingMessage('');
-                });
-        } catch (e) {
-            setMinisterios([]);
-            setLoading(false);
-            setLoadingMessage('');
-        }
-    }
-
-    const getAllMembersDiaconos = async (): Promise<void> => {
-        setLoading(true);
-        setLoadingMessage('Carregando...');
-        try {
-            UserApi.fetchMembersDiaconos()
-                .then((response: FormValuesMember[]) => {
-                    if (response.length > 0) {
-                        const mapDiaconos: FormValuesUniqueMember[] = response.map((diacono: FormValuesMember) => (
-                            {
-                                "nome": diacono.nome,
-                                "isDiacono": diacono.isDiacono,
-                                "isMember": true,
-                                "id": diacono._id.toString()
-                            }
-                        ))
-                        setDiaconos(mapDiaconos);
-                        return;
-                    }
-
-                    setDiaconos([]);
-                })
-                .catch((error) => {
-                    console.log(error);
-                    switch (error.code) {
-                        case 'ERR_BAD_REQUEST':
-                            setDiaconos([]);
-                            break;
-                        case 'ERR_NETWORK':
-                            setDiaconos([]);
-                            break;
-
-                        default:
-                            setDiaconos([]);
-                            break;
-                    }
-                })
-                .finally(() => {
-                    setLoading(false);
-                    setLoadingMessage('');
-                })
-        } catch (e) {
-            setDiaconos([]);
-            setLoading(false);
-            setLoadingMessage('');
-        }
-    }
-    const getAllMembers = async (): Promise<void> => {
-        setLoading(true);
-        setLoadingMessage('Carregando...');
-        try {
-            UserApi.fetchMembers()
-                .then((response: FormValuesMember[]) => {
-                    if (response.length > 0) {
-                        setMembros(response);
-                        return;
-                    }
-
-                    setMembros([]);
-                })
-                .catch((error) => {
-                    console.log(error);
-                    switch (error.code) {
-                        case 'ERR_BAD_REQUEST':
-                            setMembros([]);
-                            break;
-                        case 'ERR_NETWORK':
-                            setMembros([]);
-                            break;
-
-                        default:
-                            setMembros([]);
-                            break;
-                    }
-                })
-                .finally(() => {
-                    setLoading(false);
-                    setLoadingMessage('');
-                })
-        } catch (e) {
-            setMembros([]);
-            setLoading(false);
-            setLoadingMessage('');
-        }
-    }
+    }, [useStoreIbbZus.hasHydrated]);
 
     const mapMinisterios = (member: FormValuesMember) => {
         // Filtra os ministérios cujos _id estão no array ids e retorna os nomes correspondentes.

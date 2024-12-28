@@ -26,7 +26,7 @@ export function Header() {
     const [signOut] = useSignOut(auth);
     const router = useRouter();
     const [menuOpen, setMenuOpen] = useState(false);
-    const [photo, setPhoto] = useState<string>('')
+    const [photo, setPhoto] = useState<string>(useStoreIbbZus.photo)
 
     const handleSignOut = (e: any) => {
         e.preventDefault();
@@ -49,38 +49,6 @@ export function Header() {
         }
     }
 
-    const getUniqueMember = async (): Promise<void> => {
-        try {
-            if (useStoreIbbZus && useStoreIbbZus.mongoId.length === 24) {
-                UserApi.fetchMemberById(useStoreIbbZus.mongoId)
-                    .then((response: FormValuesMember) => {
-                        if (response) {
-                            const member: FormValuesMember = formatUserV2(response);
-                            setPhoto(member.foto);
-                        }
-                    })
-                    .catch((error) => {
-                        console.log(error);
-                        switch (error.code) {
-                            case 'ERR_BAD_REQUEST':
-                                setPhoto('');
-                                break;
-                            case 'ERR_NETWORK':
-                                setPhoto('');
-                                break;
-
-                            default:
-                                setPhoto('');
-                                break;
-                        }
-                    })
-            }
-        } catch (e) {
-            setPhoto('');
-        }
-    }
-
-    getUniqueMember();
     const logoLink = useStoreIbbZus.role === UserRoles.MEMBRO ? 'https://www.ibbrooklin.org.br/' : '/dashboard'
 
     return (
