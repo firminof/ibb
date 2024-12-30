@@ -45,6 +45,7 @@ export default function InviteV2Form() {
     const [error, setError] = useState('')
 
     const [photo, setPhoto] = useState<string | null>(null)
+    const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
 
     const searchParams = useSearchParams()
     const inviteId: string | null = searchParams.get('id')
@@ -105,16 +106,49 @@ export default function InviteV2Form() {
             }
 
             if (inviteId && inviteId.length > 0 && password === confirmPassword) {
+                // Validação de filhos
                 if (dataToCreate.informacoesPessoais.temFilhos && dataToCreate.informacoesPessoais.filhos.length === 0) {
                     alert('Adicione pelo menos 1 filho se a opção "Tem Filho" está como SIM.');
                     setLoading(false);
                     setLoadingMessage('');
-                    return
+                    return;
+                }
+
+                // Validação de filhos
+                if (dataToCreate && dataToCreate.informacoesPessoais.temFilhos && dataToCreate.informacoesPessoais.filhos.length > 0) {
+                    for (let i = 0; i < dataToCreate.informacoesPessoais.filhos.length; i++) {
+                        const filho = dataToCreate.informacoesPessoais.filhos[i];
+
+                        // Valida se o filho não tem a propriedade isMember e se tem nome
+                        if (!filho.isMember) {
+                            // Valida se o filho não tem a propriedade isMember e se tem nome
+                            if (filho && filho.id === '' && filho.nome?.length === 0) {
+                                filho.id = '';  // Atribui id vazio se o filho não for membro
+                            }
+                        }
+                    }
                 }
 
                 if (!dataToCreate.informacoesPessoais.casamento.conjugue?.isMember) {
                     if (dataToCreate.informacoesPessoais.casamento.conjugue && dataToCreate.informacoesPessoais.casamento.conjugue.nome) {
                         dataToCreate.informacoesPessoais.casamento.conjugue.id = '';
+                    }
+                }
+
+                // Upload da foto se necessário
+                if (selectedPhoto) {
+                    const formData = new FormData();
+                    formData.append('file', selectedPhoto);
+
+                    try {
+                        const uploadResponse = await UserApi.uploadPhoto(formData);
+                        dataToCreate.foto = uploadResponse.url; // Atribui a URL retornada ao campo foto
+                    } catch (uploadError) {
+                        console.error('Erro ao fazer upload da foto:', uploadError);
+                        alert('Erro ao fazer upload da foto. Verifique o arquivo e tente novamente.');
+                        setLoading(false);
+                        setLoadingMessage('');
+                        return;
                     }
                 }
 
@@ -128,27 +162,16 @@ export default function InviteV2Form() {
         } catch (e) {
             console.error(e)
             alert(`Erro: ${e.response?.data?.message || 'Ocorreu um erro ao cadastrar o membro.'}`)
+        } finally {
+            setLoading(false)
+            setLoadingMessage('')
         }
-
-        setLoading(false)
-        setLoadingMessage('')
     }
 
     const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0]
-
-        // Limpar mensagens de erro
-        setError(null);
+        const file = event.target.files?.[0];
 
         if (!file) return;
-
-        // Verificar tamanho máximo do arquivo (500 KB)
-        const maxSize = 0.5 * 1024 * 1024; // 600 KB em bytes
-        if (file.size > maxSize) {
-            setError("A imagem deve ter tamanho máximo de 500 KB");
-            alert("A imagem deve ter tamanho máximo de 500 KB")
-            return;
-        }
 
         // Ler a imagem como Base64
         const reader = new FileReader();
@@ -159,6 +182,9 @@ export default function InviteV2Form() {
                 // Compactar a imagem para largura máxima de 800px e qualidade de 60%
                 const compressed = await compressBase64Image(base64Image, 800, 0.6);
                 setPhoto(compressed);
+                setTimeout(() => {
+                    setSelectedPhoto(file);
+                }, 200)
             } catch (error) {
                 alert('Atenção: somente arquivo de imagem é permitido!')
                 console.error('Erro ao compactar a imagem:', error);

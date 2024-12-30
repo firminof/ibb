@@ -21,12 +21,9 @@ export function Header() {
     const useStoreIbbZus: IStore = useStoreIbb((state: IStore) => state);
     const [isOpen, setIsOpen] = useState(false)
 
-    const user = useStoreIbbZus.user;
-
     const [signOut] = useSignOut(auth);
     const router = useRouter();
-    const [menuOpen, setMenuOpen] = useState(false);
-    const [photo, setPhoto] = useState<string>(useStoreIbbZus.photo)
+    const [photo] = useState<string>(useStoreIbbZus.photo)
 
     const handleSignOut = (e: any) => {
         e.preventDefault();
@@ -38,6 +35,7 @@ export function Header() {
                     useStoreIbbZus.addRole('');
                     useStoreIbbZus.addMongoId('');
                     useStoreIbbZus.setHasHydrated(true);
+                    useStoreIbbZus.addPhoto('');
 
                     setTimeout(() => {
                         router.push('/login');

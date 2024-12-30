@@ -101,11 +101,34 @@ export default function MemberForm() {
                 return;
             }
 
+            if (!dataToCreate.informacoesPessoais.temFilhos) {
+                dataToCreate.informacoesPessoais.filhos = [];
+            }
+
+            // Validação de filhos
+            if (dataToCreate && dataToCreate.informacoesPessoais.temFilhos && dataToCreate.informacoesPessoais.filhos.length > 0) {
+                for (let i = 0; i < dataToCreate.informacoesPessoais.filhos.length; i++) {
+                    const filho = dataToCreate.informacoesPessoais.filhos[i];
+
+                    // Valida se o filho não tem a propriedade isMember e se tem nome
+                    if (!filho.isMember) {
+                        // Valida se o filho não tem a propriedade isMember e se tem nome
+                        if (filho && filho.id === '' && filho.nome?.length === 0) {
+                            filho.id = '';  // Atribui id vazio se o filho não for membro
+                        }
+                    }
+                }
+            }
+
             // Validação de cônjuge
             if (!dataToCreate.informacoesPessoais.casamento.conjugue?.isMember) {
                 if (dataToCreate.informacoesPessoais.casamento.conjugue && dataToCreate.informacoesPessoais.casamento.conjugue.nome) {
                     dataToCreate.informacoesPessoais.casamento.conjugue.id = '';
                 }
+            }
+
+            if (dataToCreate.informacoesPessoais.estadoCivil === CivilStateEnumV2.DIVORCIADO) {
+                dataToCreate.informacoesPessoais.casamento = null;
             }
 
             // Upload da foto se necessário
@@ -136,7 +159,7 @@ export default function MemberForm() {
 
             setLoading(false);
             setLoadingMessage('');
-            router.push('/member-list');
+            useStoreIbbZus.role === UserRolesV2.ADMIN ? router.push('/member-list') : router.push('/user');
         } catch (e) {
             console.error('Erro ao salvar membro:', e);
             alert(`Erro: ${e.response?.data?.message || 'Erro desconhecido'}!`);

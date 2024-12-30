@@ -289,14 +289,27 @@ export default function UserForm() {
     }, {} as Record<string, Historico[]>);
 
     function getGroupForField(field: string): string {
-        if (field.startsWith('informacoesPessoais')) return 'Informações Pessoais';
-        if (field.startsWith('endereco')) return 'Endereço';
-        if (field.startsWith('ingresso')) return 'Ingresso';
-        if (field.startsWith('transferencia')) return 'Transferência';
-        if (field.startsWith('falecimento')) return 'Falecimento';
-        if (field.startsWith('exclusao')) return 'Exclusão';
-        if (field.startsWith('visitas')) return 'Visitas';
-        if (field.startsWith('autenticacao')) return 'Autenticação';
+        const groups: { [key: string]: string } = {
+            'informacoesPessoais.casamento.conjugue': 'Informações Pessoais (Cônjuge)',
+            'informacoesPessoais.casamento': 'Informações Pessoais (Casamento)',
+            'informacoesPessoais.filhos': 'Informações Pessoais (Filhos)',
+            'informacoesPessoais': 'Informações Pessoais',
+            'endereco': 'Endereço',
+            'ingresso': 'Ingresso',
+            'transferencia': 'Transferência',
+            'falecimento': 'Falecimento',
+            'exclusao': 'Exclusão',
+            'visitas': 'Visitas',
+            'autenticacao': 'Autenticação',
+        };
+
+        // Busca o grupo correspondente, retornando 'Informações Básicas' como padrão.
+        for (const prefix in groups) {
+            if (field.startsWith(prefix)) {
+                return groups[prefix];
+            }
+        }
+
         return 'Informações Básicas';
     }
 
@@ -314,6 +327,14 @@ export default function UserForm() {
 
         if (typeof value === 'boolean') {
             return value ? 'Sim' : 'Não';
+        }
+
+        if (value === 'true') {
+            return 'Sim';
+        }
+
+        if (value === 'false') {
+            return 'Não';
         }
 
         if (value instanceof Date) {
@@ -683,7 +704,7 @@ export default function UserForm() {
                             </CardContent>
 
                             {
-                                member.role === UserRolesV2.ADMIN && (
+                                useStoreIbbZus.role === UserRolesV2.ADMIN && (
                                     <CardFooter>
                                         <div className="w-full space-y-4">
                                             <h3 className="text-lg font-semibold">Convites Enviados</h3>
@@ -709,13 +730,10 @@ export default function UserForm() {
                                                                 </div>
                                                                 <div
                                                                     className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                                                                    <span className="text-sm text-muted-foreground">
-                                                                        {format(invitation.createdAt, 'dd/MM/yyyy HH:mm:ss')}
-                                                                    </span>
 
                                                                     <span
                                                                         className={`text-sm text-muted-foreground px-2 py-1 rounded-full font-semibold ${invitation.isAccepted ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
-                                                                        {invitation.isAccepted ? 'CONVITE ACEITO' : 'CONVITE PENDENTE DE ACEITAÇÃO'}
+                                                                        {invitation.isAccepted ? `CONVITE ACEITO EM: ${format(invitation.updatedAt, 'dd/MM/yyyy HH:mm:ss')}` : `CONVITE ENVIADO EM: ${format(invitation.createdAt, 'dd/MM/yyyy HH:mm:ss')}`}
                                                                     </span>
                                                                     <span>
                                                                         <AlertDialog>
@@ -760,7 +778,7 @@ export default function UserForm() {
                             }
 
                             {
-                                member.role === UserRolesV2.ADMIN && (
+                                useStoreIbbZus.role === UserRolesV2.ADMIN && (
                                     <CardFooter>
                                         {/* Histórico de Alterações */}
                                         <div className="space-y-2">
