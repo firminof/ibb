@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import {Label} from "@/components/ui/label"
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from "@/components/ui/accordion"
-import {Edit, Eye, Filter, RefreshCw, Trash, UserCog, ViewIcon} from 'lucide-react'
+import {Edit, Eye, Filter, RefreshCw, Trash, Trash2, UserCog, ViewIcon} from 'lucide-react'
 import {format} from 'date-fns'
 import {useForm} from "react-hook-form"
 import {zodResolver} from "@hookform/resolvers/zod"
@@ -41,6 +41,15 @@ import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group";
 import {EmailInput, PhoneInput} from "@/components/form-inputs/form-inputs";
 import {emailRegex} from "@/lib/helpers/helpers";
 import {IInviteByEmail} from "@/lib/models/invite";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 
 // Status validation schema
 const statusUpdateSchema = z.object({
@@ -618,13 +627,39 @@ export default function MemberListing() {
 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-5">
                 <div className="flex flex-col md:flex-row gap-2">
-                    <Button
-                        variant="destructive"
-                        onClick={handleDeleteSelected}
-                        disabled={selectedMembers.length === 0}
-                    >
-                        <Trash className="mr-2 h-4 w-4"/> Deletar Selecionados
-                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button
+                                disabled={selectedMembers.length === 0}
+                                variant="destructive">
+                                <Trash2 className="h-4 w-4 mr-3"/> Deletar Selecionados
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Tem certeza que deseja excluir: <b>({selectedMembers.length}) {selectedMembers.length === 1 ? 'item' : 'itens'}</b>?
+                                    <br/>
+                                    <br/>
+                                    Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteSelected()}>
+                                    Confirmar
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                    {/*<Button*/}
+                    {/*    variant="destructive"*/}
+                    {/*    onClick={handleDeleteSelected}*/}
+                    {/*    disabled={selectedMembers.length === 0}*/}
+                    {/*>*/}
+                    {/*    <Trash className="mr-2 h-4 w-4"/> Deletar Selecionados*/}
+                    {/*</Button>*/}
                     <Button
                         variant="outline"
                         onClick={handleRequestUpdate}
