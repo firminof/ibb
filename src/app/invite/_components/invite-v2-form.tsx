@@ -135,6 +135,10 @@ export default function InviteV2Form() {
                     }
                 }
 
+                if (dataToCreate.informacoesPessoais.estadoCivil === CivilStateEnumV2.DIVORCIADO) {
+                    dataToCreate.informacoesPessoais.casamento = null;
+                }
+
                 // Upload da foto se necessário
                 if (selectedPhoto) {
                     const formData = new FormData();

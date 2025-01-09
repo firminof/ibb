@@ -56,14 +56,14 @@ export class UserApi {
         return user.data;
     }
 
-    static async requestUpdateUserInfo(body: string[]): Promise<any> {
-        const user = await api.post(`/v2/user/request-update`, body);
+    static async requestUpdateUserInfo(body: string[], requestPassword: boolean): Promise<any> {
+        const user = await api.post(`/v2/user/request-update/${requestPassword}`, body);
 
         return user.data;
     }
 
-    static async updateMember(id: string, body: any): Promise<UserV2> {
-        const user = await api.put(`/v2/user/${id}`, body);
+    static async updateMember(id: string, body: any, password?: string): Promise<UserV2> {
+        const user = await api.put(`/v2/user/${id}/${password}`, body);
 
         return user.data;
     }

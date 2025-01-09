@@ -109,6 +109,8 @@ export default function MemberListing() {
     const [diaconos, setDiaconos] = useState<FormValuesUniqueMember[]>([]);
     const [membros, setMembros] = useState<FormValuesMember[]>([]);
 
+    const [requestPassword, setRequestPassword] = useState(false);
+
     const [openLoading, setLoading] = useState<boolean>(false);
     const [openLoadingMessage, setLoadingMessage] = useState<string>('');
 
@@ -183,7 +185,7 @@ export default function MemberListing() {
 
         try {
             if (selectedMembers && selectedMembers.length > 0) {
-                UserApi.requestUpdateUserInfo({_id: selectedMembers})
+                UserApi.requestUpdateUserInfo({_id: selectedMembers}, requestPassword)
                     .then((response: FormValuesMember) => {
                         alert(`Atualização cadastral solicitada com sucesso!`);
                     })
@@ -653,20 +655,53 @@ export default function MemberListing() {
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
+
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button
+                                disabled={selectedMembers.length === 0}
+                                variant="outline">
+                                <UserCog className="mr-3 h-4 w-4"/> Solicitar Atualização Cadastral
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmar solicitação de atualização cadastral</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Tem certeza que deseja solicitar atualização cadastral para: <b>({selectedMembers.length}) {selectedMembers.length === 1 ? 'item' : 'itens'}</b>?
+                                    <br/>
+                                    <br/>
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id="request-password"
+                                            checked={requestPassword}
+                                            onCheckedChange={(checked) => setRequestPassword(checked as boolean)}
+                                        />
+                                        <label
+                                            htmlFor="request-password"
+                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                        >
+                                            Solicitar a senha na atualização cadastral
+                                        </label>
+                                    </div>
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleRequestUpdate()}>
+                                    Confirmar
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+
                     {/*<Button*/}
-                    {/*    variant="destructive"*/}
-                    {/*    onClick={handleDeleteSelected}*/}
+                    {/*    variant="outline"*/}
+                    {/*    onClick={handleRequestUpdate}*/}
                     {/*    disabled={selectedMembers.length === 0}*/}
                     {/*>*/}
-                    {/*    <Trash className="mr-2 h-4 w-4"/> Deletar Selecionados*/}
+                    {/*    <UserCog className="mr-2 h-4 w-4"/> Solicitar Atualização Cadastral*/}
                     {/*</Button>*/}
-                    <Button
-                        variant="outline"
-                        onClick={handleRequestUpdate}
-                        disabled={selectedMembers.length === 0}
-                    >
-                        <UserCog className="mr-2 h-4 w-4"/> Solicitar Atualização Cadastral
-                    </Button>
                 </div>
                 <Button variant="outline" onClick={handleReloadTable}>
                     <RefreshCw className="mr-2 h-4 w-4"/> Recarregar

@@ -39,6 +39,7 @@ import {UserApi} from "@/lib/api/user-api";
 import {IMinistries} from "@/lib/models/user-response-api";
 import {RefinementCtx, SafeParseError, SafeParseSuccess, ZodIssue} from "zod";
 import {compressBase64Image} from "@/lib/helpers/helpers";
+import {PasswordSection} from "@/app/invite/_components/password-section";
 
 // Registrar o local (se necessário)
 registerLocale("pt-BR", ptBR);
@@ -52,9 +53,19 @@ export default function MemberForm() {
 
     const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
 
+    const [password, setPassword] = useState('')
+    const [confirmPassword, setConfirmPassword] = useState('')
+
     const searchParams = useSearchParams()
 
     const idMembro: string | null = searchParams.get('id')
+
+    let requestPassword: boolean | null = null;
+
+    const paramValue = searchParams.get('requestPassword');
+    if (paramValue !== null) {
+        requestPassword = paramValue.toLowerCase() === 'true';
+    }
 
     const isEditing: boolean = idMembro && idMembro.length > 0;
 
@@ -93,16 +104,35 @@ export default function MemberForm() {
             let { _id, ...dataToCreate } = { ...data, foto: photo }; // Inicialmente, foto recebe o valor atual de photo
             console.log('dataToCreate: ', dataToCreate);
 
+            if (requestPassword) {
+                if (!password || password === '') {
+                    setLoading(false)
+                    setLoadingMessage('')
+                    alert('Erro: Preencha a senha!')
+                    return
+                }
+
+                if (!confirmPassword || confirmPassword === '') {
+                    setLoading(false)
+                    setLoadingMessage('')
+                    alert('Erro: Preencha a confirmação da senha!')
+                    return
+                }
+
+                if (password !== confirmPassword) {
+                    setLoading(false)
+                    setLoadingMessage('')
+                    alert('Erro: As senhas não coincidem!')
+                    return
+                }
+            }
+
             // Validação de filhos
             if (dataToCreate.informacoesPessoais.temFilhos && dataToCreate.informacoesPessoais.filhos.length === 0) {
                 alert('Adicione pelo menos 1 filho se a opção "Tem Filho" está como SIM.');
                 setLoading(false);
                 setLoadingMessage('');
                 return;
-            }
-
-            if (!dataToCreate.informacoesPessoais.temFilhos) {
-                dataToCreate.informacoesPessoais.filhos = [];
             }
 
             // Validação de filhos
@@ -150,7 +180,7 @@ export default function MemberForm() {
 
             // Atualização ou criação do membro
             if (idMembro && idMembro.length > 0) {
-                await UserApi.updateMember(idMembro, dataToCreate);
+                await UserApi.updateMember(idMembro, dataToCreate, password);
                 alert('Membro editado com sucesso!');
             } else {
                 await UserApi.createMember(dataToCreate);
@@ -518,6 +548,16 @@ export default function MemberForm() {
                             />
                         </CardContent>
                     </Card>
+
+                    {/*SENHA*/}
+                    {
+                        requestPassword && (<PasswordSection
+                            password={password}
+                            setPassword={setPassword}
+                            confirmPassword={confirmPassword}
+                            setConfirmPassword={setConfirmPassword}
+                        />)
+                    }
 
                     {/*NIVEL DE ACESSO E STATUS MEMBRESIA*/}
                     {
