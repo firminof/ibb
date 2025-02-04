@@ -1,5 +1,5 @@
 import {initializeApp, getApps, getApp} from "firebase/app";
-import {getAuth} from "firebase/auth";
+import {getAuth, RecaptchaVerifier as Recaptcha } from "firebase/auth";
 
 const config = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -13,3 +13,4 @@ const config = {
 // Initialize Firebase
 export const app = !getApps().length ? initializeApp(config) : getApp();
 export const auth = getAuth()
+export const RecaptchaVerifier = Recaptcha;

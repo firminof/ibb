@@ -8,7 +8,7 @@ import {useRouter} from "next/navigation";
 import Image from "next/image";
 import * as React from "react";
 import {useState} from "react";
-import {UserRoles} from "@/lib/helpers/helpers";
+import {passouUmaHora, UserRoles} from "@/lib/helpers/helpers";
 import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
 import {LogOutIcon, Menu, UserIcon} from "lucide-react";
 import {UserApi} from "@/lib/api/user-api";
@@ -25,9 +25,7 @@ export function Header() {
     const router = useRouter();
     const [photo] = useState<string>(useStoreIbbZus.photo)
 
-    const handleSignOut = (e: any) => {
-        e.preventDefault();
-
+    const handleSignOut = () => {
         try {
             signOut()
                 .then(r => {
@@ -36,6 +34,7 @@ export function Header() {
                     useStoreIbbZus.addMongoId('');
                     useStoreIbbZus.setHasHydrated(true);
                     useStoreIbbZus.addPhoto('');
+                    useStoreIbbZus.addLoggout(true);
 
                     setTimeout(() => {
                         router.push('/login');
@@ -47,7 +46,28 @@ export function Header() {
         }
     }
 
-    const logoLink = useStoreIbbZus.role === UserRoles.MEMBRO ? 'https://www.ibbrooklin.org.br/' : '/dashboard'
+    const logoLink = useStoreIbbZus.role === UserRoles.MEMBRO ? 'https://www.ibbrooklin.org.br/' : '/dashboard';
+
+    if (!useStoreIbbZus.loggout) {
+        const verificaSessaoExpirada: boolean = passouUmaHora(useStoreIbbZus.sessionDuration);
+
+        if (verificaSessaoExpirada) {
+            signOut()
+                .then(r => {
+                    useStoreIbbZus.addUser(null);
+                    useStoreIbbZus.addRole('');
+                    useStoreIbbZus.addMongoId('');
+                    useStoreIbbZus.setHasHydrated(true);
+                    useStoreIbbZus.addPhoto('');
+                    useStoreIbbZus.addLoggout(true);
+
+                    setTimeout(() => {
+                        router.push('/login');
+                    }, 1000);
+                })
+                .catch(e => console.log('[PROMISE] error: ', e))
+        }
+    }
 
     return (
         <header className="bg-background border-b-2 border-border px-4 py-3 flex items-center justify-between">

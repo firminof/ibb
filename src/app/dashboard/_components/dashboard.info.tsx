@@ -66,7 +66,7 @@ export function DashboardInfo() {
         router.push('/user');
     }
 
-    if (useStoreIbbZus.user == null) {
+    if (useStoreIbbZus.user == null || useStoreIbbZus.loggout) {
         useStoreIbbZus.addUser(null);
         useStoreIbbZus.addRole('');
         useStoreIbbZus.addMongoId('');
@@ -279,7 +279,7 @@ export function DashboardInfo() {
                 <BirthdaysV2/>
             </main>
             <footer>
-                Versão: 1.0
+                Versão: 1.1
             </footer>
         </div>
     )

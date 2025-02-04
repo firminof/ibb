@@ -36,8 +36,7 @@ import {
     UserRoles, UserRolesV2
 } from "@/lib/models/user";
 import {UserApi} from "@/lib/api/user-api";
-import {IMinistries} from "@/lib/models/user-response-api";
-import {RefinementCtx, SafeParseError, SafeParseSuccess, ZodIssue} from "zod";
+import {SafeParseError, SafeParseSuccess, ZodIssue} from "zod";
 import {compressBase64Image} from "@/lib/helpers/helpers";
 import {PasswordSection} from "@/app/invite/_components/password-section";
 
@@ -127,6 +126,14 @@ export default function MemberForm() {
                 }
             }
 
+            // Validar se tem pelo menos o email ou telefone
+            // if (dataToCreate.email.toString().length === 0 && dataToCreate.telefone.toString().length === 0) {
+            //     alert('Adicione um meio de contato: Email ou Telefone');
+            //     setLoading(false);
+            //     setLoadingMessage('');
+            //     return;
+            // }
+
             // Validação de filhos
             if (dataToCreate.informacoesPessoais.temFilhos && dataToCreate.informacoesPessoais.filhos.length === 0) {
                 alert('Adicione pelo menos 1 filho se a opção "Tem Filho" está como SIM.');
@@ -180,7 +187,8 @@ export default function MemberForm() {
 
             // Atualização ou criação do membro
             if (idMembro && idMembro.length > 0) {
-                await UserApi.updateMember(idMembro, dataToCreate, password);
+                const params = requestPassword ? [idMembro, dataToCreate, password] : [idMembro, dataToCreate, ''];
+                await UserApi.updateMember(...params);
                 alert('Membro editado com sucesso!');
             } else {
                 await UserApi.createMember(dataToCreate);
@@ -1545,8 +1553,8 @@ export default function MemberForm() {
 
                     <div className="flex flex-1 justify-end mt-4 mb-4">
                         <Button type="submit" className="ml-auto" onClick={() => {
-                            const result: SafeParseSuccess<FormValuesMember> | SafeParseError<FormValuesMember> = formSchema.safeParse(form.getValues());
                             console.log(form.getValues());
+                            const result: SafeParseSuccess<FormValuesMember> | SafeParseError<FormValuesMember> = formSchema.safeParse(form.getValues());
                             console.log(result);
                             const errorMessages: string[] = [];
                             if (result && result.error && result.error.issues) {

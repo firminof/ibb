@@ -171,3 +171,10 @@ export async function compressBase64Image(
         img.src = base64Image;
     });
 }
+
+export function passouUmaHora(timestamp: number): boolean {
+    const umaHoraEmMs: number = 60 * 60 * 1000; // 1 hora em milissegundos
+    const tempoAtualAteTempoLogin = new Date().getTime() - timestamp;
+
+    return tempoAtualAteTempoLogin > umaHoraEmMs;
+}

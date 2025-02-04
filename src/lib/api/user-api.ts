@@ -63,7 +63,11 @@ export class UserApi {
     }
 
     static async updateMember(id: string, body: any, password?: string): Promise<UserV2> {
-        const user = await api.put(`/v2/user/${id}/${password}`, body);
+        console.log('password: ', password);
+        console.log('password && password.length > 0: ', password && password.length > 0);
+        const url: string = password && password.length > 0 ? `/v2/user/${id}/${password}` : `/v2/user/no-password/${id}`
+
+        const user = password && password.length > 0 ? await api.put(url, body) : await api.patch(url, body);
 
         return user.data;
     }
