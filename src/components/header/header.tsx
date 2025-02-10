@@ -65,7 +65,7 @@ export function Header() {
     if (!useStoreIbbZus.loggout) {
         const verificaSessaoExpirada: boolean = passouUmaHora(useStoreIbbZus.sessionDuration);
 
-        if (!verificaSessaoExpirada) {
+        if (verificaSessaoExpirada) {
             setTimeout(() => setOpenDialogSession(true), 1000);
         }
     }
