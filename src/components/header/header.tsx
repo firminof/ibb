@@ -8,7 +8,7 @@ import {useRouter} from "next/navigation";
 import Image from "next/image";
 import * as React from "react";
 import {useState} from "react";
-import {passouUmaHora, UserRoles} from "@/lib/helpers/helpers";
+import {emailRegex, passouUmaHora, UserRoles} from "@/lib/helpers/helpers";
 import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
 import {LogOutIcon, Menu, UserIcon} from "lucide-react";
 import {UserApi} from "@/lib/api/user-api";
@@ -16,6 +16,19 @@ import {formatUserV2, FormValuesMember} from "@/lib/models/user";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger} from "@/components/ui/sheet";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger
+} from "@/components/ui/dialog";
+import {SendIcon} from "@/components/send-icon/send-icon";
+import {Label} from "@/components/ui/label";
+import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group";
+import {EmailInput, PhoneInput} from "@/components/form-inputs/form-inputs";
+import {ArrowRightIcon} from "@radix-ui/react-icons";
 
 export function Header() {
     const useStoreIbbZus: IStore = useStoreIbb((state: IStore) => state);
@@ -24,6 +37,7 @@ export function Header() {
     const [signOut] = useSignOut(auth);
     const router = useRouter();
     const [photo] = useState<string>(useStoreIbbZus.photo)
+    const [openDialogSession, setOpenDialogSession] = useState(false);
 
     const handleSignOut = () => {
         try {
@@ -51,26 +65,38 @@ export function Header() {
     if (!useStoreIbbZus.loggout) {
         const verificaSessaoExpirada: boolean = passouUmaHora(useStoreIbbZus.sessionDuration);
 
-        if (verificaSessaoExpirada) {
-            signOut()
-                .then(r => {
-                    useStoreIbbZus.addUser(null);
-                    useStoreIbbZus.addRole('');
-                    useStoreIbbZus.addMongoId('');
-                    useStoreIbbZus.setHasHydrated(true);
-                    useStoreIbbZus.addPhoto('');
-                    useStoreIbbZus.addLoggout(true);
-
-                    setTimeout(() => {
-                        router.push('/login');
-                    }, 1000);
-                })
-                .catch(e => console.log('[PROMISE] error: ', e))
+        if (!verificaSessaoExpirada) {
+            setTimeout(() => setOpenDialogSession(true), 1000);
         }
     }
 
     return (
         <header className="bg-background border-b-2 border-border px-4 py-3 flex items-center justify-between">
+            <Dialog open={openDialogSession} onOpenChange={setOpenDialogSession}>
+                {/* Conteúdo do Diálogo */}
+                <DialogContent className="w-full max-w-sm sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Sessão encerrada</DialogTitle>
+                        <DialogDescription>
+                            <p>Sua sessão foi encerrada por tempo de uso.</p>
+                            <p>Você será redirecionado para o login para se autenticar novamente.</p>
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                        <Button
+                            type="submit"
+                            size="sm"
+                            className="px-3 flex items-center gap-2"
+                            onClick={(e) => handleSignOut()}
+                        >
+                            Ir para login
+                            <ArrowRightIcon className="w-4 h-4" />
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
             <Link href={logoLink} prefetch={false} className="flex-shrink-0">
                 <Image
                     src="/ibb_azul.png"

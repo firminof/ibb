@@ -102,6 +102,12 @@ const MinistrieEntitySchema = z.object({
 type MinistriesEntity = z.infer<typeof MinistrieEntitySchema>;
 
 export default function MemberListing() {
+    const [currentPage, setCurrentPage] = useState(1)
+    const [itemsPerPage, setItemsPerPage] = useState(10)
+    const [totalPages, setTotalPages] = useState(1)
+    const [indexOfLastItem, setIndexOfLastItem] = useState(1)
+    const [indexOfFirstItem, setIndexOfFirstItem] = useState(1)
+
     const useStoreIbbZus = useStoreIbb((state: IStore) => state);
     const router = useRouter();
 
@@ -120,6 +126,7 @@ export default function MemberListing() {
         nome: '',
         telefone: '',
         isDiacono: 'all',
+        status: 'all'
     })
     const [selectedMember, setSelectedMember] = useState<FormValuesMember | null>(null);
     const form = useForm<z.infer<typeof statusUpdateSchema>>({
@@ -133,12 +140,7 @@ export default function MemberListing() {
     const [openDialogInvite, setOpenDialogInvite] = useState(false);
 
     useEffect(() => {
-        const filtered: FormValuesMember[] = membros.filter(member =>
-            member.nome.toLowerCase().includes(filters.nome.toLowerCase()) &&
-            member.telefone.includes(filters.telefone) &&
-            (filters.isDiacono === 'all' || member.isDiacono.toString() === filters.isDiacono)
-        )
-        setFilteredMembers(filtered)
+        applyFilters();
     }, [membros, filters])
 
     const handleFilterChange = (key: string, value: string) => {
@@ -435,6 +437,46 @@ export default function MemberListing() {
             .map((ministerio: MinistriesEntity): string => ministerio.nome ? ministerio.nome : '-').join(', ');
     }
 
+    const applyFilters = () => {
+        const filtered: FormValuesMember[] = membros.filter(member =>
+            member.nome.toLowerCase().includes(filters.nome.toLowerCase()) &&
+            member.telefone.includes(filters.telefone) &&
+            (member.status === filters.status || filters.status === 'all') &&
+            (filters.isDiacono === 'all' || member.isDiacono.toString() === filters.isDiacono)
+        )
+
+        const indexOfLastItem = currentPage * itemsPerPage;
+        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+
+        setIndexOfLastItem(currentPage * itemsPerPage);
+        setIndexOfFirstItem(indexOfLastItem - itemsPerPage);
+        setTotalPages(Math.ceil(filtered.length / itemsPerPage))
+
+        setTimeout(() => setFilteredMembers(filtered.slice(indexOfFirstItem, indexOfLastItem)), 100);
+    }
+
+    const handlePageChange = (pageNumber: number) => {
+        setTimeout(() => {
+            setCurrentPage(pageNumber)
+            setIndexOfLastItem(currentPage * itemsPerPage);
+            setIndexOfFirstItem(indexOfLastItem - itemsPerPage);
+
+            setTimeout(() => applyFilters(), 200);
+        }, 100)
+    }
+
+    const handleItemsPerPageChange = (value: string) => {
+        setTimeout(() => {
+            setItemsPerPage(Number(value))
+            setCurrentPage(1)
+
+            setIndexOfLastItem(currentPage * itemsPerPage);
+            setIndexOfFirstItem(indexOfLastItem - itemsPerPage);
+
+            setTimeout(() => applyFilters(), 200);
+        }, 100);
+    }
+
     if (openLoading) {
         return <Backdrop
             sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
@@ -622,6 +664,28 @@ export default function MemberListing() {
                                     </SelectContent>
                                 </Select>
                             </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="diacono">Status</Label>
+                                <Select
+                                    id="diacono"
+                                    value={filters.status}
+                                    onValueChange={(value) => handleFilterChange('status', value)}
+                                >
+                                    <SelectTrigger className="w-[180px]">
+                                        <SelectValue placeholder="Selecione o status"/>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Todos</SelectItem>
+                                        <SelectItem value="ativo">{StatusEnumV2.ATIVO}</SelectItem>
+                                        <SelectItem value="visitante">{StatusEnumV2.VISITANTE}</SelectItem>
+                                        <SelectItem value="congregado">{StatusEnumV2.CONGREGADO}</SelectItem>
+                                        <SelectItem value="inativo">{StatusEnumV2.INATIVO}</SelectItem>
+                                        <SelectItem value="transferido">{StatusEnumV2.TRANSFERIDO}</SelectItem>
+                                        <SelectItem value="falecido">{StatusEnumV2.FALECIDO}</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     </AccordionContent>
                 </AccordionItem>
@@ -715,6 +779,28 @@ export default function MemberListing() {
             ) : (
                 <Card className="w-full">
                     <CardContent className="p-2">
+                        <div className="flex justify-between items-center mb-4">
+                            <div>
+                                <span className="font-medium">Total de membros: </span>
+                                {membros.length}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <span>Itens por página:</span>
+                                <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+                                    <SelectTrigger className="w-[70px]">
+                                        <SelectValue placeholder={itemsPerPage} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {[5, 10, 20, 50, 100].map((number) => (
+                                            <SelectItem key={number} value={number.toString()}>
+                                                {number}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -1092,6 +1178,54 @@ export default function MemberListing() {
                                 ))}
                             </TableBody>
                         </Table>
+
+                        <div className="flex justify-between flex-wrap items-center mt-4">
+                            <div>
+                                <span className="font-medium">Exibindo </span>
+                                {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredMembers.length)}
+                                <span className="font-medium"> de {membros.length}</span>
+                            </div>
+                            <div className="flex justify-start flex-wrap space-x-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        handlePageChange(currentPage - 1)
+                                        setTimeout(() => handlePageChange(currentPage - 1), 100)
+                                    }}
+                                    disabled={currentPage === 1}
+                                >
+                                    Anterior
+                                </Button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                    <Button
+                                        key={page}
+                                        variant={currentPage === page ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            handlePageChange(page)
+                                            setTimeout(() => handlePageChange(page), 100)
+                                        }}
+                                    >
+                                        {page}
+                                    </Button>
+                                ))}
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        handlePageChange(currentPage + 1)
+                                        setTimeout(() => handlePageChange(currentPage + 1), 100)
+                                    }}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    Próxima
+                                </Button>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
             )}
