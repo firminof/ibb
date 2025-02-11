@@ -279,7 +279,7 @@ export function DashboardInfo() {
                 <BirthdaysV2/>
             </main>
             <footer>
-                Versão: 1.1
+                Versão: 1.2
             </footer>
         </div>
     )
