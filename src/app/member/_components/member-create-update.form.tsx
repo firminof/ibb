@@ -457,12 +457,12 @@ export default function MemberForm() {
                                             <FormLabel>RG</FormLabel>
                                             <FormControl>
                                                 <InputMask
-                                                    mask="999.999.999"
+                                                    mask="99.999.999-9"
                                                     value={field.value}
                                                     onChange={field.onChange}
                                                 >
                                                     {(inputProps: any) => <Input
-                                                        placeholder={"999.999.999"} {...inputProps} />}
+                                                        placeholder={"99.999.999-9"} {...inputProps} />}
                                                 </InputMask>
                                             </FormControl>
                                             <FormMessage/>

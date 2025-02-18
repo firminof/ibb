@@ -82,7 +82,7 @@ export default function BirthdaysV2() {
     useEffect(() => {
         const filtered: FormValuesMember[] = membros.filter(member =>
             member.nome.toLowerCase().includes(filters.nome.toLowerCase()) &&
-            member.telefone.includes(filters.telefone) &&
+            member.telefone?.includes(filters.telefone) &&
             (filters.isDiacono === 'all' || member.isDiacono.toString() === filters.isDiacono) &&
             (filters.mesAniversario === 'all' || new Date(member.dataNascimento).getMonth() + 1 === parseInt(filters.mesAniversario))
         )
@@ -245,6 +245,11 @@ export default function BirthdaysV2() {
     const handleSendMessage = async (member: FormValuesMember) => {
         setLoading(true);
         setLoadingMessage('Enviando mensagem de parabéns');
+
+        if (member.telefone?.length === 0) {
+            alert('Membro sem telefone cadastrado, não é possível enviar os parábens!');
+            return;
+        }
 
         try {
             const payload: WhatsappMessageWithTwilioInput = {
@@ -447,6 +452,7 @@ export default function BirthdaysV2() {
                                                             variant="outline"
                                                             size="sm"
                                                             className="z-10"
+                                                            disabled={member.telefone?.length === 0}
                                                         >
                                                             <MessageCircleIcon className="w-4 h-4 mr-2"/>
                                                             Enviar parabéns
