@@ -105,6 +105,7 @@ export default function MemberListing() {
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [totalPages, setTotalPages] = useState(1)
+    const [totalItemFiltered, setTotalItemFiltered] = useState(0)
     const [indexOfLastItem, setIndexOfLastItem] = useState(1)
     const [indexOfFirstItem, setIndexOfFirstItem] = useState(1)
 
@@ -126,7 +127,9 @@ export default function MemberListing() {
         nome: '',
         telefone: '',
         isDiacono: 'all',
-        status: 'all'
+        status: 'all',
+        hasEmail: 'all',
+        hasTelefone: 'all'
     })
     const [selectedMember, setSelectedMember] = useState<FormValuesMember | null>(null);
     const form = useForm<z.infer<typeof statusUpdateSchema>>({
@@ -138,10 +141,6 @@ export default function MemberListing() {
     const [email, setEmail] = useState('');
     const [whatsapp, setWhatsapp] = useState('');
     const [openDialogInvite, setOpenDialogInvite] = useState(false);
-
-    useEffect(() => {
-        applyFilters();
-    }, [membros, filters])
 
     const handleFilterChange = (key: string, value: string) => {
         setFilters(prev => ({...prev, [key]: value}))
@@ -440,9 +439,11 @@ export default function MemberListing() {
     const applyFilters = () => {
         const filtered: FormValuesMember[] = membros.filter(member =>
             member.nome.toLowerCase().includes(filters.nome.toLowerCase()) &&
-            member.telefone.includes(filters.telefone) &&
+            member.telefone?.includes(filters.telefone) &&
             (member.status === filters.status || filters.status === 'all') &&
-            (filters.isDiacono === 'all' || member.isDiacono.toString() === filters.isDiacono)
+            (filters.isDiacono === 'all' || member.isDiacono.toString() === filters.isDiacono) &&
+            (filters.hasTelefone === 'all' || (filters.hasTelefone === 'true' ? member.telefone?.length > 0 : member.telefone?.length === 0)) &&
+            (filters.hasEmail === 'all' || (filters.hasEmail === 'true' ? member.email?.length > 0 : member.email?.length === 0))
         )
 
         const indexOfLastItem = currentPage * itemsPerPage;
@@ -451,6 +452,7 @@ export default function MemberListing() {
         setIndexOfLastItem(currentPage * itemsPerPage);
         setIndexOfFirstItem(indexOfLastItem - itemsPerPage);
         setTotalPages(Math.ceil(filtered.length / itemsPerPage))
+        setTotalItemFiltered(filtered.length);
 
         setTimeout(() => setFilteredMembers(filtered.slice(indexOfFirstItem, indexOfLastItem)), 100);
     }
@@ -477,6 +479,10 @@ export default function MemberListing() {
         }, 100);
     }
 
+    useEffect(() => {
+        applyFilters();
+    }, [membros, filters, applyFilters])
+    
     if (openLoading) {
         return <Backdrop
             sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
@@ -654,7 +660,7 @@ export default function MemberListing() {
                                     value={filters.isDiacono}
                                     onValueChange={(value) => handleFilterChange('isDiacono', value)}
                                 >
-                                    <SelectTrigger className="w-[180px]">
+                                    <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Diácono"/>
                                     </SelectTrigger>
                                     <SelectContent>
@@ -672,7 +678,7 @@ export default function MemberListing() {
                                     value={filters.status}
                                     onValueChange={(value) => handleFilterChange('status', value)}
                                 >
-                                    <SelectTrigger className="w-[180px]">
+                                    <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Selecione o status"/>
                                     </SelectTrigger>
                                     <SelectContent>
@@ -686,6 +692,63 @@ export default function MemberListing() {
                                     </SelectContent>
                                 </Select>
                             </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="hasTelefone">Tem telefone</Label>
+                                <Select
+                                    id="hasTelefone"
+                                    value={filters.hasTelefone}
+                                    onValueChange={(value) => handleFilterChange('hasTelefone', value)}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Tem telefone"/>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Todos</SelectItem>
+                                        <SelectItem value="true">Sim</SelectItem>
+                                        <SelectItem value="false">Não</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="hasTelefone">Tem email</Label>
+                                <Select
+                                    id="hasEmail"
+                                    value={filters.hasEmail}
+                                    onValueChange={(value) => handleFilterChange('hasEmail', value)}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Tem email"/>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Todos</SelectItem>
+                                        <SelectItem value="true">Sim</SelectItem>
+                                        <SelectItem value="false">Não</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className='flex justify-end items-center mt-3'>
+                            <Button
+                                variant="outline"
+                                onClick={(e) => {
+                                    e.preventDefault();
+
+                                    setTimeout(() => setFilters({
+                                        nome: '',
+                                        telefone: '',
+                                        isDiacono: 'all',
+                                        status: 'all',
+                                        hasEmail: 'all',
+                                        hasTelefone: 'all'
+                                    }), 100);
+
+                                    setTimeout(() => applyFilters(), 200);
+                                }}
+                            >
+                                <Trash2 className="mr-2 h-4 w-4"/> Limpar filtros
+                            </Button>
                         </div>
                     </AccordionContent>
                 </AccordionItem>
@@ -779,15 +842,15 @@ export default function MemberListing() {
             ) : (
                 <Card className="w-full">
                     <CardContent className="p-2">
-                        <div className="flex justify-between items-center mb-4">
-                            <div>
+                        <div className="flex flex-col sm:flex-row justify-between items-end gap-2 sm:gap-4 mb-4">
+                            <div className="text-center sm:text-left">
                                 <span className="font-medium">Total de membros: </span>
-                                {membros.length}
+                                <b>{totalItemFiltered}</b>
                             </div>
-                            <div className="flex items-center space-x-2">
+                            <div className="flex flex-col sm:flex-row items-center space-x-2 sm:space-x-2">
                                 <span>Itens por página:</span>
                                 <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
-                                    <SelectTrigger className="w-[70px]">
+                                    <SelectTrigger className="w-full sm:w-[70px]">
                                         <SelectValue placeholder={itemsPerPage} />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -800,6 +863,7 @@ export default function MemberListing() {
                                 </Select>
                             </div>
                         </div>
+
 
                         <Table>
                             <TableHeader>
@@ -1182,8 +1246,8 @@ export default function MemberListing() {
                         <div className="flex justify-between flex-wrap items-center mt-4">
                             <div>
                                 <span className="font-medium">Exibindo </span>
-                                {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredMembers.length)}
-                                <span className="font-medium"> de {membros.length}</span>
+                                {indexOfFirstItem + 1} - {indexOfLastItem > totalItemFiltered ? totalItemFiltered : indexOfLastItem}
+                                <span className="font-medium"> de {totalItemFiltered}</span>
                             </div>
                             <div className="flex justify-start flex-wrap space-x-2">
                                 <Button

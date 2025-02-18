@@ -226,15 +226,16 @@ export const formSchema = z
         nome: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
         foto: z.string().optional(),
         cpf: z
-            .string()
-            .regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "CPF inválido"),
+            .string().optional(),
+            // .regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "CPF inválido"),
         rg: z
-            .string()
-            .regex(/^\d{3}\.\d{3}\.\d{3}$/, "RG inválido"),
-        email: z.string().email("Email inválido"),
+            .string().optional(),
+            // .regex(/^\d{3}\.\d{3}\.\d{3}$/, "RG inválido"),
+        email: z.string(),
+        // .email("Email inválido"),
         telefone: z
-            .string()
-            .regex(/^\(\d{2}\) \d{5}-\d{4}$/, "Telefone inválido"),
+            .string().optional(),
+            // .regex(/^\(\d{2}\) \d{5}-\d{4}$/, "Telefone inválido"),
         dataNascimento: z.date({
             message: "Data de Nascimento inválida",
         }),
@@ -308,52 +309,52 @@ export const formSchema = z
     })
     .superRefine((data, ctx) => {
         // Validação condicional para `status`
-        const statusValidations = {
-            ativo: () => {
-                if (!data.ingresso.data || !data.ingresso.forma || !data.ingresso.local) {
-                    ctx.addIssue({
-                        path: ["ingresso"],
-                        message: "Para membros ativos, os campos de ingresso são obrigatórios.",
-                    });
-                }
-            },
-            transferido: () => {
-                if (
-                    !data.transferencia.data ||
-                    !data.transferencia.motivo ||
-                    !data.transferencia.local
-                ) {
-                    ctx.addIssue({
-                        path: ["transferencia"],
-                        message: "Para membros transferidos, os campos de transferência são obrigatórios.",
-                    });
-                }
-            },
-            falecido: () => {
-                if (
-                    !data.falecimento.data ||
-                    !data.falecimento.motivo ||
-                    !data.falecimento.local
-                ) {
-                    ctx.addIssue({
-                        path: ["falecimento"],
-                        message: "Para membros falecidos, os campos de falecimento são obrigatórios.",
-                    });
-                }
-            },
-            excluido: () => {
-                if (!data.exclusao.data || !data.exclusao.motivo) {
-                    ctx.addIssue({
-                        path: ["exclusao"],
-                        message: "Para membros excluídos, os campos de exclusão são obrigatórios.",
-                    });
-                }
-            },
-        };
+        // const statusValidations = {
+        //     ativo: () => {
+        //         if (!data.ingresso.data || !data.ingresso.forma || !data.ingresso.local) {
+        //             ctx.addIssue({
+        //                 path: ["ingresso"],
+        //                 message: "Para membros ativos, os campos de ingresso são obrigatórios.",
+        //             });
+        //         }
+        //     },
+        //     transferido: () => {
+        //         if (
+        //             !data.transferencia.data ||
+        //             !data.transferencia.motivo ||
+        //             !data.transferencia.local
+        //         ) {
+        //             ctx.addIssue({
+        //                 path: ["transferencia"],
+        //                 message: "Para membros transferidos, os campos de transferência são obrigatórios.",
+        //             });
+        //         }
+        //     },
+        //     falecido: () => {
+        //         if (
+        //             !data.falecimento.data ||
+        //             !data.falecimento.motivo ||
+        //             !data.falecimento.local
+        //         ) {
+        //             ctx.addIssue({
+        //                 path: ["falecimento"],
+        //                 message: "Para membros falecidos, os campos de falecimento são obrigatórios.",
+        //             });
+        //         }
+        //     },
+        //     excluido: () => {
+        //         if (!data.exclusao.data || !data.exclusao.motivo) {
+        //             ctx.addIssue({
+        //                 path: ["exclusao"],
+        //                 message: "Para membros excluídos, os campos de exclusão são obrigatórios.",
+        //             });
+        //         }
+        //     },
+        // };
 
-        if (statusValidations[data.status]) {
-            statusValidations[data.status]();
-        }
+        // if (statusValidations[data.status]) {
+        //     statusValidations[data.status]();
+        // }
     })
 
 

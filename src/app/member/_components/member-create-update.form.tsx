@@ -432,7 +432,7 @@ export default function MemberForm() {
                                     name="cpf"
                                     render={({field}) => (
                                         <FormItem>
-                                            <FormLabel>CPF *</FormLabel>
+                                            <FormLabel>CPF</FormLabel>
                                             <FormControl>
                                                 <InputMask
                                                     mask="999.999.999-99"
@@ -454,7 +454,7 @@ export default function MemberForm() {
                                     name="rg"
                                     render={({field}) => (
                                         <FormItem>
-                                            <FormLabel>RG *</FormLabel>
+                                            <FormLabel>RG</FormLabel>
                                             <FormControl>
                                                 <InputMask
                                                     mask="999.999.999"
@@ -478,7 +478,7 @@ export default function MemberForm() {
                                     name="email"
                                     render={({field}) => (
                                         <FormItem>
-                                            <FormLabel>Email *</FormLabel>
+                                            <FormLabel>Email</FormLabel>
                                             <FormControl>
                                                 <Input type="email" {...field} placeholder={"jhon@email.com"}/>
                                             </FormControl>
@@ -491,7 +491,7 @@ export default function MemberForm() {
                                     name="telefone"
                                     render={({field}) => (
                                         <FormItem>
-                                            <FormLabel>Telefone *</FormLabel>
+                                            <FormLabel>Telefone</FormLabel>
                                             <FormControl>
                                                 <InputMask
                                                     mask="(99) 99999-9999"
