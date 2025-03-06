@@ -16,8 +16,17 @@ export type IStore = {
     addPhoto: (photo: string) => void;
     hasHydrated: boolean; // Novo estado para saber se o Zustand foi hidratado
     setHasHydrated: (state: boolean) => void;
-    addDiaconos: (diaconos: any) => void;
+
+    addDiaconos: (diaconos: any[]) => void;
     diaconos: any[];
+
+    membros: any[];
+    addMembros: (membros: any[]) => void;
+    totalMembros: number;
+    addTotalMembros: (totalMembros: number) => void;
+
+    addMinisterios: (ministerios: any[]) => void;
+    ministerios: any[];
 }
 
 export const useStoreIbb = create<IStore>()(
@@ -36,8 +45,18 @@ export const useStoreIbb = create<IStore>()(
             addRole: (role: string) => set(() => ({ role })),
             addMongoId: (mongoId: string) => set(() => ({ mongoId })),
             setHasHydrated: (state: boolean) => set(() => ({ hasHydrated: state })), // Atualiza o estado de hidratação
-            addDiaconos: (diaconos: any) => set(() => (diaconos)),
-            diaconos: []
+
+            addDiaconos: (diaconos: any) => set(() => ({diaconos})),
+            diaconos: [],
+
+            membros: [],
+            addMembros: (membrosRecebidos: any) => set(() => ({membros: membrosRecebidos})),
+
+            totalMembros: 0,
+            addTotalMembros: (totalMembros: number) => set(() => ({ totalMembros})),
+
+            ministerios: [],
+            addMinisterios: (ministeriosRecebidos: any) => set(() => ({ministerios: ministeriosRecebidos})),
         })),
         {
             name: 'user-store',

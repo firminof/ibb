@@ -188,6 +188,7 @@ export default function UserForm() {
                 UserApi.fetchMemberById(idMembro)
                     .then((response: FormValuesMember) => {
                         if (response) {
+                            console.log(response)
                             const member: FormValuesMember = formatUserV2(response);
                             setMember(member);
                         }
@@ -248,36 +249,10 @@ export default function UserForm() {
             .map((ministerio: MinistriesEntity): string => ministerio.nome ? ministerio.nome : '-');
     }
 
-    useEffect(() => {
-        if (useStoreIbbZus.hasHydrated && useStoreIbbZus.role === UserRoles.MEMBRO && (!idMembro || idMembro.length === 0)) {
-            router.push('/user')
-            return
-        }
-        if (useStoreIbbZus.hasHydrated && useStoreIbbZus.user == null) {
-            useStoreIbbZus.addUser(null)
-            useStoreIbbZus.addRole('')
-            useStoreIbbZus.addMongoId('')
-            useStoreIbbZus.setHasHydrated(true)
-            router.push('/login')
-            return
-        }
-
-        getAllMinistries();
-
-        if (idMembro && idMembro.length > 0) {
-            getUniqueMember();
-            return;
-        }
-    }, [useStoreIbbZus.hasHydrated])
-
     const reloadUser = () => {
         getAllMembersDiaconos();
         getAllInvites();
     }
-
-    useEffect(() => {
-        reloadUser();
-    }, [member]);
 
     const groupedHistory = member?.historico.reduce((acc, change) => {
         const group = getGroupForField(change.chave);
@@ -322,7 +297,7 @@ export default function UserForm() {
 
     function formatValue(value: any): string {
         if (value === null || value === undefined) {
-            return 'Não informado';
+            return 'NÃO INFORMADO';
         }
 
         if (typeof value === 'boolean') {
@@ -437,6 +412,31 @@ export default function UserForm() {
         }
     }
 
+    useEffect(() => {
+        if (useStoreIbbZus.hasHydrated && useStoreIbbZus.role === UserRoles.MEMBRO && (!idMembro || idMembro.length === 0)) {
+            router.push('/user')
+            return
+        }
+        if (useStoreIbbZus.hasHydrated && useStoreIbbZus.user == null) {
+            useStoreIbbZus.addUser(null)
+            useStoreIbbZus.addRole('')
+            useStoreIbbZus.addMongoId('')
+            useStoreIbbZus.setHasHydrated(true)
+            router.push('/login')
+            return
+        }
+
+        getAllMinistries();
+
+        if (idMembro && idMembro.length > 0) {
+            getUniqueMember();
+            return;
+        }
+    }, [useStoreIbbZus.hasHydrated])
+    useEffect(() => {
+        reloadUser();
+    }, [member]);
+
     if (openLoading) {
         return <Backdrop
             sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
@@ -452,7 +452,7 @@ export default function UserForm() {
     return (
         <div className="container mx-auto py-4 px-4 sm:py-10 sm:px-6">
             {
-                member && member.email ? (
+                member ? (
                     <>
                         {
                             useStoreIbbZus.role === UserRolesV2.ADMIN && (
@@ -461,7 +461,8 @@ export default function UserForm() {
                                         <ChevronLeftIcon className="h-4 w-4"/> voltar
                                     </Button>
 
-                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-5">
+                                    <div
+                                        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-5">
                                         <h2 className="text-black text-3xl font-semibold mb-4 mt-4">Detalhes do membro</h2>
                                         <div className="flex justify-end items-center gap-4">
                                             <Button size="sm" className="font-bold sm:inline-flex md:inline-flex"
@@ -479,6 +480,7 @@ export default function UserForm() {
                                 </section>
                             )
                         }
+
                         <Card className="w-full max-w-4xl mx-auto">
                             <CardHeader
                                 className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
@@ -544,18 +546,18 @@ export default function UserForm() {
                                     <div className="space-y-2">
                                         <h3 className="text-lg font-semibold">Informações Básicas</h3>
                                         <div className="flex items-center"><Mail
-                                            className="mr-2 h-4 w-4"/> {member.email}
+                                            className="mr-2 h-4 w-4"/> {member.email && member.email.length > 0 ? member.email : 'NÃO INFORMADO'}
                                         </div>
                                         <div className="flex items-center"><Phone
-                                            className="mr-2 h-4 w-4"/> {member.telefone}</div>
+                                            className="mr-2 h-4 w-4"/> {member.telefone && member.telefone.length > 0 ? member.telefone : 'NÃO INFORMADO'}</div>
                                         <div className="flex items-center"><Calendar
                                             className="mr-2 h-4 w-4"/> Nascimento: {format(member.dataNascimento, 'dd/MM/yyyy')}
                                         </div>
                                     </div>
                                     <div className="space-y-2">
                                         <h3 className="text-lg font-semibold">Documentos</h3>
-                                        <div>CPF: {member.cpf}</div>
-                                        <div>RG: {member.rg}</div>
+                                        <div>CPF: {member.cpf && member.cpf.length > 0 ? member.cpf : 'NÃO INFORMADO'}</div>
+                                        <div>RG: {member.rg && member.rg.length > 0 ? member.rg : 'NÃO INFORMADO'}</div>
                                     </div>
                                 </div>
 
@@ -567,7 +569,7 @@ export default function UserForm() {
                                     {member.informacoesPessoais.casamento.conjugue && (
                                         <div className="flex flex-wrap items-center">
                                             <Heart className="mr-2 h-4 w-4"/>
-                                            <span>Cônjuge: {member.informacoesPessoais.casamento.conjugue.nome}</span>
+                                            <span>Cônjuge: {member.informacoesPessoais.casamento.conjugue.nome && member.informacoesPessoais.casamento.conjugue.nome.length > 0 ? member.informacoesPessoais.casamento.conjugue.nome : 'NÃO INFORMADO'}</span>
                                             {member.informacoesPessoais.casamento.dataCasamento && (
                                                 <span className="ml-2">
                                                 (Data de Casamento: {format(member.informacoesPessoais.casamento.dataCasamento, 'dd/MM/yyyy')})
@@ -579,7 +581,7 @@ export default function UserForm() {
                                         <div className="flex items-start">
                                             <Users className="mr-2 h-4 w-4 mt-1"/>
                                             <div>
-                                                Filhos: {member.informacoesPessoais.filhos.length > 0 ? member.informacoesPessoais.filhos.map(filho => filho.nome).join(', ') : 'Não informado'}
+                                                Filhos: {member.informacoesPessoais.filhos.length > 0 ? member.informacoesPessoais.filhos.map(filho => filho.nome).join(', ') : 'NÃO INFORMADO'}
                                             </div>
                                         </div>
                                     )}
@@ -591,12 +593,12 @@ export default function UserForm() {
                                     <h3 className="text-lg font-semibold">Cargo e Ministério</h3>
                                     <div className="flex items-center">
                                         <Briefcase
-                                            className="mr-2 h-4 w-4"/> Diácono: {member.diacono.nome ? member.diacono.nome : 'Não informado'}
+                                            className="mr-2 h-4 w-4"/> Diácono: {member.diacono.nome ? member.diacono.nome : 'NÃO INFORMADO'}
                                     </div>
                                     <div className="flex items-start">
                                         <Users className="mr-2 h-4 w-4 mt-1"/>
                                         <div>
-                                            Ministérios: {member.ministerio.length > 0 ? mapMinisterios(member).join(', ') : 'Não informado'}
+                                            Ministérios: {member.ministerio.length > 0 ? mapMinisterios(member).join(', ') : 'NÃO INFORMADO'}
                                         </div>
                                     </div>
                                 </div>
@@ -615,9 +617,9 @@ export default function UserForm() {
                                                 </CardTitle>
                                             </CardHeader>
                                             <CardContent>
-                                                <p>Data: {member.ingresso.data ? format(new Date(member.ingresso.data), 'dd/MM/yyyy') : 'Não informado'}</p>
-                                                <p>Forma: {member.ingresso.forma || 'Não informado'}</p>
-                                                <p>Local: {member.ingresso.local || 'Não informado'}</p>
+                                                <p>Data: {member.ingresso.data ? format(new Date(member.ingresso.data), 'dd/MM/yyyy') : 'NÃO INFORMADO'}</p>
+                                                <p>Forma: {member.ingresso.forma || 'NÃO INFORMADO'}</p>
+                                                <p>Local: {member.ingresso.local || 'NÃO INFORMADO'}</p>
                                             </CardContent>
                                         </Card>
 
@@ -630,9 +632,9 @@ export default function UserForm() {
                                                 </CardTitle>
                                             </CardHeader>
                                             <CardContent>
-                                                <p>Data: {member.transferencia.data ? format(new Date(member.transferencia.data), 'dd/MM/yyyy') : 'Não informado'}</p>
-                                                <p>Motivo: {member.transferencia.motivo || 'Não informado'}</p>
-                                                <p>Local: {member.transferencia.local || 'Não informado'}</p>
+                                                <p>Data: {member.transferencia.data ? format(new Date(member.transferencia.data), 'dd/MM/yyyy') : 'NÃO INFORMADO'}</p>
+                                                <p>Motivo: {member.transferencia.motivo || 'NÃO INFORMADO'}</p>
+                                                <p>Local: {member.transferencia.local || 'NÃO INFORMADO'}</p>
                                             </CardContent>
                                         </Card>
 
@@ -644,9 +646,9 @@ export default function UserForm() {
                                                 </CardTitle>
                                             </CardHeader>
                                             <CardContent>
-                                                <p>Data: {member.falecimento.data ? format(new Date(member.falecimento.data), 'dd/MM/yyyy') : 'Não informado'}</p>
-                                                <p>Motivo: {member.falecimento.motivo || 'Não informado'}</p>
-                                                <p>Local: {member.falecimento.local || 'Não informado'}</p>
+                                                <p>Data: {member.falecimento.data ? format(new Date(member.falecimento.data), 'dd/MM/yyyy') : 'NÃO INFORMADO'}</p>
+                                                <p>Motivo: {member.falecimento.motivo || 'NÃO INFORMADO'}</p>
+                                                <p>Local: {member.falecimento.local || 'NÃO INFORMADO'}</p>
                                             </CardContent>
                                         </Card>
 
@@ -659,8 +661,8 @@ export default function UserForm() {
                                                 </CardTitle>
                                             </CardHeader>
                                             <CardContent>
-                                                <p>Data: {member.exclusao.data ? format(new Date(member.exclusao.data), 'dd/MM/yyyy') : 'Não informado'}</p>
-                                                <p>Motivo: {member.exclusao.motivo || 'Não informado'}</p>
+                                                <p>Data: {member.exclusao.data ? format(new Date(member.exclusao.data), 'dd/MM/yyyy') : 'NÃO INFORMADO'}</p>
+                                                <p>Motivo: {member.exclusao.motivo || 'NÃO INFORMADO'}</p>
                                             </CardContent>
                                         </Card>
 
@@ -673,7 +675,7 @@ export default function UserForm() {
                                                 </CardTitle>
                                             </CardHeader>
                                             <CardContent>
-                                                <p>Motivo: {member.visitas.motivo || 'Não informado'}</p>
+                                                <p>Motivo: {member.visitas.motivo || 'NÃO INFORMADO'}</p>
                                             </CardContent>
                                         </Card>
                                     </div>
@@ -720,11 +722,12 @@ export default function UserForm() {
                                                                     <Popover>
                                                                         <PopoverTrigger asChild>
                                                                             <Button variant="ghost" size="icon" className="ml-2">
-                                                                                <Info className="h-4 w-4" />
+                                                                                <Info className="h-4 w-4"/>
                                                                             </Button>
                                                                         </PopoverTrigger>
                                                                         <PopoverContent className="w-auto">
-                                                                            <p className="text-sm">ID do Convite: {invitation._id}</p>
+                                                                            <p className="text-sm">ID do
+                                                                                Convite: {invitation._id}</p>
                                                                         </PopoverContent>
                                                                     </Popover>
                                                                 </div>
@@ -754,7 +757,8 @@ export default function UserForm() {
                                                                                 </AlertDialogHeader>
                                                                                 <AlertDialogFooter>
                                                                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                                                    <AlertDialogAction onClick={() => handleDeleteInvite(invitation._id)}>
+                                                                                    <AlertDialogAction
+                                                                                        onClick={() => handleDeleteInvite(invitation._id)}>
                                                                                         Confirmar
                                                                                     </AlertDialogAction>
                                                                                 </AlertDialogFooter>
@@ -836,7 +840,7 @@ export default function UserForm() {
                         </Card>
                     </>
                 ) : (
-                    <p>Membro não encontrado.</p>
+                    <p>Membro não encontrado!</p>
                 )
             }
         </div>

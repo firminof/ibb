@@ -49,6 +49,10 @@ export function Header() {
                     useStoreIbbZus.setHasHydrated(true);
                     useStoreIbbZus.addPhoto('');
                     useStoreIbbZus.addLoggout(true);
+                    useStoreIbbZus.addMembros([]);
+                    useStoreIbbZus.addTotalMembros(0);
+                    useStoreIbbZus.addDiaconos([]);
+                    useStoreIbbZus.addMinisterios([]);
 
                     setTimeout(() => {
                         router.push('/login');

@@ -156,6 +156,11 @@ export function LoginForm() {
                                         useStoreIbbZus.addSessionDuration(new Date().getTime()); // hora do login
                                         useStoreIbbZus.addLoggout(false);
 
+                                        useStoreIbbZus.addMembros([]);
+                                        useStoreIbbZus.addTotalMembros(0);
+                                        useStoreIbbZus.addDiaconos([]);
+                                        useStoreIbbZus.addMinisterios([]);
+
                                         router.push('/dashboard');
                                         break;
                                     case UserRoles.MEMBRO:
@@ -167,6 +172,11 @@ export function LoginForm() {
                                         useStoreIbbZus.addMongoId(mongoId);
                                         useStoreIbbZus.addSessionDuration(new Date().getTime()); // hora do login
                                         useStoreIbbZus.addLoggout(false);
+
+                                        useStoreIbbZus.addMembros([]);
+                                        useStoreIbbZus.addTotalMembros(0);
+                                        useStoreIbbZus.addDiaconos([]);
+                                        useStoreIbbZus.addMinisterios([]);
 
                                         router.push('/user');
 

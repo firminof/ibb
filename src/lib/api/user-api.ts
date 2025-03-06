@@ -12,6 +12,12 @@ export class UserApi {
         return members.data;
     }
 
+    static async fetchTotalMembers(): Promise<any | undefined> {
+        const members = await api.get(`/v2/user/total-membros`);
+
+        return members.data;
+    }
+
     static async fetchMembersDiaconos(): Promise<any | undefined> {
         const members = await api.get(`/v2/user/diaconos`);
 
@@ -121,7 +127,7 @@ export class UserApi {
     }
 
     static async getUserByEmail(email: string): Promise<any> {
-        const user = await api.get(`/v1/auth/find-user/${email}`);
+        const user = await api.get(`/v2/user/login/find-user/${email}`);
 
         return user.data;
     }

@@ -152,6 +152,17 @@ export default function MemberListing() {
         )
     }
 
+    const handleResetFilter = () => {
+        setFilters({
+            nome: '',
+            telefone: '',
+            isDiacono: 'all',
+            status: 'all',
+            hasEmail: 'all',
+            hasTelefone: 'all'
+        })
+    }
+
     const handleDeleteSelected = () => {
         setLoading(true);
         setLoadingMessage('Excluindo membro...');
@@ -171,10 +182,9 @@ export default function MemberListing() {
             .finally(async () => {
                 setLoading(false);
                 setLoadingMessage('');
-                const [members] = await Promise.all([
-                    UserApi.fetchMembers(),
-                ]);
-                setMembros(members.length > 0 ? members : []);
+
+                handleResetFilter();
+                fetchMembers();
                 setSelectedMembers([]);
             });
     }
@@ -222,6 +232,7 @@ export default function MemberListing() {
     }
 
     const handleReloadTable = () => {
+        handleResetFilter();
         fetchMembers()
     }
 
@@ -394,24 +405,41 @@ export default function MemberListing() {
             setLoading(true);
             setLoadingMessage('Carregando...');
 
-            const [ministries, diaconos, members] = await Promise.all([
-                UserApi.fetchMinistries(),
-                UserApi.fetchMembersDiaconos(),
-                UserApi.fetchMembers(),
-            ]);
+            const totalMembros = await UserApi.fetchTotalMembers();
 
-            setMinisterios(ministries.length > 0 ? ministries : []);
-            setDiaconos(
-                diaconos.length > 0
-                    ? diaconos.map(diacono => ({
-                        nome: diacono.nome,
-                        isDiacono: diacono.isDiacono,
-                        isMember: true,
-                        id: diacono._id.toString(),
-                    }))
-                    : []
-            );
-            setMembros(members.length > 0 ? members : []);
+            if (totalMembros.total !== useStoreIbbZus.totalMembros) {
+                const [ministries, diaconos, members] = await Promise.all([
+                    UserApi.fetchMinistries(),
+                    UserApi.fetchMembersDiaconos(),
+                    UserApi.fetchMembers(),
+                ]);
+
+                setMinisterios(ministries.length > 0 ? ministries : []);
+                setDiaconos(
+                    diaconos.length > 0
+                        ? diaconos.map(diacono => ({
+                            nome: diacono.nome,
+                            isDiacono: diacono.isDiacono,
+                            isMember: true,
+                            id: diacono._id.toString(),
+                        }))
+                        : []
+                );
+                setMembros(members.length > 0 ? members : []);
+
+                useStoreIbbZus.addTotalMembros(totalMembros.total);
+                useStoreIbbZus.addMembros(members);
+
+                useStoreIbbZus.addMinisterios(ministries);
+                useStoreIbbZus.addDiaconos(diaconos);
+
+                return;
+            }
+
+            console.log('Recuperando do estado!')
+            setMinisterios(useStoreIbbZus.ministerios);
+            setDiaconos(useStoreIbbZus.diaconos);
+            setMembros(useStoreIbbZus.membros);
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
             setMinisterios([]);
