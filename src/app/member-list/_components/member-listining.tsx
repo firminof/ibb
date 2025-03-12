@@ -232,8 +232,15 @@ export default function MemberListing() {
     }
 
     const handleReloadTable = () => {
-        handleResetFilter();
-        fetchMembers()
+        useStoreIbbZus.addTotalMembros(0);
+        useStoreIbbZus.addMembros([]);
+        useStoreIbbZus.addDiaconos([]);
+        useStoreIbbZus.addMinisterios([]);
+
+        setTimeout(() => {
+            handleResetFilter();
+            fetchMembers();
+        }, 300)
     }
 
     const handleConvidarMembro = async (e: any) => {
@@ -396,6 +403,12 @@ export default function MemberListing() {
                 useStoreIbbZus.addRole('');
                 useStoreIbbZus.addMongoId('');
                 useStoreIbbZus.setHasHydrated(true);
+                useStoreIbbZus.addPhoto('');
+                useStoreIbbZus.addLoggout(true);
+                useStoreIbbZus.addMembros([]);
+                useStoreIbbZus.addTotalMembros(0);
+                useStoreIbbZus.addDiaconos([]);
+                useStoreIbbZus.addMinisterios([]);
                 router.push('/login');
                 return;
             }
