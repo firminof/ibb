@@ -60,10 +60,23 @@ export default function MemberForm() {
     const idMembro: string | null = searchParams.get('id')
 
     let requestPassword: boolean | null = null;
+    let bypass: boolean | null = null;
+    let skipLogin: boolean | null = null;
 
-    const paramValue = searchParams.get('requestPassword');
-    if (paramValue !== null) {
-        requestPassword = paramValue.toLowerCase() === 'true';
+    const requestPasswordParam = searchParams.get('requestPassword');
+    const bypassParam = searchParams.get('bypass');
+    const skipLoginParam = searchParams.get('skipLogin');
+
+    if (requestPasswordParam !== null) {
+        requestPassword = requestPasswordParam.toLowerCase() === 'true';
+    }
+
+    if (bypassParam !== null) {
+        bypass = bypassParam.toLowerCase() === 'true';
+    }
+
+    if (skipLoginParam !== null) {
+        skipLogin = skipLoginParam.toLowerCase() === 'true';
     }
 
     const isEditing: boolean = idMembro && idMembro.length > 0;
@@ -124,6 +137,13 @@ export default function MemberForm() {
                     alert('Erro: As senhas não coincidem!')
                     return
                 }
+            }
+
+            if (useStoreIbbZus.user === null && (
+                (bypass === null || !bypass && skipLogin) ||
+                (skipLogin === null || !skipLogin && bypass))) {
+                alert('Erro: Sua atualização cadastral foi modificada, abra novamente o link que recebeu em outra aba!')
+                return
             }
 
             // Validar se tem pelo menos o email ou telefone
@@ -189,6 +209,12 @@ export default function MemberForm() {
             if (idMembro && idMembro.length > 0) {
                 const params = requestPassword ? [idMembro, dataToCreate, password] : [idMembro, dataToCreate, ''];
                 await UserApi.updateMember(...params);
+
+                useStoreIbbZus.addTotalMembros(0);
+                useStoreIbbZus.addMembros([]);
+                useStoreIbbZus.addMinisterios([]);
+                useStoreIbbZus.addDiaconos([]);
+
                 alert('Membro editado com sucesso!');
             } else {
                 await UserApi.createMember(dataToCreate);
@@ -301,7 +327,9 @@ export default function MemberForm() {
             return;
         }
 
-        if (useStoreIbbZus.user == null) {
+        if (useStoreIbbZus.user == null && (
+            (bypass === null || !bypass && skipLogin) ||
+            (skipLogin === null || !skipLogin && bypass))) {
             useStoreIbbZus.addUser(null);
             useStoreIbbZus.addRole('');
             useStoreIbbZus.addMongoId('');
@@ -347,9 +375,13 @@ export default function MemberForm() {
     return (
         <div className="mt-4 mb-4 container mx-auto">
             <section>
-                <Button variant="outline" className="text-black" onClick={() => router.back()}>
-                    <ChevronLeftIcon className="h-4 w-4"/> voltar
-                </Button>
+                {
+                    !bypass && !skipLogin && (
+                        <Button variant="outline" className="text-black" onClick={() => router.back()}>
+                            <ChevronLeftIcon className="h-4 w-4"/> voltar
+                        </Button>
+                    )
+                }
 
                 {
                     useStoreIbbZus.role === UserRolesV2.ADMIN && (
