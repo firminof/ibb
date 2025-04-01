@@ -232,7 +232,12 @@ export function LoginForm() {
 
                     setShowErrorLogin(true);
                     if (!error.response.data || error.response.data.message === '') {
-                        setErrorMessage('Algo inesperado acontecer, recarregue a página e tente novamente!');
+                        setErrorMessage('Algo inesperado aconteceu, recarregue a página e tente novamente!');
+                        return;
+                    }
+
+                    if (error.response.data.message.toString().includes('Membro não encontrado!')) {
+                        setErrorMessage('Membro não cadastrado, solicite um convite para fazer parte da nossa comunidade');
                         return;
                     }
 
@@ -240,6 +245,9 @@ export function LoginForm() {
                         setErrorMessage('Membro não cadastrado, solicite um convite para fazer parte da nossa comunidade');
                         return;
                     }
+
+                    setErrorMessage('Algo inesperado aconteceu, recarregue a página e tente novamente!');
+                    return;
                 })
                 .finally(() => {
                     setOpenBackLoading(false);

@@ -9,7 +9,8 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {
     Dialog,
     DialogContent,
-    DialogDescription, DialogFooter,
+    DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger
@@ -70,6 +71,7 @@ export default function BirthdaysV2() {
     const {codigo: codigoMes, descricao: nomeMes}: IMesAtual = obterMesAtual();
 
     const [message, setMessage] = useState('')
+    const [totalItemFiltered, setTotalItemFiltered] = useState(0)
 
     const [filteredMembers, setFilteredMembers] = useState<FormValuesMember[]>([])
     const [filters, setFilters] = useState({
@@ -77,6 +79,8 @@ export default function BirthdaysV2() {
         telefone: '',
         isDiacono: 'all',
         mesAniversario: `${codigoMes}`,
+        hasTelefone: 'all',
+        status: 'all',
     })
 
     useEffect(() => {
@@ -84,9 +88,12 @@ export default function BirthdaysV2() {
             member.nome.toLowerCase().includes(filters.nome.toLowerCase()) &&
             member.telefone?.includes(filters.telefone) &&
             (filters.isDiacono === 'all' || member.isDiacono.toString() === filters.isDiacono) &&
-            (filters.mesAniversario === 'all' || new Date(member.dataNascimento).getMonth() + 1 === parseInt(filters.mesAniversario))
+            (filters.mesAniversario === 'all' || new Date(member.dataNascimento).getMonth() + 1 === parseInt(filters.mesAniversario)) &&
+            (filters.hasTelefone === 'all' || (filters.hasTelefone === 'true' ? member.telefone?.length > 0 : member.telefone?.length === 0)) &&
+            (member.status === filters.status || filters.status === 'all')
         )
-        setFilteredMembers(filtered)
+        setFilteredMembers(filtered);
+        setTotalItemFiltered(filtered.length);
     }, [membros, filters])
 
     const handleFilterChange = (key: string, value: string) => {
@@ -122,13 +129,28 @@ export default function BirthdaysV2() {
             return
         }
 
+        resetPageValues();
         getAllMinistries()
         getAllMembers()
     }
 
+    const resetPageValues = () => {
+        setMembros([]);
+        setMinisterios([]);
+        setFilters({
+            nome: '',
+            telefone: '',
+            isDiacono: 'all',
+            mesAniversario: `${codigoMes}`,
+            hasTelefone: 'all',
+            status: 'all'
+        })
+    }
+
     useEffect(() => {
-        setLoading(true)
-        setLoadingMessage('Carregando...')
+        setLoading(true);
+        setLoadingMessage('Carregando...');
+
         fetchMembers()
     }, [useStoreIbbZus.hasHydrated])
 
@@ -224,7 +246,7 @@ export default function BirthdaysV2() {
             return 'TODOS OS MESES';
         }
 
-        const meses: {codigo: number; descricao: string}[] = [
+        const meses: { codigo: number; descricao: string }[] = [
             {codigo: 1, descricao: 'Janeiro'},
             {codigo: 2, descricao: 'Fevereiro'},
             {codigo: 3, descricao: 'Março'},
@@ -255,7 +277,7 @@ export default function BirthdaysV2() {
             const payload: WhatsappMessageWithTwilioInput = {
                 nomeMembro: member.nome,
                 nomeCompanhia: 'Igreja Batista do Brooklin',
-                numeroWhatsapp: member.telefone,
+                numeroWhatsapp: member.telefone ? member.telefone : '',
                 linkAplicacao: '',
                 conteudoMensagem: message
             }
@@ -294,7 +316,8 @@ export default function BirthdaysV2() {
         <div className="py-10">
             <section>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <h2 className="text-black text-2xl font-semibold mb-4 mt-4">Aniversariantes de {mapearNomeMes(filters.mesAniversario)}</h2>
+                    <h2 className="text-black text-2xl font-semibold mb-4 mt-4">Aniversariantes
+                        de {mapearNomeMes(filters.mesAniversario)}</h2>
 
                     <div className="space-y-2">
                         <Label htmlFor="mesAniversario">Mês de Aniversário</Label>
@@ -357,6 +380,46 @@ export default function BirthdaysV2() {
                                         placeholder={"(99) 99999-9999"} {...inputProps} />}
                                 </InputMask>
                             </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="hasTelefone">Tem telefone</Label>
+                                <Select
+                                    id="hasTelefone"
+                                    value={filters.hasTelefone}
+                                    onValueChange={(value) => handleFilterChange('hasTelefone', value)}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Tem telefone"/>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Todos</SelectItem>
+                                        <SelectItem value="true">Sim</SelectItem>
+                                        <SelectItem value="false">Não</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="diacono">Status</Label>
+                                <Select
+                                    id="diacono"
+                                    value={filters.status}
+                                    onValueChange={(value) => handleFilterChange('status', value)}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Selecione o status"/>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Todos</SelectItem>
+                                        <SelectItem value="ativo">{StatusEnumV2.ATIVO}</SelectItem>
+                                        <SelectItem value="visitante">{StatusEnumV2.VISITANTE}</SelectItem>
+                                        <SelectItem value="congregado">{StatusEnumV2.CONGREGADO}</SelectItem>
+                                        <SelectItem value="inativo">{StatusEnumV2.INATIVO}</SelectItem>
+                                        <SelectItem value="transferido">{StatusEnumV2.TRANSFERIDO}</SelectItem>
+                                        <SelectItem value="falecido">{StatusEnumV2.FALECIDO}</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     </AccordionContent>
                 </AccordionItem>
@@ -376,6 +439,13 @@ export default function BirthdaysV2() {
             ) : (
                 <Card className="w-full">
                     <CardContent className="p-2">
+                        <div className="flex flex-col sm:flex-row justify-between items-end gap-2 sm:gap-4 mb-4">
+                            <div className="text-center sm:text-left">
+                                <span className="font-medium">Total de membros: </span>
+                                <b>{totalItemFiltered}</b>
+                            </div>
+                        </div>
+
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -460,8 +530,10 @@ export default function BirthdaysV2() {
                                                     </DialogTrigger>
                                                     <DialogContent className="sm:max-w-[425px]">
                                                         <DialogHeader>
-                                                            <DialogTitle>Enviar Parabéns ao membro: {member.nome}</DialogTitle>
-                                                            <DialogDescription>Mande uma mensagem parabenizando o membro</DialogDescription>
+                                                            <DialogTitle>Enviar Parabéns ao
+                                                                membro: {member.nome}</DialogTitle>
+                                                            <DialogDescription>Mande uma mensagem parabenizando o
+                                                                membro</DialogDescription>
                                                         </DialogHeader>
                                                         <div className="grid gap-4 py-4">
                                                             <Textarea
@@ -472,7 +544,8 @@ export default function BirthdaysV2() {
                                                             />
                                                         </div>
                                                         <DialogFooter>
-                                                            <Button type="submit" onClick={() => handleSendMessage(member)}>
+                                                            <Button type="submit"
+                                                                    onClick={() => handleSendMessage(member)}>
                                                                 <SendIcon className="w-4 h-4 mr-2"/>
                                                                 Enviar
                                                             </Button>

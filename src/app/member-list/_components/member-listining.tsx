@@ -50,6 +50,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
+import {ToastSuccess} from "@/components/toast/toast-success";
 
 // Status validation schema
 const statusUpdateSchema = z.object({
@@ -415,6 +416,8 @@ export default function MemberListing() {
         }
 
         try {
+            resetPageValues();
+
             setLoading(true);
             setLoadingMessage('Carregando...');
 
@@ -475,6 +478,27 @@ export default function MemberListing() {
         return ministerios
             .filter((ministerio: MinistriesEntity) => member.ministerio.includes(ministerio._id))
             .map((ministerio: MinistriesEntity): string => ministerio.nome ? ministerio.nome : '-').join(', ');
+    }
+
+    const resetPageValues = () => {
+        setCurrentPage(1);
+        setIndexOfLastItem(1);
+        setIndexOfFirstItem(1);
+        setTotalPages(1);
+        setTotalItemFiltered(0);
+        setFilteredMembers([]);
+        setSelectedMembers([]);
+        setMembros([]);
+        setMinisterios([]);
+        setDiaconos([]);
+        setFilters({
+            nome: '',
+            telefone: '',
+            isDiacono: 'all',
+            status: 'all',
+            hasEmail: 'all',
+            hasTelefone: 'all'
+        })
     }
 
     const applyFilters = () => {
@@ -538,6 +562,12 @@ export default function MemberListing() {
 
     return (
         <div className="container mx-auto py-10">
+            {
+                isSuccessSendInvite && (
+                    <ToastSuccess data={{message: 'Convite enviado com sucesso!'}} visible={true}
+                                  setShowParentComponent={setIsSuccessSendInvite}/>
+                )
+            }
             <section>
                 {/* Botão Voltar */}
                 <div className="mb-4">
@@ -802,14 +832,14 @@ export default function MemberListing() {
                             <Button
                                 disabled={selectedMembers.length === 0}
                                 variant="destructive">
-                                <Trash2 className="h-4 w-4 mr-3"/> Deletar Selecionados
+                                <Trash2 className="h-4 w-4 mr-3"/> Deletar Selecionados ({selectedMembers.length})
                             </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Tem certeza que deseja excluir: <b>({selectedMembers.length}) {selectedMembers.length === 1 ? 'item' : 'itens'}</b>?
+                                    Tem certeza que deseja excluir: <b>({selectedMembers.length}) {selectedMembers.length === 1 ? 'membro' : 'membros'}</b>?
                                     <br/>
                                     <br/>
                                     Esta ação não pode ser desfeita.
@@ -829,14 +859,14 @@ export default function MemberListing() {
                             <Button
                                 disabled={selectedMembers.length === 0}
                                 variant="outline">
-                                <UserCog className="mr-3 h-4 w-4"/> Solicitar Atualização Cadastral
+                                <UserCog className="mr-3 h-4 w-4"/> Solicitar Atualização Cadastral ({selectedMembers.length})
                             </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Confirmar solicitação de atualização cadastral</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Tem certeza que deseja solicitar atualização cadastral para: <b>({selectedMembers.length}) {selectedMembers.length === 1 ? 'item' : 'itens'}</b>?
+                                    Tem certeza que deseja solicitar atualização cadastral para: <b>({selectedMembers.length}) {selectedMembers.length === 1 ? 'membro' : 'membros'}</b>?
                                     <br/>
                                     <br/>
                                     <div className="flex items-center space-x-2">

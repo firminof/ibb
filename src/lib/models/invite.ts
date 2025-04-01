@@ -4,6 +4,7 @@ export interface IInviteByEmail {
     subject: string;
     text: string;
     phone: string;
+    memberIdRequested?: string;
 }
 
 export interface IInviteEntity {
