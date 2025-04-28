@@ -4,10 +4,10 @@ import Link from "next/link";
 import {Button} from "@/components/ui/button";
 import {useSignOut} from "react-firebase-hooks/auth";
 import {auth} from "@/app/firebase/config";
-import {useRouter} from "next/navigation";
+import {useRouter, useSearchParams} from "next/navigation";
 import Image from "next/image";
 import * as React from "react";
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {emailRegex, passouUmaHora, UserRoles} from "@/lib/helpers/helpers";
 import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
 import {LogOutIcon, Menu, UserIcon} from "lucide-react";
@@ -38,6 +38,28 @@ export function Header() {
     const router = useRouter();
     const [photo] = useState<string>(useStoreIbbZus.photo)
     const [openDialogSession, setOpenDialogSession] = useState(false);
+
+    const searchParams = useSearchParams()
+
+    let requestPassword: boolean | null = null;
+    let bypass: boolean | null = null;
+    let skipLogin: boolean | null = null;
+
+    const requestPasswordParam = searchParams.get('requestPassword');
+    const bypassParam = searchParams.get('bypass');
+    const skipLoginParam = searchParams.get('skipLogin');
+
+    if (requestPasswordParam !== null) {
+        requestPassword = requestPasswordParam.toLowerCase() === 'true';
+    }
+
+    if (bypassParam !== null) {
+        bypass = bypassParam.toLowerCase() === 'true';
+    }
+
+    if (skipLoginParam !== null) {
+        skipLogin = skipLoginParam.toLowerCase() === 'true';
+    }
 
     const handleSignOut = () => {
         try {

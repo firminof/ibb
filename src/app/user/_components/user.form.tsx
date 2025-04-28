@@ -603,84 +603,116 @@ export default function UserForm() {
                                     </div>
                                 </div>
 
-                                <Separator/>
+                                {
+                                    (
+                                        member.ingresso.data ||
+                                        member.transferencia.data ||
+                                        member.falecimento.data ||
+                                        member.exclusao.data ||
+                                        member.visitas.motivo
+                                    ) && (
+                                        <>
+                                            <Separator/>
 
-                                <div className="space-y-2">
-                                    <h3 className="text-lg font-semibold mb-4">Informações Adicionais</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <Card className="bg-blue-50 dark:bg-blue-900">
-                                            <CardHeader>
-                                                <CardTitle
-                                                    className="flex items-center text-blue-700 dark:text-blue-300">
-                                                    <UserPlus className="mr-2 h-5 w-5"/>
-                                                    Ingresso
-                                                </CardTitle>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <p>Data: {member.ingresso.data ? format(new Date(member.ingresso.data), 'dd/MM/yyyy') : 'NÃO INFORMADO'}</p>
-                                                <p>Forma: {member.ingresso.forma || 'NÃO INFORMADO'}</p>
-                                                <p>Local: {member.ingresso.local || 'NÃO INFORMADO'}</p>
-                                            </CardContent>
-                                        </Card>
+                                            <div className="space-y-2">
+                                                <h3 className="text-lg font-semibold mb-4">Informações Adicionais</h3>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    {
+                                                        member.ingresso.data && (
+                                                            <Card className="bg-blue-50 dark:bg-blue-900">
+                                                                <CardHeader>
+                                                                    <CardTitle
+                                                                        className="flex items-center text-blue-700 dark:text-blue-300">
+                                                                        <UserPlus className="mr-2 h-5 w-5"/>
+                                                                        Ingresso
+                                                                    </CardTitle>
+                                                                </CardHeader>
+                                                                <CardContent>
+                                                                    <p>Data: {member.ingresso.data ? format(new Date(member.ingresso.data), 'dd/MM/yyyy') : 'NÃO INFORMADO'}</p>
+                                                                    <p>Forma: {member.ingresso.forma || 'NÃO INFORMADO'}</p>
+                                                                    <p>Local: {member.ingresso.local || 'NÃO INFORMADO'}</p>
+                                                                </CardContent>
+                                                            </Card>
+                                                        )
+                                                    }
 
-                                        <Card className="bg-yellow-50 dark:bg-yellow-900">
-                                            <CardHeader>
-                                                <CardTitle
-                                                    className="flex items-center text-yellow-700 dark:text-yellow-300">
-                                                    <UserMinus className="mr-2 h-5 w-5"/>
-                                                    Transferência
-                                                </CardTitle>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <p>Data: {member.transferencia.data ? format(new Date(member.transferencia.data), 'dd/MM/yyyy') : 'NÃO INFORMADO'}</p>
-                                                <p>Motivo: {member.transferencia.motivo || 'NÃO INFORMADO'}</p>
-                                                <p>Local: {member.transferencia.local || 'NÃO INFORMADO'}</p>
-                                            </CardContent>
-                                        </Card>
+                                                    {
+                                                        member.transferencia.data && (
+                                                            <Card className="bg-yellow-50 dark:bg-yellow-900">
+                                                                <CardHeader>
+                                                                    <CardTitle
+                                                                        className="flex items-center text-yellow-700 dark:text-yellow-300">
+                                                                        <UserMinus className="mr-2 h-5 w-5"/>
+                                                                        Transferência
+                                                                    </CardTitle>
+                                                                </CardHeader>
+                                                                <CardContent>
+                                                                    <p>Data: {member.transferencia.data ? format(new Date(member.transferencia.data), 'dd/MM/yyyy') : 'NÃO INFORMADO'}</p>
+                                                                    <p>Motivo: {member.transferencia.motivo || 'NÃO INFORMADO'}</p>
+                                                                    <p>Local: {member.transferencia.local || 'NÃO INFORMADO'}</p>
+                                                                </CardContent>
+                                                            </Card>
+                                                        )
+                                                    }
 
-                                        <Card className="bg-red-50 dark:bg-red-900">
-                                            <CardHeader>
-                                                <CardTitle className="flex items-center text-red-700 dark:text-red-300">
-                                                    <Skull className="mr-2 h-5 w-5"/>
-                                                    Falecimento
-                                                </CardTitle>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <p>Data: {member.falecimento.data ? format(new Date(member.falecimento.data), 'dd/MM/yyyy') : 'NÃO INFORMADO'}</p>
-                                                <p>Motivo: {member.falecimento.motivo || 'NÃO INFORMADO'}</p>
-                                                <p>Local: {member.falecimento.local || 'NÃO INFORMADO'}</p>
-                                            </CardContent>
-                                        </Card>
+                                                    {
+                                                        member.falecimento.data && (
+                                                            <Card className="bg-red-50 dark:bg-red-900">
+                                                                <CardHeader>
+                                                                    <CardTitle className="flex items-center text-red-700 dark:text-red-300">
+                                                                        <Skull className="mr-2 h-5 w-5"/>
+                                                                        Falecimento
+                                                                    </CardTitle>
+                                                                </CardHeader>
+                                                                <CardContent>
+                                                                    <p>Data: {member.falecimento.data ? format(new Date(member.falecimento.data), 'dd/MM/yyyy') : 'NÃO INFORMADO'}</p>
+                                                                    <p>Motivo: {member.falecimento.motivo || 'NÃO INFORMADO'}</p>
+                                                                    <p>Local: {member.falecimento.local || 'NÃO INFORMADO'}</p>
+                                                                </CardContent>
+                                                            </Card>
+                                                        )
+                                                    }
 
-                                        <Card className="bg-purple-50 dark:bg-purple-900">
-                                            <CardHeader>
-                                                <CardTitle
-                                                    className="flex items-center text-purple-700 dark:text-purple-300">
-                                                    <UserX className="mr-2 h-5 w-5"/>
-                                                    Exclusão
-                                                </CardTitle>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <p>Data: {member.exclusao.data ? format(new Date(member.exclusao.data), 'dd/MM/yyyy') : 'NÃO INFORMADO'}</p>
-                                                <p>Motivo: {member.exclusao.motivo || 'NÃO INFORMADO'}</p>
-                                            </CardContent>
-                                        </Card>
+                                                    {
+                                                        member.exclusao.data && (
+                                                            <Card className="bg-purple-50 dark:bg-purple-900">
+                                                                <CardHeader>
+                                                                    <CardTitle
+                                                                        className="flex items-center text-purple-700 dark:text-purple-300">
+                                                                        <UserX className="mr-2 h-5 w-5"/>
+                                                                        Exclusão
+                                                                    </CardTitle>
+                                                                </CardHeader>
+                                                                <CardContent>
+                                                                    <p>Data: {member.exclusao.data ? format(new Date(member.exclusao.data), 'dd/MM/yyyy') : 'NÃO INFORMADO'}</p>
+                                                                    <p>Motivo: {member.exclusao.motivo || 'NÃO INFORMADO'}</p>
+                                                                </CardContent>
+                                                            </Card>
+                                                        )
+                                                    }
 
-                                        <Card className="bg-green-50 dark:bg-green-900 md:col-span-2">
-                                            <CardHeader>
-                                                <CardTitle
-                                                    className="flex items-center text-green-700 dark:text-green-300">
-                                                    <Eye className="mr-2 h-5 w-5"/>
-                                                    Visitas
-                                                </CardTitle>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <p>Motivo: {member.visitas.motivo || 'NÃO INFORMADO'}</p>
-                                            </CardContent>
-                                        </Card>
-                                    </div>
-                                </div>
+                                                    {
+                                                        member.visitas.motivo && (
+                                                            <Card className="bg-green-50 dark:bg-green-900 md:col-span-2">
+                                                                <CardHeader>
+                                                                    <CardTitle
+                                                                        className="flex items-center text-green-700 dark:text-green-300">
+                                                                        <Eye className="mr-2 h-5 w-5"/>
+                                                                        Visitas
+                                                                    </CardTitle>
+                                                                </CardHeader>
+                                                                <CardContent>
+                                                                    <p>Motivo: {member.visitas.motivo || 'NÃO INFORMADO'}</p>
+                                                                </CardContent>
+                                                            </Card>
+                                                        )
+                                                    }
+                                                </div>
+                                            </div>
 
+                                        </>
+                                    )
+                                }
                                 <Separator/>
 
                                 <div className="space-y-2">
