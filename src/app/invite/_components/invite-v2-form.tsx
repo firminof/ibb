@@ -31,6 +31,7 @@ import {PasswordSection} from "@/app/invite/_components/password-section";
 import {IInviteEntity} from "@/lib/models/invite";
 import InvitationStatus from "@/app/invite/_components/invite-status";
 import {compressBase64Image} from "@/lib/helpers/helpers";
+import {SearchableSelect} from "@/components/ui/searchable-select";
 
 // Registrar o local (se necessário)
 registerLocale("pt-BR", ptBR);
@@ -67,6 +68,8 @@ export default function InviteV2Form() {
         control: form.control,
         name: "informacoesPessoais.filhos"
     });
+
+    const [selectedMemberId, setSelectedMemberId] = useState("")
 
     const onSubmit = async (data: FormValuesMember) => {
         setLoading(true)
@@ -135,8 +138,12 @@ export default function InviteV2Form() {
                     }
                 }
 
-                if (dataToCreate.informacoesPessoais.estadoCivil === CivilStateEnumV2.DIVORCIADO) {
-                    dataToCreate.informacoesPessoais.casamento = null;
+                switch (dataToCreate.informacoesPessoais.estadoCivil) {
+                    case CivilStateEnumV2.DIVORCIADO:
+                    case CivilStateEnumV2.SOLTEIRO:
+                    case CivilStateEnumV2.SEPARADO:
+                        dataToCreate.informacoesPessoais.casamento = null;
+                        break;
                 }
 
                 // Upload da foto se necessário
@@ -617,28 +624,29 @@ export default function InviteV2Form() {
                                                             control={form.control}
                                                             name="informacoesPessoais.casamento.conjugue.id"
                                                             render={({field}) => (
-                                                                <FormItem>
-                                                                    <FormLabel>Selecione o(a) cônjugue *</FormLabel>
-                                                                    <Select onValueChange={field.onChange}
-                                                                            defaultValue={field.value}>
-                                                                        <FormControl>
-                                                                            <SelectTrigger>
-                                                                                <SelectValue
-                                                                                    placeholder="Selecione o(a) cônjugue"/>
-                                                                            </SelectTrigger>
-                                                                        </FormControl>
-                                                                        <SelectContent>
-                                                                            {membros.map((member: FormValuesMember, index: number) => (
-                                                                                <SelectItem
-                                                                                    key={`${member._id}_casamento_${index}`}
-                                                                                    value={member._id.toString()}>
-                                                                                    {member.nome}
-                                                                                </SelectItem>
-                                                                            ))}
-                                                                        </SelectContent>
-                                                                    </Select>
-                                                                    <FormMessage/>
-                                                                </FormItem>
+                                                                <FormField
+                                                                    control={form.control}
+                                                                    name="informacoesPessoais.casamento.conjugue.id"
+                                                                    render={({ field: any }) => (
+                                                                        <FormItem>
+                                                                            <FormLabel>Selecione o(a) cônjugue *</FormLabel>
+                                                                            <SearchableSelect<FormValuesMember>
+                                                                                items={membros}
+                                                                                value={field.value}
+                                                                                onChange={(value: string) => {
+                                                                                    setSelectedMemberId(value);
+                                                                                    field.onChange(value);
+                                                                                }}
+                                                                                getItemValue={(member) => member._id}
+                                                                                getItemLabel={(member) => member.nome}
+                                                                                placeholder="Clique para selecionar um membro..."
+                                                                                emptyMessage="Nenhum membro encontrado."
+                                                                                className="shadow-sm"
+                                                                            />
+                                                                            <FormMessage />
+                                                                        </FormItem>
+                                                                    )}
+                                                                />
                                                             )}
                                                         />
                                                     ) : (
@@ -795,26 +803,21 @@ export default function InviteV2Form() {
                                                                     name={`informacoesPessoais.filhos.${index}.id`}
                                                                     render={({field}) => (
                                                                         <FormItem>
-                                                                            <FormLabel>Selecione o Filho</FormLabel>
-                                                                            <Select onValueChange={field.onChange}
-                                                                                    defaultValue={field.value}>
-                                                                                <FormControl>
-                                                                                    <SelectTrigger>
-                                                                                        <SelectValue
-                                                                                            placeholder="Selecione um membro"/>
-                                                                                    </SelectTrigger>
-                                                                                </FormControl>
-                                                                                <SelectContent>
-                                                                                    {membros.map((member: FormValuesMember, index: number) => (
-                                                                                        <SelectItem
-                                                                                            key={`${member._id}_filho_${index}`}
-                                                                                            value={member._id}>
-                                                                                            {member.nome}
-                                                                                        </SelectItem>
-                                                                                    ))}
-                                                                                </SelectContent>
-                                                                            </Select>
-                                                                            <FormMessage/>
+                                                                            <FormLabel>Selecione o(a) filho(a) *</FormLabel>
+                                                                            <SearchableSelect<FormValuesMember>
+                                                                                items={membros}
+                                                                                value={field.value}
+                                                                                onChange={(value: string) => {
+                                                                                    setSelectedMemberId(value);
+                                                                                    field.onChange(value);
+                                                                                }}
+                                                                                getItemValue={(member) => member._id}
+                                                                                getItemLabel={(member) => member.nome}
+                                                                                placeholder="Clique para selecionar um membro..."
+                                                                                emptyMessage="Nenhum membro encontrado."
+                                                                                className="shadow-sm"
+                                                                            />
+                                                                            <FormMessage />
                                                                         </FormItem>
                                                                     )}
                                                                 />

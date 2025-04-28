@@ -88,17 +88,21 @@ export function Header() {
 
     const logoLink = useStoreIbbZus.role === UserRoles.MEMBRO ? 'https://www.ibbrooklin.org.br/' : '/dashboard';
 
-    if (!useStoreIbbZus.loggout) {
-        const verificaSessaoExpirada: boolean = passouUmaHora(useStoreIbbZus.sessionDuration);
+    if (skipLogin && skipLoginParam && openDialogSession) {
+        setOpenDialogSession(false);
+    } else {
+        if (!useStoreIbbZus.loggout) {
+            const verificaSessaoExpirada: boolean = passouUmaHora(useStoreIbbZus.sessionDuration);
 
-        if (verificaSessaoExpirada) {
-            setTimeout(() => setOpenDialogSession(true), 1000);
+            if (verificaSessaoExpirada) {
+                setTimeout(() => setOpenDialogSession(true), 1000);
+            }
         }
     }
 
     return (
         <header className="bg-background border-b-2 border-border px-4 py-3 flex items-center justify-between">
-            <Dialog open={openDialogSession} onOpenChange={setOpenDialogSession}>
+            <Dialog open={openDialogSession && !skipLogin && !skipLoginParam} onOpenChange={setOpenDialogSession}>
                 {/* Conteúdo do Diálogo */}
                 <DialogContent className="w-full max-w-sm sm:max-w-md">
                     <DialogHeader>
@@ -199,13 +203,17 @@ export function Header() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
                         <DropdownMenuItem asChild>
-                            <Link
-                                href={`/user?id=${useStoreIbbZus.mongoId}`}
-                                className="flex items-center gap-2"
-                            >
-                                <UserIcon className="w-4 h-4" />
-                                Meu perfil
-                            </Link>
+                            {
+                                !skipLogin && !skipLoginParam && (
+                                    <Link
+                                        href={`/user?id=${useStoreIbbZus.mongoId}`}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <UserIcon className="w-4 h-4" />
+                                        Meu perfil
+                                    </Link>
+                                )
+                            }
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                             <Link

@@ -530,10 +530,12 @@ export default function BirthdaysV2() {
                                                     </DialogTrigger>
                                                     <DialogContent className="sm:max-w-[425px]">
                                                         <DialogHeader>
-                                                            <DialogTitle>Enviar Parabéns ao
-                                                                membro: {member.nome}</DialogTitle>
-                                                            <DialogDescription>Mande uma mensagem parabenizando o
-                                                                membro</DialogDescription>
+                                                            <DialogTitle>Enviar Parabéns ao membro:</DialogTitle>
+                                                            <DialogTitle>{member.nome}</DialogTitle>
+                                                            <br/>
+                                                            <DialogTitle>Tel: {member.telefone}</DialogTitle>
+
+                                                            <DialogDescription>Mande uma mensagem parabenizando o membro</DialogDescription>
                                                         </DialogHeader>
                                                         <div className="grid gap-4 py-4">
                                                             <Textarea

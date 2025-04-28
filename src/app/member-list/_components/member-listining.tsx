@@ -321,10 +321,6 @@ export default function MemberListing() {
                 break;
         }
 
-        console.log({
-            status: member.status,
-            ...valorAtual
-        })
         form.reset({
             status: member.status,
             ...valorAtual
@@ -336,7 +332,6 @@ export default function MemberListing() {
         setLoading(true);
         setLoadingMessage('Atualizando status do membro');
 
-        console.log("Form Data:", data);
         const result = statusUpdateSchema.safeParse(data);
         if (!result.success) {
             const errors = result.error.format();
@@ -348,20 +343,23 @@ export default function MemberListing() {
                     UserApi.updateMember(selectedMember._id, data)
                         .then((response: FormValuesMember) => {
                             alert(`Status do membro: ${selectedMember.nome} atualizado`);
-                            fetchMembers();
+                            handleReloadTable();
                         })
                         .catch((error) => {
                             console.log(error);
                             switch (error.code) {
                                 case 'ERR_BAD_REQUEST':
                                     setMembros([]);
+                                    handleReloadTable();
                                     break;
                                 case 'ERR_NETWORK':
                                     setMembros([]);
+                                    handleReloadTable();
                                     break;
 
                                 default:
                                     setMembros([]);
+                                    handleReloadTable();
                                     break;
                             }
                         })
@@ -369,12 +367,14 @@ export default function MemberListing() {
                             setLoading(false);
                             setLoadingMessage('');
                             form.reset();
+                            handleReloadTable();
                         })
                 }
             } catch (e) {
                 setLoading(false);
                 setLoadingMessage('');
                 form.reset();
+                handleReloadTable();
             }
         }
     };

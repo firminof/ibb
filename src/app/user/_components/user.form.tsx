@@ -188,7 +188,6 @@ export default function UserForm() {
                 UserApi.fetchMemberById(idMembro)
                     .then((response: FormValuesMember) => {
                         if (response) {
-                            console.log(response)
                             const member: FormValuesMember = formatUserV2(response);
                             setMember(member);
                         }
