@@ -121,7 +121,7 @@ export default function MemberForm() {
         }
 
         try {
-            let { _id, ...dataToCreate } = { ...data, foto: photo }; // Inicialmente, foto recebe o valor atual de photo
+            let {_id, ...dataToCreate} = {...data, foto: photo}; // Inicialmente, foto recebe o valor atual de photo
             console.log('dataToCreate: ', dataToCreate);
 
             if (requestPassword) {
@@ -1128,11 +1128,11 @@ export default function MemberForm() {
                                                 <FormField
                                                     control={form.control}
                                                     name="informacoesPessoais.casamento.conjugue.id"
-                                                    render={({ field }) => (
+                                                    render={({field}) => (
                                                         <FormField
                                                             control={form.control}
                                                             name="informacoesPessoais.casamento.conjugue.id"
-                                                            render={({ field: any }) => (
+                                                            render={({field: any}) => (
                                                                 <FormItem>
                                                                     <FormLabel>Selecione o(a) cônjugue *</FormLabel>
                                                                     <SearchableSelect<FormValuesMember>
@@ -1148,7 +1148,7 @@ export default function MemberForm() {
                                                                         emptyMessage="Nenhum membro encontrado."
                                                                         className="shadow-sm"
                                                                     />
-                                                                    <FormMessage />
+                                                                    <FormMessage/>
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -1321,7 +1321,7 @@ export default function MemberForm() {
                                                                         emptyMessage="Nenhum membro encontrado."
                                                                         className="shadow-sm"
                                                                     />
-                                                                    <FormMessage />
+                                                                    <FormMessage/>
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -1416,7 +1416,7 @@ export default function MemberForm() {
                                                     emptyMessage="Nenhum membro encontrado."
                                                     className="shadow-sm"
                                                 />
-                                                <FormMessage />
+                                                <FormMessage/>
                                             </FormItem>
                                         )}
                                     />
@@ -1480,7 +1480,62 @@ export default function MemberForm() {
                             <CardTitle>Endereço (Opcional)</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="grid md:grid-cols-2 sm:grid-cols-1 gap-4">
+                            <div className="grid md:grid-cols-1 sm:grid-cols-1 gap-4">
+                                <div className="flex justify-center items-end gap-2">
+                                    <FormField
+                                        control={form.control}
+                                        name="endereco.cep"
+                                        render={({field}) => (
+                                            <FormItem className="flex-grow">
+                                                <FormLabel>CEP</FormLabel>
+                                                <FormControl>
+                                                    <InputMask
+                                                        mask="99999-999"
+                                                        value={field.value}
+                                                        onChange={field.onChange}
+                                                    >
+                                                        {(inputProps: any) => (
+                                                            <Input placeholder="99999-999" {...inputProps} />
+                                                        )}
+                                                    </InputMask>
+                                                </FormControl>
+                                                <FormMessage/>
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <div className="flex justify-end">
+                                        <Button
+                                            type="button"
+                                            onClick={async () => {
+                                                const cep = form.getValues("endereco.cep")?.replace(/\D/g, "");
+                                                if (cep?.length === 8) {
+                                                    try {
+                                                        const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                                                        const data = await res.json();
+                                                        if (!data.erro) {
+                                                            form.setValue("endereco.rua", data.logradouro || "");
+                                                            form.setValue("endereco.bairro", data.bairro || "");
+                                                            form.setValue("endereco.cidade", data.localidade || "");
+                                                            form.setValue("endereco.estado", data.uf || "");
+                                                            form.setValue("endereco.numero", data.unidade || "");
+                                                            form.setValue("endereco.complemento", data.complemento || "");
+                                                        } else {
+                                                            alert("CEP não encontrado.");
+                                                        }
+                                                    } catch (error) {
+                                                        console.error("Erro ao buscar CEP:", error);
+                                                        alert("Erro ao buscar CEP.");
+                                                    }
+                                                } else {
+                                                    alert("CEP inválido.");
+                                                }
+                                            }}
+                                        >
+                                            Buscar
+                                        </Button>
+                                    </div>
+                                </div>
+
                                 <FormField
                                     control={form.control}
                                     name="endereco.rua"
@@ -1558,26 +1613,6 @@ export default function MemberForm() {
                                             <FormLabel>Estado</FormLabel>
                                             <FormControl>
                                                 <Input {...field} />
-                                            </FormControl>
-                                            <FormMessage/>
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="endereco.cep"
-                                    render={({field}) => (
-                                        <FormItem>
-                                            <FormLabel>CEP</FormLabel>
-                                            <FormControl>
-                                                <InputMask
-                                                    mask="99999-999"
-                                                    value={field.value}
-                                                    onChange={field.onChange}
-                                                >
-                                                    {(inputProps: any) => <Input
-                                                        placeholder={"99999-999"} {...inputProps} />}
-                                                </InputMask>
                                             </FormControl>
                                             <FormMessage/>
                                         </FormItem>
