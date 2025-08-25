@@ -10,7 +10,7 @@ export default function Invite() {
             <header className="bg-background border-b-2 border-border px-4 py-3 flex items-center justify-between sm:px-6">
                 <Link href={'https://www.ibbrooklin.org.br/'} prefetch={false} className="flex-shrink-0">
                     <Image
-                        src="/ibb_azul.png"
+                        src="/ibb_logo.PNG"
                         alt="IBB Logo"
                         width={256}
                         height={100}
