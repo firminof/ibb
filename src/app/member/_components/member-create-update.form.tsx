@@ -500,14 +500,16 @@ export default function MemberForm() {
                                         <FormItem>
                                             <FormLabel>RG</FormLabel>
                                             <FormControl>
-                                                <InputMask
-                                                    mask="99.999.999-9"
-                                                    value={field.value}
-                                                    onChange={field.onChange}
-                                                >
-                                                    {(inputProps: any) => <Input
-                                                        placeholder={"99.999.999-9"} {...inputProps} />}
-                                                </InputMask>
+                                                <Input type="rg" {...field} placeholder={"99.999.999-9"}/>
+                                                {/*<InputMask*/}
+                                                {/*    mask="99.999.999-9"*/}
+                                                {/*    type='text'*/}
+                                                {/*    value={field.value}*/}
+                                                {/*    onChange={field.onChange}*/}
+                                                {/*>*/}
+                                                {/*    {(inputProps: any) => <Input*/}
+                                                {/*        placeholder={"99.999.999-9"} {...inputProps} />}*/}
+                                                {/*</InputMask>*/}
                                             </FormControl>
                                             <FormMessage/>
                                         </FormItem>
@@ -558,7 +560,7 @@ export default function MemberForm() {
                                 name="dataNascimento"
                                 render={({field}) => (
                                     <FormItem className="flex flex-col">
-                                        <FormLabel>Data de Nascimento *</FormLabel>
+                                        <FormLabel>Data de Nascimento</FormLabel>
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
