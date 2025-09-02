@@ -27,6 +27,7 @@ import {UserRoles} from "@/lib/models/user";
 import {IStore, useStoreIbb} from "@/lib/store/StoreIbb";
 import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group";
 import BirthdaysV2 from "@/app/dashboard/_components/birthdays-v2";
+import {version} from '../../../../package.json'
 
 
 export function DashboardInfo() {
@@ -279,7 +280,7 @@ export function DashboardInfo() {
                 <BirthdaysV2/>
             </main>
             <footer>
-                Versão: 1.5.0
+                Versão: {version}
             </footer>
         </div>
     )

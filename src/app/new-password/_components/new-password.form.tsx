@@ -82,7 +82,7 @@ export function NewPasswordForm() {
             <div className="hidden md:block md:w-1/2 lg:w-2/3">
                 <div
                     className="w-full h-full bg-cover bg-center bg-black"
-                    style={{backgroundImage: "url('/ibb_tela_lateral.jpg')"}}
+                    style={{backgroundImage: "url('/ibb_login.jpg')"}}
                 ></div>
             </div>
             <div className="flex w-full flex-col items-center justify-center px-4 py-12 md:w-1/2 md:px-8 lg:w-1/3">

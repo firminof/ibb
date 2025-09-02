@@ -129,7 +129,7 @@ export function Header() {
 
             <Link href={logoLink} prefetch={false} className="flex-shrink-0">
                 <Image
-                    src="/ibb_logo.PNG"
+                    src="/ibb_logo.png"
                     alt="IBB Logo"
                     width={256}
                     height={100}

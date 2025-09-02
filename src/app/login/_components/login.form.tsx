@@ -369,7 +369,7 @@ export function LoginForm() {
             <div className="hidden md:block md:w-1/2 lg:w-2/3">
                 <div
                     className="w-full h-full bg-cover bg-center bg-black"
-                    style={{backgroundImage: "url('/ibb_tela_lateral.jpg')"}}
+                    style={{backgroundImage: "url('/ibb_login.jpg')"}}
                 ></div>
             </div>
             <div className="flex w-full flex-col items-center justify-center px-4 py-12 md:w-1/2 md:px-8 lg:w-1/3">
@@ -379,9 +379,9 @@ export function LoginForm() {
                             <div className="flex flex-col items-center justify-center -mt-12">
                                 <div>
                                     <Image
-                                        src="/ibb_azul_v2.png"
+                                        src="/ibb_logo_circulo.png"
                                         alt="Login background"
-                                        className={`object-cover`}
+                                        className={`object-cover rounded-3xl`}
                                         width="152"
                                         height="88"
                                     />
