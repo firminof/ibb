@@ -236,7 +236,9 @@ export const formSchema = z
         telefone: z
             .string().optional(),
             // .regex(/^\(\d{2}\) \d{5}-\d{4}$/, "Telefone inválido"),
-        dataNascimento: z.string().optional(),
+        dataNascimento: z.date({
+            message: "Data de Nascimento inválida",
+        }),
         role: z.nativeEnum(UserRolesV2, {
             errorMap: () => ({
                 message: "O campo 'Nível de Acesso' é obrigatório.",

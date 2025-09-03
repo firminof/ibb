@@ -560,7 +560,7 @@ export default function MemberForm() {
                                 name="dataNascimento"
                                 render={({field}) => (
                                     <FormItem className="flex flex-col">
-                                        <FormLabel>Data de Nascimento</FormLabel>
+                                        <FormLabel>Data de Nascimento *</FormLabel>
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <FormControl>

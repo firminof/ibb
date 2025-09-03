@@ -993,8 +993,7 @@ export default function MemberListing() {
                                             </div>
                                         </TableCell>
                                         <TableCell>{member.nome}</TableCell>
-                                        <TableCell>{member.dataNascimento && member.dataNascimento.length > 0 ? format(member.dataNascimento, 'dd/MM/yyyy') : ''}</TableCell>
-                                        <TableCell>{member.idade}</TableCell>
+                                        <TableCell>{format(member.dataNascimento, 'dd/MM/yyyy')}</TableCell>                                        <TableCell>{member.idade}</TableCell>
                                         <TableCell>{member.telefone}</TableCell>
                                         <TableCell className="relative group">
                                             {/* Badge de status */}
